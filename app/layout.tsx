@@ -1,22 +1,39 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Martian_Mono, Roboto, Rokkitt } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
+import { Footer } from "@/components/footer";
+import { Header } from "@/components/header";
 
-const defaultUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
+const defaultUrl = process.env.APP_URL
+  ? `https://${process.env.APP_URL}`
   : "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "THE HEAP",
+  description: "FEED THE PILE",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const martianMono = Martian_Mono({
+  variable: "--font-mono",
   display: "swap",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const roboto = Roboto({
+  variable: "--font-sans",
+  display: "swap",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700", "900"],
+});
+
+const rokkitt = Rokkitt({
+  variable: "--font-serif",
+  display: "swap",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
 });
 
 export default function RootLayout({
@@ -26,14 +43,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body
+        className={`${roboto.variable} ${rokkitt.variable} ${martianMono.variable} antialiased`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <main className="min-h-screen flex flex-col items-center">
+            <div className="flex-1 w-full flex flex-col gap-20 items-center">
+              <Header />
+              <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
+                {children}
+              </div>
+
+              <Footer />
+            </div>
+          </main>
         </ThemeProvider>
       </body>
     </html>
