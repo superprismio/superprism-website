@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-type Params = { params: { heapId: string } };
+type Params = { params: Promise<{ heapId: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
+  const { heapId } = await params;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("heaps")
     .select("*")
-    .eq("id", params.heapId)
+    .eq("id", heapId)
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });
   return NextResponse.json({ data });
 }
 
 export async function PATCH(request: Request, { params }: Params) {
+  const { heapId } = await params;
   const body = await request.json().catch(() => ({}));
   const { name, description, avatar_url, visibility, allowed_group_ids, config } = body ?? {};
 
@@ -30,7 +32,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const { data, error } = await supabase
     .from("heaps")
     .update(updates)
-    .eq("id", params.heapId)
+    .eq("id", heapId)
     .select("*")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
@@ -38,8 +40,9 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
+  const { heapId } = await params;
   const supabase = await createClient();
-  const { error } = await supabase.from("heaps").delete().eq("id", params.heapId);
+  const { error } = await supabase.from("heaps").delete().eq("id", heapId);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ success: true });
 }

@@ -2,9 +2,9 @@ import Image from "next/image";
 
 export function Hero() {
   return (
-    <div className="flex flex-col gap-3 items-center w-full">
-      <div className="flex gap-8 justify-center items-center text-3xl">
-        the heap
+    <div className="flex flex-col gap-12 items-center w-full py-20">
+      <div className="flex gap-4 justify-center items-center text-6xl">
+        HEAPS
       </div>
       <h1 className="sr-only">Supabase and Next.js Starter Template</h1>
 
