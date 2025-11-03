@@ -1,29 +1,43 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { requireHeapMember } from "@/lib/auth-helpers";
 
-type Params = { params: { heapId: string } };
+type Params = { params: Promise<{ heapId: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
+  const { heapId } = await params;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("kb_tags")
     .select("*")
-    .eq("heap_id", params.heapId)
+    .eq("heap_id", heapId)
     .order("label", { ascending: true });
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ data });
 }
 
 export async function POST(request: Request, { params }: Params) {
+  const { heapId } = await params;
   const body = await request.json().catch(() => ({}));
   const { label, slug, description, is_active, synonyms } = body ?? {};
   if (!label || !slug)
     return NextResponse.json({ error: "label and slug are required" }, { status: 400 });
 
   const supabase = await createClient();
+  
+  // Verify user is authenticated and is a heap member
+  const authResult = await requireHeapMember(
+    supabase,
+    heapId,
+    "You must be a member of this heap to add tags"
+  );
+  if (!authResult.success) {
+    return authResult.response;
+  }
+
   const { data, error } = await supabase
     .from("kb_tags")
-    .insert({ label, slug, description, is_active, synonyms, heap_id: params.heapId })
+    .insert({ label, slug, description, is_active, synonyms, heap_id: heapId })
     .select("*")
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

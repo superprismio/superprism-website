@@ -11,7 +11,7 @@ const defaultUrl = process.env.APP_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "THE HEAP",
+  title: "HEAPS",
   description: "FEED THE PILE",
 };
 
@@ -53,10 +53,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <main className="min-h-screen flex flex-col items-center">
-            <div className="flex-1 w-full flex flex-col gap-20 items-center">
+            <div className="flex-1 w-full flex flex-col items-center">
               <Header />
               {children}
-
               <Footer />
             </div>
           </main>
