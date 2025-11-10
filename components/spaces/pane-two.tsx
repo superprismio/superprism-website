@@ -14,14 +14,14 @@ type PaneTwoProps = {
 export function PaneTwo({ title, isOpen, onClose, children }: PaneTwoProps) {
   if (!isOpen) {
     return (
-      <aside className="hidden min-h-[320px] rounded-lg text-center text-xs font-medium text-muted-foreground md:flex md:flex-col md:items-center md:justify-center">
+      <aside className="hidden min-h-[320px] text-center text-xs font-medium text-muted-foreground md:flex md:flex-col md:items-center md:justify-center">
         Secondary pane collapsed
       </aside>
     );
   }
 
   return (
-    <aside className="flex min-h-[320px] flex-col rounded-lg border bg-card shadow-sm">
+    <aside className="flex min-h-[320px] flex-col">
       <header className="flex items-start justify-between gap-4 border-b px-4 py-3">
         <div>
           <h3 className="text-base font-semibold text-foreground">

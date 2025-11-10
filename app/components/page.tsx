@@ -86,6 +86,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -586,6 +591,38 @@ export default function ComponentsShowcase() {
                   <Label htmlFor="enterprise-plan">Enterprise</Label>
                 </div>
               </RadioGroup>
+            </Example>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-semibold">Resizable</h2>
+            <Example>
+              <ResizablePanelGroup
+                direction="horizontal"
+                className="w-full max-w-4xl overflow-hidden rounded-lg border"
+              >
+                <ResizablePanel defaultSize={40}>
+                  <div className="flex h-full min-h-[220px] items-center justify-center bg-muted/40 p-6">
+                    <span className="font-medium">Sidebar</span>
+                  </div>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={60}>
+                  <ResizablePanelGroup direction="vertical">
+                    <ResizablePanel defaultSize={60}>
+                      <div className="flex h-full items-center justify-center bg-muted/20 p-6">
+                        <span className="font-medium">Content</span>
+                      </div>
+                    </ResizablePanel>
+                    <ResizableHandle />
+                    <ResizablePanel defaultSize={40}>
+                      <div className="flex h-full items-center justify-center bg-muted/30 p-6">
+                        <span className="font-medium">Details</span>
+                      </div>
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                </ResizablePanel>
+              </ResizablePanelGroup>
             </Example>
           </section>
 
