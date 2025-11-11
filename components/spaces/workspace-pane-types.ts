@@ -9,4 +9,5 @@ export type WorkspacePaneKey =
 
 export type WorkspacePaneComponentProps = {
   onOpenPaneTwo?: (pane: WorkspacePaneKey) => void;
+  heapId: string;
 };

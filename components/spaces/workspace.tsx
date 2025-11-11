@@ -157,7 +157,10 @@ export function Workspace({
               className="min-w-[280px]"
             >
               <PaneOne title={primaryDefinition.label}>
-                <PrimaryComponent onOpenPaneTwo={handleOpenSecondary} />
+                <PrimaryComponent
+                  onOpenPaneTwo={handleOpenSecondary}
+                  heapId={spaceId}
+                />
               </PaneOne>
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -167,14 +170,20 @@ export function Workspace({
               className="min-w-[240px]"
             >
               <PaneTwo title={secondaryDefinition?.label}>
-                <SecondaryComponent onOpenPaneTwo={handleOpenSecondary} />
+                <SecondaryComponent
+                  onOpenPaneTwo={handleOpenSecondary}
+                  heapId={spaceId}
+                />
               </PaneTwo>
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
           <>
             <PaneOne title={primaryDefinition.label}>
-              <PrimaryComponent onOpenPaneTwo={handleOpenSecondary} />
+              <PrimaryComponent
+                onOpenPaneTwo={handleOpenSecondary}
+                heapId={spaceId}
+              />
             </PaneOne>
             <PaneTwo title={secondaryDefinition?.label} />
           </>
