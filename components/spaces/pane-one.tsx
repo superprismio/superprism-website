@@ -5,17 +5,11 @@ import { cn } from "@/lib/utils";
 
 type PaneOneProps = {
   title: string;
-  description?: string | null;
   children: ReactNode;
   className?: string;
 };
 
-export function PaneOne({
-  title,
-  description,
-  children,
-  className,
-}: PaneOneProps) {
+export function PaneOne({ title, children, className }: PaneOneProps) {
   return (
     <section
       className={cn(
@@ -25,9 +19,6 @@ export function PaneOne({
     >
       <header className="mb-6">
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        {description ? (
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        ) : null}
       </header>
       <div className="flex-1">{children}</div>
     </section>

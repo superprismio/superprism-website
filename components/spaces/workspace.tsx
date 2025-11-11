@@ -28,7 +28,7 @@ type PaneDefinition = {
 
 const PANE_DEFINITIONS: Record<WorkspacePaneKey, PaneDefinition> = {
   spaceFeed: {
-    label: "Space Feed",
+    label: "Feed",
     component: SpaceFeed,
   },
   knowledgeExplorer: {
@@ -36,15 +36,15 @@ const PANE_DEFINITIONS: Record<WorkspacePaneKey, PaneDefinition> = {
     component: KnowledgeExplorer,
   },
   spaceChat: {
-    label: "Space Chat",
+    label: "     Chat",
     component: SpaceChat,
   },
   spaceMembers: {
-    label: "Space Members",
+    label: "Members",
     component: SpaceMembers,
   },
   spaceSettings: {
-    label: "Space Settings",
+    label: "Settings",
     component: SpaceSettings,
   },
 };
@@ -125,7 +125,7 @@ export function Workspace({
   return (
     <div>
       <div
-        className={`flex flex-col gap-4 min-h-[calc(100vh)] md:grid ${layoutColumns}`}
+        className={`flex flex-col min-h-[calc(100vh)] md:grid ${layoutColumns}`}
         role="region"
         aria-label="Workspace layout"
       >
@@ -134,10 +134,7 @@ export function Workspace({
           activeSecondary={secondaryPane}
           onSelect={handleSelectPrimary}
         />
-        <PaneOne
-          title={primaryDefinition.label}
-          description={space.description}
-        >
+        <PaneOne title={primaryDefinition.label}>
           <PrimaryComponent onOpenPaneTwo={handleOpenSecondary} />
         </PaneOne>
         <PaneTwo
