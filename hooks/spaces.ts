@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
-import { Space } from "./types";
+import { Space } from "../components/spaces/types";
 
 const USER_HEAPS_QUERY_KEY = ["user-heaps"];
 
@@ -56,9 +56,7 @@ export function useUserHeaps(): UseQueryResult<Space[], Error> {
   });
 }
 
-export function useHeap(
-  heapId: string | null
-): UseQueryResult<Space, Error> {
+export function useHeap(heapId: string | null): UseQueryResult<Space, Error> {
   return useQuery<Space, Error>({
     queryKey: ["heap", heapId],
     queryFn: async () => {
@@ -96,5 +94,3 @@ export function useHeap(
 }
 
 export { USER_HEAPS_QUERY_KEY };
-
-

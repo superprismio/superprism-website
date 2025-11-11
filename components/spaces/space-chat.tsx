@@ -2,7 +2,7 @@
 
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 
-export function SpaceChat({ onOpenPaneTwo }: WorkspacePaneComponentProps) {
+export function SpaceChat({}: WorkspacePaneComponentProps) {
   return (
     <div className="space-y-3 text-sm text-muted-foreground">
       <p>Talk to your knowledge</p>

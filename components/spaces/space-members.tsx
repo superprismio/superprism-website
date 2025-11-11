@@ -2,7 +2,7 @@
 
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 
-export function SpaceMembers({ onOpenPaneTwo }: WorkspacePaneComponentProps) {
+export function SpaceMembers({}: WorkspacePaneComponentProps) {
   return (
     <div className="space-y-3 text-sm text-muted-foreground">
       <p>Manage who has access to this space and their roles.</p>
@@ -12,5 +12,3 @@ export function SpaceMembers({ onOpenPaneTwo }: WorkspacePaneComponentProps) {
     </div>
   );
 }
-
-

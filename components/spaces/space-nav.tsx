@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import {
   Box,
+  Globe,
   Library,
   Pyramid,
   Settings,
@@ -31,14 +32,19 @@ const NAV_ITEMS: SpaceNavItem[] = [
     icon: Library,
   },
   {
-    key: "spaceChat",
-    label: "Space Chat",
+    key: "spaceProjects",
+    label: "Space Projects",
     icon: Box,
   },
   {
     key: "spaceMembers",
     label: "Space Members",
     icon: UserPlus,
+  },
+  {
+    key: "spacePublish",
+    label: "Publish",
+    icon: Globe,
   },
   {
     key: "spaceSettings",
@@ -74,8 +80,10 @@ export function SpaceNav({
                 className={cn(
                   "flex w-full flex-col items-center justify-center rounded-md px-2 py-3 text-xs font-medium transition-colors md:px-3 md:py-4",
                   isActive
-                    ? "text-primary"
-                    : "text-foreground hover:text-secondary"
+                    ? "text-foreground"
+                    : "text-primary hover:text-foreground",
+                  item.key === "spaceFeed" ? "mb-8" : "",
+                  item.key === "spaceSettings" ? "mt-8" : ""
                 )}
                 aria-pressed={isActive}
               >

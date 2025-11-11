@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode } from "react";
-import { cn } from "@/lib/utils";
 
 type PaneOneProps = {
   title: string;
@@ -9,18 +8,15 @@ type PaneOneProps = {
   className?: string;
 };
 
-export function PaneOne({ title, children, className }: PaneOneProps) {
+export function PaneOne({ title, children }: PaneOneProps) {
   return (
-    <section
-      className={cn(
-        "flex min-h-[320px] flex-col border-r p-4 shadow-sm md:p-6",
-        className
-      )}
-    >
-      <header className="mb-6">
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+    <section className="flex min-h-[320px] flex-col border-r">
+      <header className="gap-4 border-b px-4 py-3">
+        <h3 className="text-base font-semibold text-foreground">
+          {title ?? "Secondary"}
+        </h3>
       </header>
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
     </section>
   );
 }

@@ -23,12 +23,29 @@ export async function AuthButton() {
   return (
     <>
       {isAuthenticated ? (
-        <div className="hidden items-center gap-4 md:flex">
-          <Link href="/dashboard">
-            <CircleUserRound />
-          </Link>
-          <LogoutButton />
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              aria-label="Open account menu"
+              size="icon"
+              variant="ghost"
+            >
+              <CircleUserRound />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-background">
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="#">User settings</Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <div className="px-1 pb-1">
+              <LogoutButton />
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ) : (
         <div className="hidden gap-2 md:flex">
           <Button asChild size="sm" variant="outline">
@@ -40,37 +57,25 @@ export async function AuthButton() {
         </div>
       )}
 
-      <div className="flex md:hidden">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button aria-label="Open menu" size="icon">
-              <Menu />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40 bg-background">
-            {isAuthenticated ? (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard">Dashboard</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <div className="px-1 pb-1">
-                  <LogoutButton />
-                </div>
-              </>
-            ) : (
-              <>
-                <DropdownMenuItem asChild>
-                  <Link href="/auth/login">Sign in</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/auth/sign-up">Sign up</Link>
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {!isAuthenticated && (
+        <div className="flex md:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button aria-label="Open menu" size="icon">
+                <Menu />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40 bg-background">
+              <DropdownMenuItem asChild>
+                <Link href="/auth/login">Sign in</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/auth/sign-up">Sign up</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
     </>
   );
 }

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
-// import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { QueryProvider } from "@/components/providers/query-provider";
 
@@ -48,13 +47,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <main className="min-h-screen flex flex-col items-center">
-              <div className="flex-1 w-full flex flex-col items-center">
-                <Header />
-                <div className="flex-1 w-full flex flex-col items-center">
                   {children}
-                </div>
-                {/* <Footer /> */}
-              </div>
             </main>
           </QueryProvider>
         </ThemeProvider>

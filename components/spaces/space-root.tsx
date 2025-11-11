@@ -15,7 +15,7 @@ import {
 import { CreateSpaceDialog } from "./create-space-dialog";
 import { Workspace } from "./workspace";
 import { Space } from "./types";
-import { useUserHeaps, USER_HEAPS_QUERY_KEY } from "./hooks";
+import { useUserHeaps, USER_HEAPS_QUERY_KEY } from "../../hooks/spaces";
 
 export function SpaceRoot() {
   const queryClient = useQueryClient();
