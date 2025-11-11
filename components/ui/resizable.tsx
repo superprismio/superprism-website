@@ -43,7 +43,7 @@ const ResizableHandle = React.forwardRef<
     {...props}
   >
     {withHandle ? (
-      <div className="z-10 flex h-6 w-6 items-center justify-center rounded-full border border-border border-primary bg-primary">
+      <div className="z-10 flex h-2 w-2 items-center justify-center rounded-full border-4 border-border border-primary bg-primary">
         <span className="h-3 w-0.5 rounded-full bg-border data-[panel-group-direction=vertical]:h-0.5 data-[panel-group-direction=vertical]:w-3" />
       </div>
     ) : null}
