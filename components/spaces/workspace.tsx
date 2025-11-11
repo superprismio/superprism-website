@@ -1,7 +1,7 @@
 "use client";
 
 import { ComponentType, ReactNode, useCallback, useState } from "react";
-import { useHeap } from "./hooks";
+import { useHeap } from "../../hooks/spaces";
 import { SpaceNav } from "./space-nav";
 import { PaneOne } from "./pane-one";
 import { PaneTwo } from "./pane-two";
@@ -14,6 +14,13 @@ import { KnowledgeExplorer } from "./knowledge-explorer";
 import { SpaceChat } from "./space-chat";
 import { SpaceMembers } from "./space-members";
 import { SpaceSettings } from "./space-settings";
+import { SpaceProjects } from "./space-projects";
+import { SpacePublish } from "./space-publish";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "../ui/resizable";
 
 type WorkspaceProps = {
   spaceId: string | null;
@@ -36,12 +43,20 @@ const PANE_DEFINITIONS: Record<WorkspacePaneKey, PaneDefinition> = {
     component: KnowledgeExplorer,
   },
   spaceChat: {
-    label: "     Chat",
+    label: "Chat with Space",
     component: SpaceChat,
+  },
+  spaceProjects: {
+    label: "Projects",
+    component: SpaceProjects,
   },
   spaceMembers: {
     label: "Members",
     component: SpaceMembers,
+  },
+  spacePublish: {
+    label: "Publish",
+    component: SpacePublish,
   },
   spaceSettings: {
     label: "Settings",
@@ -50,6 +65,7 @@ const PANE_DEFINITIONS: Record<WorkspacePaneKey, PaneDefinition> = {
 };
 
 const DEFAULT_PRIMARY: WorkspacePaneKey = "spaceFeed";
+const DEFAULT_SECONDARY: WorkspacePaneKey = "spaceChat";
 
 export function Workspace({
   spaceId,
@@ -61,7 +77,7 @@ export function Workspace({
   const [primaryPane, setPrimaryPane] =
     useState<WorkspacePaneKey>(DEFAULT_PRIMARY);
   const [secondaryPane, setSecondaryPane] = useState<WorkspacePaneKey | null>(
-    null
+    DEFAULT_SECONDARY
   );
 
   const handleSelectPrimary = useCallback((pane: WorkspacePaneKey) => {
@@ -72,18 +88,14 @@ export function Workspace({
     setSecondaryPane(pane);
   }, []);
 
-  const handleCloseSecondary = useCallback(() => {
-    setSecondaryPane(null);
-  }, []);
-
-  const layoutColumns = secondaryPane
-    ? "md:grid-cols-[72px,minmax(0,1fr),minmax(0,320px)]"
-    : "md:grid-cols-[72px,minmax(0,1fr),112px]";
-
   const PrimaryComponent = PANE_DEFINITIONS[primaryPane].component;
   const SecondaryComponent = secondaryPane
     ? PANE_DEFINITIONS[secondaryPane].component
     : null;
+
+  const layoutColumns = SecondaryComponent
+    ? "md:grid-cols-[72px,minmax(0,1fr)]"
+    : "md:grid-cols-[72px,minmax(0,1fr),112px]";
 
   if (isLoadingList || (spaceId && isPending)) {
     return (
@@ -134,18 +146,39 @@ export function Workspace({
           activeSecondary={secondaryPane}
           onSelect={handleSelectPrimary}
         />
-        <PaneOne title={primaryDefinition.label}>
-          <PrimaryComponent onOpenPaneTwo={handleOpenSecondary} />
-        </PaneOne>
-        <PaneTwo
-          isOpen={Boolean(SecondaryComponent)}
-          title={secondaryDefinition?.label}
-          onClose={handleCloseSecondary}
-        >
-          {SecondaryComponent ? (
-            <SecondaryComponent onOpenPaneTwo={handleOpenSecondary} />
-          ) : null}
-        </PaneTwo>
+        {SecondaryComponent ? (
+          <ResizablePanelGroup
+            direction="horizontal"
+            className="flex min-h-[320px] flex-col"
+          >
+            <ResizablePanel
+              defaultSize={60}
+              minSize={10}
+              className="min-w-[280px]"
+            >
+              <PaneOne title={primaryDefinition.label}>
+                <PrimaryComponent onOpenPaneTwo={handleOpenSecondary} />
+              </PaneOne>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel
+              defaultSize={40}
+              minSize={10}
+              className="min-w-[240px]"
+            >
+              <PaneTwo title={secondaryDefinition?.label}>
+                <SecondaryComponent onOpenPaneTwo={handleOpenSecondary} />
+              </PaneTwo>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          <>
+            <PaneOne title={primaryDefinition.label}>
+              <PrimaryComponent onOpenPaneTwo={handleOpenSecondary} />
+            </PaneOne>
+            <PaneTwo title={secondaryDefinition?.label} />
+          </>
+        )}
       </div>
     </div>
   );
