@@ -3,12 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Folder, FolderOpen } from "lucide-react";
 import { FileRow } from "@/components/heaps/types";
-import { useSpaceFiles } from "@/src/hooks/useSpaceFiles";
+import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type FileExplorerProps = {
   heapId: string;
+  onPreviewFile?: (file: FileRow) => void;
+  onAddFileToChat?: (file: FileRow) => void;
+  selectedFileId?: string | null;
 };
 
 type FolderSelection = {
@@ -20,9 +24,18 @@ type FolderSelection = {
 type FileListProps = {
   files: FileRow[];
   emptyMessage: string;
+  selectedFileId?: string | null;
+  onAddToChat?: (file: FileRow) => void;
+  onPreview?: (file: FileRow) => void;
 };
 
-function FileList({ files, emptyMessage }: FileListProps) {
+function FileList({
+  files,
+  emptyMessage,
+  selectedFileId,
+  onAddToChat,
+  onPreview,
+}: FileListProps) {
   if (files.length === 0) {
     return <div className="text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -31,14 +44,37 @@ function FileList({ files, emptyMessage }: FileListProps) {
     <ul className="space-y-2">
       {files.map((file) => (
         <li key={file.id} className="p-3">
-          <div className="text-sm font-medium">
-            {file.file_name ?? "Untitled file"}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 space-y-1">
+              <div className="text-sm font-medium">
+                {file.file_name ?? "Untitled file"}
+              </div>
+              {file.meta?.summary_short ? (
+                <p className="text-xs text-muted-foreground">
+                  {file.meta.summary_short}
+                </p>
+              ) : null}
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => onAddToChat?.(file)}
+              >
+                Add to chat
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onPreview?.(file)}
+                aria-pressed={selectedFileId === file.id}
+              >
+                Preview
+              </Button>
+            </div>
           </div>
-          {file.meta?.summary_short ? (
-            <p className="text-xs text-muted-foreground mt-1">
-              {file.meta.summary_short}
-            </p>
-          ) : null}
         </li>
       ))}
     </ul>
@@ -52,6 +88,7 @@ type FolderListProps = {
   activePath: string | null;
   onToggleParent: (path: string) => void;
   onSelectFolder: (path: string) => void;
+  className?: string;
 };
 
 function FolderList({
@@ -61,9 +98,10 @@ function FolderList({
   activePath,
   onToggleParent,
   onSelectFolder,
+  className,
 }: FolderListProps) {
   return (
-    <nav className="sm:w-56 border-r">
+    <nav className={cn("space-y-0", className)}>
       <ul>
         {folders.map((folder) => {
           const parentOpen = openParent === folder.path;
@@ -138,6 +176,7 @@ type FileSearchProps = {
   tags: string[];
   activeTag: string | null;
   onToggleTag: (tag: string | null) => void;
+  className?: string;
 };
 
 function FileSearch({
@@ -146,9 +185,10 @@ function FileSearch({
   tags,
   activeTag,
   onToggleTag,
+  className,
 }: FileSearchProps) {
   return (
-    <aside className="sm:w-56 border-r p-4 space-y-4">
+    <aside className={cn("p-4 space-y-4 overflow-y-auto", className)}>
       <div className="space-y-2">
         <label className="text-xs font-medium text-muted-foreground">
           Search
@@ -199,7 +239,48 @@ function FileSearch({
   );
 }
 
-export function FileExplorer({ heapId }: FileExplorerProps) {
+type ModeToggleProps = {
+  mode: "explore" | "search";
+  onChange: (mode: "explore" | "search") => void;
+};
+
+function ModeToggle({ mode, onChange }: ModeToggleProps) {
+  return (
+    <div className="px-3 py-2 border-b flex gap-2">
+      <button
+        type="button"
+        onClick={() => onChange("explore")}
+        className={cn(
+          "text-sm px-2 py-1 rounded",
+          mode === "explore"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-muted"
+        )}
+      >
+        Explore
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("search")}
+        className={cn(
+          "text-sm px-2 py-1 rounded",
+          mode === "search"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-muted"
+        )}
+      >
+        Search
+      </button>
+    </div>
+  );
+}
+
+export function FileExplorer({
+  heapId,
+  onPreviewFile,
+  onAddFileToChat,
+  selectedFileId,
+}: FileExplorerProps) {
   const {
     folders,
     filesByFolder,
@@ -279,57 +360,41 @@ export function FileExplorer({ heapId }: FileExplorerProps) {
   }, [files, search, activeTagFilter]);
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="overflow-hidden">
       <header className="gap-3 border-b w-full px-3 py-4 flex items-center">
         <div className="flex-1 text-sm font-medium">Knowledge files</div>
-        <button
-          type="button"
-          onClick={() => setMode("explore")}
-          className={cn(
-            "text-sm px-2 py-1 rounded",
-            mode === "explore"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted"
-          )}
-        >
-          Explore
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("search")}
-          className={cn(
-            "text-sm px-2 py-1 rounded",
-            mode === "search"
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted"
-          )}
-        >
-          Search
-        </button>
       </header>
 
       <div className="overflow-hidden">
         <div className="flex flex-col sm:flex-row">
-          {mode === "explore" ? (
-            <FolderList
-              folders={folders}
-              filesByFolder={filesByFolder}
-              openParent={openParent}
-              activePath={activePath}
-              onToggleParent={(path) =>
-                setOpenParent((prev) => (prev === path ? null : path))
-              }
-              onSelectFolder={(path) => setActivePath(path)}
+          <div className="sm:w-56 border-b sm:border-b-0 sm:border-r flex flex-col">
+            <ModeToggle
+              mode={mode}
+              onChange={(nextMode) => setMode(nextMode)}
             />
-          ) : (
-            <FileSearch
-              search={search}
-              onSearchChange={setSearch}
-              tags={tags}
-              activeTag={activeTagFilter}
-              onToggleTag={setActiveTagFilter}
-            />
-          )}
+            {mode === "explore" ? (
+              <FolderList
+                folders={folders}
+                filesByFolder={filesByFolder}
+                openParent={openParent}
+                activePath={activePath}
+                onToggleParent={(path) =>
+                  setOpenParent((prev) => (prev === path ? null : path))
+                }
+                onSelectFolder={(path) => setActivePath(path)}
+                className="flex-1 overflow-y-auto"
+              />
+            ) : (
+              <FileSearch
+                search={search}
+                onSearchChange={setSearch}
+                tags={tags}
+                activeTag={activeTagFilter}
+                onToggleTag={setActiveTagFilter}
+                className="flex-1"
+              />
+            )}
+          </div>
           <section className="flex-1 min-h-[220px] p-4 space-y-4 overflow-hidden flex flex-col">
             {isLoading ? (
               <div className="text-sm text-muted-foreground">
@@ -360,6 +425,9 @@ export function FileExplorer({ heapId }: FileExplorerProps) {
                       <FileList
                         files={activeFolder.files}
                         emptyMessage="No files in this folder yet."
+                        selectedFileId={selectedFileId}
+                        onAddToChat={onAddFileToChat}
+                        onPreview={onPreviewFile}
                       />
                     </div>
                   </>
@@ -377,6 +445,9 @@ export function FileExplorer({ heapId }: FileExplorerProps) {
                         ? "No files match your filters."
                         : "Start by searching or selecting a tag."
                     }
+                    selectedFileId={selectedFileId}
+                    onAddToChat={onAddFileToChat}
+                    onPreview={onPreviewFile}
                   />
                 </div>
               )
