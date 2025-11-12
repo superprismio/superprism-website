@@ -360,14 +360,14 @@ export function FileExplorer({
   }, [files, search, activeTagFilter]);
 
   return (
-    <div className="overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden">
       <header className="gap-3 border-b w-full px-3 py-4 flex items-center">
         <div className="flex-1 text-sm font-medium">Knowledge files</div>
       </header>
 
-      <div className="overflow-hidden">
-        <div className="flex flex-col sm:flex-row">
-          <div className="sm:w-56 border-b sm:border-b-0 sm:border-r flex flex-col">
+      <div className="flex-1 overflow-hidden">
+        <div className="flex h-full flex-col sm:flex-row">
+          <div className="sm:h-full sm:w-56 border-b sm:border-b-0 sm:border-r flex flex-col">
             <ModeToggle
               mode={mode}
               onChange={(nextMode) => setMode(nextMode)}
@@ -395,7 +395,7 @@ export function FileExplorer({
               />
             )}
           </div>
-          <section className="flex-1 min-h-[220px] p-4 space-y-4 overflow-hidden flex flex-col">
+          <section className="flex-1 min-h-[220px] space-y-4 overflow-hidden flex flex-col">
             {isLoading ? (
               <div className="text-sm text-muted-foreground">
                 Loading files…
