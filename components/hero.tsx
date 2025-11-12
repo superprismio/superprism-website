@@ -1,6 +1,5 @@
-import Image from "next/image";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Cta } from "@/components/cta";
+import { Access } from "@/components/access";
 import { createClient } from "@/lib/supabase/server";
 
 export async function Hero() {
@@ -18,12 +17,10 @@ export async function Hero() {
           Superprism refracts your scattered knowledge into focused, powerful contexts. Organize your information into distinct spaces, ready to work with AI within relevent context. Local-first architecture protects your data. Context isolation keeps your AI sharp and relevant.
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          <Button asChild>
-            <Link href={getStartedHref}>Get started</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="#">Read Docs</Link>
-          </Button>
+          <Cta />
+      </div>
+      <div className="items-center">
+        <Access />
       </div>
     </div>
   );
