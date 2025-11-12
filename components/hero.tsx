@@ -10,26 +10,20 @@ export async function Hero() {
   const getStartedHref = isAuthenticated ? "/dashboard" : "/auth/login";
 
   return (
-    <div className="flex flex-col gap-12 items-center w-full py-20">
-      <div className="flex justify-center">
-        <Image
-          alt="Superprism logo"
-          height={120}
-          priority
-          src="/images/logo.png"
-          width={200}
-        />
-      </div>
-      <p className=" lg:text-4xl mx-auto max-w-xl text-center">
-        A collaborative workspace that is local first ad AI-native
-      </p>
-      <div className="flex flex-wrap justify-center gap-4">
-        <Button asChild>
-          <Link href={getStartedHref}>Get started</Link>
-        </Button>
-        <Button asChild variant="outline">
-          <Link href="#">Read Docs</Link>
-        </Button>
+    <div className="flex flex-col gap-12 w-4xl py-40 lg:py-60">
+        <p className="lg:text-4xl max-w-xl text-muted-foreground">
+          A collaborative workspace that is local first and AI-native.
+        </p>
+        <p className="lg:text-xl max-w-xl">
+          Superprism refracts your scattered knowledge into focused, powerful contexts. Organize your information into distinct spaces, ready to work with AI within relevent context. Local-first architecture protects your data. Context isolation keeps your AI sharp and relevant.
+        </p>
+        <div className="flex flex-wrap justify-center gap-4">
+          <Button asChild>
+            <Link href={getStartedHref}>Get started</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="#">Read Docs</Link>
+          </Button>
       </div>
     </div>
   );
