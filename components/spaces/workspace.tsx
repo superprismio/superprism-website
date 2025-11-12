@@ -80,6 +80,9 @@ export function Workspace({
     DEFAULT_SECONDARY
   );
 
+  const [chatAttachedFileIds, setChatAttachedFileIds] = useState<string[]>([]);
+  const [md, setMd] = useState<string>("");
+
   const handleSelectPrimary = useCallback((pane: WorkspacePaneKey) => {
     setPrimaryPane(pane);
   }, []);
