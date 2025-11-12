@@ -46,3 +46,15 @@ export type Tag = {
   slug: string;
   label: string;
 };
+
+
+export type Member = {
+  membership_id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  role: string;
+  display_name: string;
+  avatar_url: string;
+};
+
