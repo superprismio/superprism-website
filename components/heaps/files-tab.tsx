@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
-import type { FileRow, Tag, FileMeta } from "./types";
+import type { FileRow, Tag } from "./types";
 
 export function FilesTab({
   heapId,
@@ -888,9 +888,7 @@ export function FilesTab({
                             {selectedFile.meta.table_of_contents.length > 5 && (
                               <div className="text-xs text-muted-foreground">
                                 +{" "}
-                                {
-                                  selectedFile.meta.table_of_contents.length - 5
-                                }{" "}
+                                {selectedFile.meta.table_of_contents.length - 5}{" "}
                                 more
                               </div>
                             )}
