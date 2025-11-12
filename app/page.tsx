@@ -1,5 +1,6 @@
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
+import { Cta } from "@/components/cta";
 
 export default function Home() {
   return (
@@ -51,6 +52,8 @@ export default function Home() {
           <h4 className="lg:text-lg mb-4">Context-Isolated Projects</h4>
           <p className="text-sm">Projects give you a sandbox to work with your knowledge base without contamination. Add project-specific context that stays ephemeral unless you explicitly choose to persist it back to your space. Perfect for experimental explorations, client work, or one-off analyses.</p>
           </div>
+        </div>
+        <div className="flex flex-row w-full mb-8 flex-wrap">
           <div className="flex flex-col w-1/3 lg:pr-8">
           <h4 className="lg:text-lg mb-4">Multi-Modal Interactivity</h4>
           <p className="text-sm">Generate artifacts in multiple formats: documents, reports, summaries, structured data, or custom formats. Engage with outputs through chat interfaces, insight feeds, or visual representations. Export to other tools or publish selectively for external audiences.</p>
@@ -90,15 +93,10 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-col max-w-4xl mb-16">
-        <h4 className="text-4xl">Get Early Access</h4>
-        <p><strong>Start building your knowledge infrastructure today.</strong></p>
-        <p>Whether you're a researcher organizing literature, a product team maintaining context across sprints, or a DAO coordinating community knowledge—Superprism gives you the foundation to work smarter with AI.</p>
-        <div className="flex flex-row items-center w-full mt-8">
-          <p className="flex-flex-col w-1/3">[CTA: Get Started]</p>
-          <p className="flex-flex-col w-1/3">[CTA: Read Documentation]</p>
-          <p className="flex-flex-col w-1/3">[CTA: Join Community]</p>
-        </div>
+      <div className="flex flex-col max-w-4xl my-16">
+        <h4 className="text-4xl">Start refracting knowledge today.</h4>
+        <p>Whether you're a researcher organizing notes and reference material, a product team maintaining context across sprints, or a DAO coordinating community knowledge—Superprism gives you the foundation to work smarter with AI.</p>
+        <Cta />
       </div>
 
       <div>
