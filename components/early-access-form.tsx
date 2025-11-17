@@ -72,19 +72,19 @@ export function EarlyAccessForm({ className }: Props) {
   return (
     <div
       className={cn(
-        "w-full rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur",
+        "w-full rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6 backdrop-blur",
         className
       )}
     >
-      <p className="text-xs font-semibold uppercase tracking-widest text-white/60">
+      <p className="text-xs font-semibold uppercase tracking-widest text-white/60 text-center sm:text-left">
         Join the Waitlist to get early access.
       </p>
 
       <form
         onSubmit={handleSubmit}
-        className="mt-6 flex w-full flex-col gap-3 sm:flex-row"
+        className="mt-4 sm:mt-6 flex w-full flex-col gap-3 sm:flex-row"
       >
-        <div className="flex-1">
+        <div className="flex-1 w-full">
           <Label htmlFor="early-access-email" className="sr-only">
             Email address
           </Label>
@@ -96,11 +96,12 @@ export function EarlyAccessForm({ className }: Props) {
             onChange={(event) => setEmail(event.target.value)}
             required
             disabled={isSubmitting}
+            className="w-full"
           />
         </div>
         <Button
           type="submit"
-          className="sm:w-auto"
+          className="w-full sm:w-auto"
           disabled={isSubmitting}
           size="lg"
         >
@@ -113,7 +114,7 @@ export function EarlyAccessForm({ className }: Props) {
           variant={status === "error" ? "destructive" : "default"}
           className="mt-4"
         >
-          <AlertDescription>{message}</AlertDescription>
+          <AlertDescription className="text-sm">{message}</AlertDescription>
         </Alert>
       )}
     </div>
