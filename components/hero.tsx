@@ -1,6 +1,7 @@
 import { Cta } from "@/components/cta";
 import { Access } from "@/components/access";
 import { createClient } from "@/lib/supabase/server";
+import { EarlyAccessForm } from "./early-access-form";
 
 export async function Hero() {
   const supabase = await createClient();
@@ -20,7 +21,8 @@ export async function Hero() {
           <Cta />
       </div>
       <div className="items-center">
-        <Access />
+        {/* <Access /> */}
+        <EarlyAccessForm className="mx-auto max-w-3xl" />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
+import { Cta } from "@/components/cta";
+import { EarlyAccessForm } from "@/components/early-access-form";
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
-import { Cta } from "@/components/cta";
 
 export default function Home() {
   return (
