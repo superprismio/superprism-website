@@ -13,11 +13,11 @@ export function Header() {
         />
       <div className="w-1/3 flex items-center justify-start pl-20">
         <Image
+          width={200}
           alt="Superprism logo"
           height={120}
           priority
           src="/images/SP_logo.png"
-          width={200}
         />
       </div>
       <div className="w-2/3 flex items-center justify-end text-sm pr-20">

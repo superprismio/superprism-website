@@ -1,6 +1,10 @@
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
+import Image from "next/image"
 import { Cta } from "@/components/cta";
+import spacesImg from "../public/images/sp_graphic-spaces.png"
+import projectsImg from "../public/images/sp_graphic-projects.png"
+import extendImg from "../public/images/sp_graphic-extend.png"
 
 export default function Home() {
   return (
@@ -12,7 +16,14 @@ export default function Home() {
       <div className="flex-1 w-full flex flex-col items-center max-w-4xl">
         <h2 className="lg:text-2xl my-8">How it Works</h2>
         <div className="flex flex-row w-full mb-16">
-          <div className="flex flex-col w-1/2"></div>
+          <div className="flex flex-col w-1/2">
+            <Image 
+            alt="Superprism logo"
+            width={1200}
+            height={1200}
+            priority
+            src={spacesImg} />
+          </div>
           <div className="flex flex-col w-1/2">
           <h3 className="lg:text-xl mb-4">1. Build Spaces of Knowledge</h3>
           <p>Create dedicated spaces for different domains—one for a research project, another for product specs, another for community docs. Each space is a focused knowledge base with its own context. Upload documents, connect data sources, or ingest content from the web. Superprism organizes it automatically based on rules you set.</p>
@@ -20,7 +31,14 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-row w-full mb-16">
-          <div className="flex flex-col w-1/2"></div>
+          <div className="flex flex-col w-1/2">
+            <Image 
+            alt="Superprism logo"
+            width={1200}
+            height={1200}
+            priority
+            src={projectsImg} />
+          </div>
           <div className="flex flex-col w-1/2">
           <h3 className="lg:text-xl mb-4">2. Run Projects Within Spaces</h3>
           <p>Launch projects that use your space's knowledge as foundation. Chat with your knowledge base, generate reports, create summaries, build documentation. Projects can pull in additional context without polluting your core space—they're experimental branches where only what you choose to keep persists.</p>
@@ -28,7 +46,14 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-row w-full mb-16">
-          <div className="flex flex-col w-1/2"></div>
+          <div className="flex flex-col w-1/2">
+           <Image 
+            alt="Superprism logo"
+            width={1200}
+            height={1200}
+            priority
+            src={extendImg} />
+            </div>
           <div className="flex flex-col w-1/2">
           <h3 className="lg:text-xl mb-4">3. Share and Extend</h3>
           <p>Invite collaborators to spaces or projects. Generate your own Model Context Protocol (MCP) server to connect your organized knowledge to other AI-ready tools. Export selective knowledge as wikis, summarized docs or public documentation. Your knowledge base becomes infrastructure for your entire workflow.</p>
@@ -99,9 +124,9 @@ export default function Home() {
         <Cta />
       </div>
 
-      <div>
+      {/* <div>
         <h4>Technicals</h4>
-      </div>
+      </div> */}
 
     </div>
   );
