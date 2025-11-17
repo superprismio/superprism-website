@@ -12,7 +12,14 @@ export default function Home() {
       <div className="flex-1 w-full flex flex-col items-center max-w-4xl">
         <h2 className="lg:text-2xl my-8">How it Works</h2>
         <div className="flex flex-row w-full mb-16">
-          <div className="flex flex-col w-1/2"></div>
+          <div className="flex flex-col w-1/2">
+            <Image 
+            alt="Superprism logo"
+            width={1200}
+            height={1200}
+            priority
+            src={spacesImg} />
+          </div>
           <div className="flex flex-col w-1/2">
             <h3 className="lg:text-xl mb-4">1. Build Spaces of Knowledge</h3>
             <p>
@@ -31,7 +38,14 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-row w-full mb-16">
-          <div className="flex flex-col w-1/2"></div>
+          <div className="flex flex-col w-1/2">
+            <Image 
+            alt="Superprism logo"
+            width={1200}
+            height={1200}
+            priority
+            src={projectsImg} />
+          </div>
           <div className="flex flex-col w-1/2">
             <h3 className="lg:text-xl mb-4">2. Run Projects Within Spaces</h3>
             <p>
@@ -47,7 +61,14 @@ export default function Home() {
           </div>
         </div>
         <div className="flex flex-row w-full mb-16">
-          <div className="flex flex-col w-1/2"></div>
+          <div className="flex flex-col w-1/2">
+           <Image 
+            alt="Superprism logo"
+            width={1200}
+            height={1200}
+            priority
+            src={extendImg} />
+            </div>
           <div className="flex flex-col w-1/2">
             <h3 className="lg:text-xl mb-4">3. Share and Extend</h3>
             <p>
@@ -198,7 +219,7 @@ export default function Home() {
         <Cta />
       </div>
 
-      <div>
+      {/* <div>
         <h4>Technicals</h4>
       </div>
     </div>
