@@ -46,6 +46,8 @@ export function EarlyAccessForm({ className }: Props) {
 
       const payload = await response.json().catch(() => ({}));
 
+      console.log("payload", payload);
+
       if (!response.ok) {
         throw new Error(payload?.error ?? "Unable to save your request.");
       }
@@ -75,7 +77,7 @@ export function EarlyAccessForm({ className }: Props) {
       )}
     >
       <p className="text-xs font-semibold uppercase tracking-widest text-white/60">
-      Join the Waitlist to get early access.
+        Join the Waitlist to get early access.
       </p>
 
       <form
@@ -117,4 +119,3 @@ export function EarlyAccessForm({ className }: Props) {
     </div>
   );
 }
-
