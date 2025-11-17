@@ -1,6 +1,10 @@
 import { Cta } from "@/components/cta";
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
+import Image from "next/image";
+import spacesImg from "../public/images/sp_graphic-spaces.png";
+import projectsImg from "../public/images/sp_graphic-projects.png";
+import extendImg from "../public/images/sp_graphic-extend.png";
 
 export default function Home() {
   return (
@@ -13,12 +17,13 @@ export default function Home() {
         <h2 className="lg:text-2xl my-8">How it Works</h2>
         <div className="flex flex-row w-full mb-16">
           <div className="flex flex-col w-1/2">
-            <Image 
-            alt="Superprism logo"
-            width={1200}
-            height={1200}
-            priority
-            src={spacesImg} />
+            <Image
+              alt="Superprism logo"
+              width={1200}
+              height={1200}
+              priority
+              src={spacesImg}
+            />
           </div>
           <div className="flex flex-col w-1/2">
             <h3 className="lg:text-xl mb-4">1. Build Spaces of Knowledge</h3>
@@ -39,21 +44,22 @@ export default function Home() {
         </div>
         <div className="flex flex-row w-full mb-16">
           <div className="flex flex-col w-1/2">
-            <Image 
-            alt="Superprism logo"
-            width={1200}
-            height={1200}
-            priority
-            src={projectsImg} />
+            <Image
+              alt="Superprism logo"
+              width={1200}
+              height={1200}
+              priority
+              src={projectsImg}
+            />
           </div>
           <div className="flex flex-col w-1/2">
             <h3 className="lg:text-xl mb-4">2. Run Projects Within Spaces</h3>
             <p>
-              Launch projects that use your space's knowledge as foundation.
-              Chat with your knowledge base, generate reports, create summaries,
-              build documentation. Projects can pull in additional context
-              without polluting your core space—they're experimental branches
-              where only what you choose to keep persists.
+              Launch projects that use your space&apos;s knowledge as
+              foundation. Chat with your knowledge base, generate reports,
+              create summaries, build documentation. Projects can pull in
+              additional context without polluting your core space—they&apos;re
+              experimental branches where only what you choose to keep persists.
             </p>
             <p>
               <strong>Generate what you need. Keep what matters.</strong>
@@ -62,13 +68,14 @@ export default function Home() {
         </div>
         <div className="flex flex-row w-full mb-16">
           <div className="flex flex-col w-1/2">
-           <Image 
-            alt="Superprism logo"
-            width={1200}
-            height={1200}
-            priority
-            src={extendImg} />
-            </div>
+            <Image
+              alt="Superprism logo"
+              width={1200}
+              height={1200}
+              priority
+              src={extendImg}
+            />
+          </div>
           <div className="flex flex-col w-1/2">
             <h3 className="lg:text-xl mb-4">3. Share and Extend</h3>
             <p>
@@ -167,8 +174,8 @@ export default function Home() {
             <p>
               Your knowledge lives on your infrastructure—private by default,
               sovereign by design. Share selectively when it serves your
-              purpose. Privacy and control aren't features; they're the
-              foundation.
+              purpose. Privacy and control aren&apos;t features; they&apos;re
+              the foundation.
             </p>
           </div>
           <div className="flex flex-col w-1/2 mb-8">
@@ -211,16 +218,12 @@ export default function Home() {
       <div className="flex flex-col max-w-4xl my-16">
         <h4 className="text-4xl">Start refracting knowledge today.</h4>
         <p>
-          Whether you're a researcher organizing notes and reference material, a
-          product team maintaining context across sprints, or a DAO coordinating
-          community knowledge—Superprism gives you the foundation to work
-          smarter with AI.
+          Whether you&apos;re a researcher organizing notes and reference
+          material, a product team maintaining context across sprints, or a DAO
+          coordinating community knowledge—Superprism gives you the foundation
+          to work smarter with AI.
         </p>
         <Cta />
-      </div>
-
-      {/* <div>
-        <h4>Technicals</h4>
       </div>
     </div>
   );
