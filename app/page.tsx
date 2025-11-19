@@ -1,10 +1,11 @@
-import { Cta } from "@/components/cta";
+// import { Cta } from "@/components/cta";
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
 import Image from "next/image";
 import spacesImg from "../public/images/sp_graphic-spaces.png";
 import projectsImg from "../public/images/sp_graphic-projects.png";
 import extendImg from "../public/images/sp_graphic-extend.png";
+import { EarlyAccessForm } from "@/components/early-access-form";
 
 export default function Home() {
   return (
@@ -27,7 +28,9 @@ export default function Home() {
             />
           </div>
           <div className="flex flex-col w-full lg:w-1/2 lg:pl-8">
-            <h3 className="text-lg lg:text-xl mb-4">1. Build Spaces of Knowledge</h3>
+            <h3 className="text-lg lg:text-xl mb-4">
+              1. Build Spaces of Knowledge
+            </h3>
             <p className="text-sm lg:text-base">
               Create dedicated spaces for different domains—one for a research
               project, another for product specs, another for community docs.
@@ -55,7 +58,9 @@ export default function Home() {
             />
           </div>
           <div className="flex flex-col w-full lg:w-1/2 lg:pl-8">
-            <h3 className="text-lg lg:text-xl mb-4">2. Run Projects Within Spaces</h3>
+            <h3 className="text-lg lg:text-xl mb-4">
+              2. Run Projects Within Spaces
+            </h3>
             <p className="text-sm lg:text-base">
               Launch projects that use your space&apos;s knowledge as
               foundation. Chat with your knowledge base, generate reports,
@@ -99,10 +104,14 @@ export default function Home() {
       </div>
 
       <div className="max-w-4xl px-4 lg:px-0">
-        <h3 className="text-xl lg:text-2xl my-8 text-center">Key Capabilities</h3>
+        <h3 className="text-xl lg:text-2xl my-8 text-center">
+          Key Capabilities
+        </h3>
         <div className="flex flex-col lg:flex-row w-full mb-8 flex-wrap gap-6 lg:gap-0">
           <div className="flex flex-col w-full lg:w-1/3 lg:pr-8">
-            <h4 className="text-base lg:text-lg mb-4">Dynamic Knowledge Ingestion</h4>
+            <h4 className="text-base lg:text-lg mb-4">
+              Dynamic Knowledge Ingestion
+            </h4>
             <p className="text-sm">
               Pull knowledge from multiple sources: upload files directly,
               scrape web content, connect APIs, or sync from external stores
@@ -123,7 +132,9 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-col w-full lg:w-1/3">
-            <h4 className="text-base lg:text-lg mb-4">Context-Isolated Projects</h4>
+            <h4 className="text-base lg:text-lg mb-4">
+              Context-Isolated Projects
+            </h4>
             <p className="text-sm">
               Projects give you a sandbox to work with your knowledge base
               without contamination. Add project-specific context that stays
@@ -135,7 +146,9 @@ export default function Home() {
         </div>
         <div className="flex flex-col lg:flex-row w-full mb-8 flex-wrap gap-6 lg:gap-0">
           <div className="flex flex-col w-full lg:w-1/3 lg:pr-8">
-            <h4 className="text-base lg:text-lg mb-4">Multi-Modal Interactivity</h4>
+            <h4 className="text-base lg:text-lg mb-4">
+              Multi-Modal Interactivity
+            </h4>
             <p className="text-sm">
               Generate artifacts in multiple formats: documents, reports,
               summaries, structured data, or custom formats. Engage with outputs
@@ -145,7 +158,9 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-col w-full lg:w-1/3 lg:pr-8">
-            <h4 className="text-base lg:text-lg mb-4">Extensible Architecture</h4>
+            <h4 className="text-base lg:text-lg mb-4">
+              Extensible Architecture
+            </h4>
             <p className="text-sm">
               Built on open-source foundations. Create custom MCP servers from
               your spaces to enhance Claude, GPT, or other AI tools with your
@@ -154,7 +169,9 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-col w-full lg:w-1/3">
-            <h4 className="text-base lg:text-lg mb-4">Flexible Collaboration</h4>
+            <h4 className="text-base lg:text-lg mb-4">
+              Flexible Collaboration
+            </h4>
             <p className="text-sm">
               Keep spaces private for personal knowledge gardening, or invite
               collaborators for team projects. Share selective portions of your
@@ -167,7 +184,9 @@ export default function Home() {
 
       <div className="flex flex-col max-w-4xl mt-8 lg:mt-16 px-4 lg:px-0">
         <div className="flex flex-row w-full">
-          <h4 className="text-xl lg:text-2xl mb-8 text-center w-full">Design Principles</h4>
+          <h4 className="text-xl lg:text-2xl mb-8 text-center w-full">
+            Design Principles
+          </h4>
         </div>
         <div className="flex flex-col lg:flex-row w-full flex-wrap gap-6 lg:gap-0">
           <div className="flex flex-col w-full lg:w-1/2 lg:pr-8 mb-6 lg:mb-8">
@@ -218,15 +237,70 @@ export default function Home() {
         </div>
       </div>
 
+      <div className="flex flex-col max-w-4xl mt-8 lg:mt-16 px-4 lg:px-0">
+        <div className="flex flex-row w-full">
+          <h4 className="text-xl lg:text-2xl mb-8 text-center w-full">
+            Technical Foundation
+          </h4>
+        </div>
+        <div className="flex flex-col lg:flex-row w-full flex-wrap gap-6 lg:gap-0">
+          <div className="flex flex-col w-full lg:w-1/2 lg:pr-8 mb-6 lg:mb-8">
+            <p className="text-sm lg:text-base">
+              <strong>Transparent, Self-Hostable Stack</strong>
+            </p>
+            <p className="text-sm lg:text-base">
+              Built on Next.js, Supabase (Postgres/Auth/Storage), and our Model
+              Context Protocol server. Deploy on your own infrastructure with
+              complete visibility into where your data lives. Every component is
+              transparent and under your control.
+            </p>
+          </div>
+          <div className="flex flex-col w-full lg:w-1/2 mb-6 lg:mb-8">
+            <p className="text-sm lg:text-base">
+              <strong>Non-Custodial by Design</strong>
+            </p>
+            <p className="text-sm lg:text-base">
+              Supabase row-level policies keep workspaces isolated. N8n
+              ingestion pipelines register every job in the open schema. You
+              maintain custody of your knowledge base—no data handover required.
+            </p>
+          </div>
+          <div className="flex flex-col w-full lg:w-1/2 lg:pr-8 mb-6 lg:mb-8">
+            <p className="text-sm lg:text-base">
+              <strong>Secure Context Streaming</strong>
+            </p>
+            <p className="text-sm lg:text-base">
+              The MCP layer exposes context to AI agents via per-workspace API
+              keys or Supabase OAuth. Stream read-only context to tools without
+              exposing raw data, maintaining security while enabling powerful
+              integrations.
+            </p>
+          </div>
+          <div className="flex flex-col w-full lg:w-1/2 mb-6 lg:mb-8">
+            <p className="text-sm lg:text-base">
+              <strong>Future-Ready Coordination</strong>
+            </p>
+            <p className="text-sm lg:text-base">
+              Aligning with emerging standards like ERC-8004 (autonomous worlds
+              state sync), AP2's agent-to-protocol graph, and X402 wallet
+              channels. Your spaces can plug into onchain workflows as these
+              coordination rails mature—no custom glue code needed.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="flex flex-col max-w-4xl my-8 lg:my-16 px-4 lg:px-0">
-        <h4 className="text-2xl lg:text-4xl mb-4 text-center">Start refracting knowledge today.</h4>
+        <h4 className="text-2xl lg:text-4xl mb-4 text-center">
+          Start refracting knowledge soon.
+        </h4>
         <p className="text-sm lg:text-base mb-6 text-center">
           Whether you&apos;re a researcher organizing notes and reference
           material, a product team maintaining context across sprints, or a DAO
           coordinating community knowledge—Superprism gives you the foundation
           to work smarter with AI.
         </p>
-        {/* <Cta /> */}
+        <EarlyAccessForm className="mx-auto w-full max-w-3xl" />
       </div>
     </div>
   );
