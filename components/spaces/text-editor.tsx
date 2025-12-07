@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -8,11 +8,18 @@ import { Textarea } from "../ui/textarea";
 
 type TextEditorProps = {
   heapId: string;
+  initialMarkdown?: string;
 };
 
-export function TextEditor({ heapId }: TextEditorProps) {
+export function TextEditor({ heapId, initialMarkdown }: TextEditorProps) {
   const queryClient = useQueryClient();
-  const [markdown, setMarkdown] = useState("");
+  const [markdown, setMarkdown] = useState(initialMarkdown || "");
+  
+  useEffect(() => {
+    if (initialMarkdown !== undefined) {
+      setMarkdown(initialMarkdown);
+    }
+  }, [initialMarkdown]);
   const [fileName, setFileName] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

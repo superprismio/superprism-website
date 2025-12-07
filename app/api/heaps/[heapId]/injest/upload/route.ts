@@ -24,10 +24,7 @@ export async function POST(request: Request, { params }: Params) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -96,7 +93,7 @@ export async function POST(request: Request, { params }: Params) {
       formData.set("file_folders", fileFolders);
     } else {
       // Default folders
-      formData.set("file_folders", JSON.stringify(["uploads", "library"]));
+      formData.set("file_folders", JSON.stringify(["local", "documents"]));
     }
 
     const upstreamResponse = await fetch(UPLOAD_ENDPOINT, {
