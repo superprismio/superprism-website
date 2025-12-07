@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import { Header } from "@/components/header";
 import { QueryProvider } from "@/components/providers/query-provider";
 
 const defaultUrl = process.env.APP_URL
@@ -37,7 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${spaceGrotesk.variable} ${spaceMono.variable} antialiased`}
+        className={`${spaceGrotesk.variable} ${spaceMono.variable} antialiased dark`}
       >
         <ThemeProvider
           attribute="class"
@@ -47,7 +46,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <main className="min-h-screen flex flex-col items-center">
-                  {children}
+              {children}
             </main>
           </QueryProvider>
         </ThemeProvider>
