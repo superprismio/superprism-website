@@ -93,7 +93,7 @@ export async function POST(request: Request, { params }: Params) {
       formData.set("file_folders", fileFolders);
     } else {
       // Default folders
-      formData.set("file_folders", JSON.stringify(["local", "documents"]));
+      formData.set("file_folders", JSON.stringify(["documents"]));
     }
 
     const upstreamResponse = await fetch(UPLOAD_ENDPOINT, {

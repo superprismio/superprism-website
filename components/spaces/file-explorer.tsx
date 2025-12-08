@@ -4,8 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { Folder, FolderOpen } from "lucide-react";
 import { FileRow } from "@/components/heaps/types";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
+import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 type FileExplorerProps = {
@@ -27,7 +35,21 @@ type FileListProps = {
   selectedFileId?: string | null;
   onAddToChat?: (file: FileRow) => void;
   onPreview?: (file: FileRow) => void;
+  isStaging?: boolean;
+  onMoveToFolder?: (fileId: string, folders: string[]) => Promise<void>;
 };
+
+const LOCAL_FOLDER_OPTIONS = [
+  { value: "artifacts", label: "Artifacts", folders: ["artifacts"] },
+  { value: "summaries", label: "Summaries", folders: ["summaries"] },
+  {
+    value: "summaries-meetings",
+    label: "Summaries > Meetings",
+    folders: ["summaries", "meetings"],
+  },
+  { value: "documents", label: "Documents", folders: ["documents"] },
+  { value: "notes", label: "Notes", folders: ["notes"] },
+];
 
 function FileList({
   files,
@@ -35,7 +57,21 @@ function FileList({
   selectedFileId,
   onAddToChat,
   onPreview,
+  isStaging = false,
+  onMoveToFolder,
 }: FileListProps) {
+  const [movingFileId, setMovingFileId] = useState<string | null>(null);
+
+  const handleMoveToFolder = async (fileId: string, folders: string[]) => {
+    if (!onMoveToFolder) return;
+    setMovingFileId(fileId);
+    try {
+      await onMoveToFolder(fileId, folders);
+    } finally {
+      setMovingFileId(null);
+    }
+  };
+
   if (files.length === 0) {
     return <div className="text-sm text-muted-foreground">{emptyMessage}</div>;
   }
@@ -56,14 +92,40 @@ function FileList({
               ) : null}
             </div>
             <div className="flex gap-2 shrink-0">
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={() => onAddToChat?.(file)}
-              >
-                Add to chat
-              </Button>
+              {isStaging ? (
+                <Select
+                  value=""
+                  onValueChange={(value) => {
+                    const option = LOCAL_FOLDER_OPTIONS.find(
+                      (opt) => opt.value === value
+                    );
+                    if (option) {
+                      void handleMoveToFolder(file.id, option.folders);
+                    }
+                  }}
+                  disabled={movingFileId === file.id}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Move to folder..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LOCAL_FOLDER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onAddToChat?.(file)}
+                >
+                  Add to chat
+                </Button>
+              )}
               <Button
                 type="button"
                 size="sm"
@@ -105,63 +167,141 @@ function FolderList({
       <ul>
         {folders.map((folder) => {
           const parentOpen = openParent === folder.path;
+          const hasChildren = folder.children && folder.children.length > 0;
+          const isStaging = !hasChildren;
+          const isActive = isStaging && activePath === folder.path;
+
           return (
             <li key={folder.path}>
-              <button
-                type="button"
-                onClick={() => onToggleParent(folder.path)}
-                className={cn(
-                  "w-full text-left px-4 py-3 text-sm font-medium flex items-center justify-between hover:bg-muted transition"
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  {parentOpen ? (
-                    <FolderOpen
-                      className="h-4 w-4 text-primary"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Folder className="h-4 w-4" aria-hidden="true" />
+              {isStaging ? (
+                <button
+                  type="button"
+                  onClick={() => onSelectFolder(folder.path)}
+                  className={cn(
+                    "w-full text-left px-4 py-3 text-sm font-medium flex items-center justify-between hover:bg-muted transition",
+                    isActive && "font-medium"
                   )}
-                  <span>{folder.name}</span>
-                </span>
-              </button>
-              {parentOpen && folder.children?.length ? (
-                <ul className="bg-background">
-                  {folder.children.map((child) => {
-                    const path = child.path;
-                    const isActive = activePath === path;
-                    const fileCount = filesByFolder[path]?.length ?? 0;
-                    return (
-                      <li key={path}>
-                        <button
-                          type="button"
-                          onClick={() => onSelectFolder(path)}
-                          className={cn(
-                            "w-full text-left px-6 py-2 text-sm flex items-center justify-between hover:bg-muted",
-                            isActive && "font-medium"
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            {isActive ? (
-                              <FolderOpen
-                                className="h-4 w-4 text-primary"
-                                aria-hidden="true"
-                              />
-                            ) : (
-                              <Folder className="h-4 w-4" aria-hidden="true" />
-                            )}
-                            <span>{child.name}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {fileCount}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : null}
+                >
+                  <span className="flex items-center gap-2">
+                    {isActive ? (
+                      <FolderOpen
+                        className="h-4 w-4 text-primary"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <Folder className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    <span>{folder.name}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {filesByFolder[folder.path]?.length ?? 0}
+                  </span>
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => onToggleParent(folder.path)}
+                    className={cn(
+                      "w-full text-left px-4 py-3 text-sm font-medium flex items-center justify-between hover:bg-muted transition"
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      {parentOpen ? (
+                        <FolderOpen
+                          className="h-4 w-4 text-primary"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <Folder className="h-4 w-4" aria-hidden="true" />
+                      )}
+                      <span>{folder.name}</span>
+                    </span>
+                  </button>
+                  {parentOpen && folder.children?.length ? (
+                    <ul className="bg-background">
+                      {folder.children.map((child) => {
+                        const hasGrandchildren =
+                          child.children && child.children.length > 0;
+                        const childPath = child.path;
+                        const isChildActive = activePath === childPath;
+                        const childFileCount = filesByFolder[childPath]?.length ?? 0;
+                        
+                        return (
+                          <li key={child.path}>
+                            <button
+                              type="button"
+                              onClick={() => onSelectFolder(childPath)}
+                              className={cn(
+                                "w-full text-left px-6 py-2 text-sm flex items-center justify-between hover:bg-muted",
+                                isChildActive && "font-medium"
+                              )}
+                            >
+                              <div className="flex items-center gap-2">
+                                {isChildActive ? (
+                                  <FolderOpen
+                                    className="h-4 w-4 text-primary"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <Folder
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                <span>{child.name}</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {childFileCount}
+                              </span>
+                            </button>
+                            {hasGrandchildren && child.children ? (
+                              <ul className="bg-background">
+                                {child.children.map((grandchild) => {
+                                  const path = grandchild.path;
+                                  const isActive = activePath === path;
+                                  const fileCount =
+                                    filesByFolder[path]?.length ?? 0;
+                                  return (
+                                    <li key={path}>
+                                      <button
+                                        type="button"
+                                        onClick={() => onSelectFolder(path)}
+                                        className={cn(
+                                          "w-full text-left px-8 py-2 text-sm flex items-center justify-between hover:bg-muted",
+                                          isActive && "font-medium"
+                                        )}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          {isActive ? (
+                                            <FolderOpen
+                                              className="h-4 w-4 text-primary"
+                                              aria-hidden="true"
+                                            />
+                                          ) : (
+                                            <Folder
+                                              className="h-4 w-4"
+                                              aria-hidden="true"
+                                            />
+                                          )}
+                                          <span>{grandchild.name}</span>
+                                        </div>
+                                        <span className="text-xs text-muted-foreground">
+                                          {fileCount}
+                                        </span>
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </>
+              )}
             </li>
           );
         })}
@@ -291,22 +431,71 @@ export function FileExplorer({
     error,
     refetch,
   } = useSpaceFiles(heapId);
+  const queryClient = useQueryClient();
   const [openParent, setOpenParent] = useState<string | null>(null);
   const [activePath, setActivePath] = useState<string | null>(null);
   const [mode, setMode] = useState<"explore" | "search">("explore");
   const [search, setSearch] = useState("");
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
+  const handleMoveToFolder = async (fileId: string, folders: string[]) => {
+    try {
+      const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ folders }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Failed to move file");
+      }
+
+      // Invalidate and refetch files
+      await queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    } catch (error) {
+      console.error("Failed to move file:", error);
+      throw error;
+    }
+  };
+
+  const isStaging = activePath === "staging";
+
   const selectableFolders = useMemo(() => {
     const entries: FolderSelection[] = [];
 
     for (const parent of folders) {
-      if (!parent.children?.length) continue;
-      for (const child of parent.children) {
+      if (parent.children?.length) {
+        // Handle folders with children (Public, Local)
+        for (const child of parent.children) {
+          // Include intermediate folders (e.g., Summaries) as selectable
+          entries.push({
+            label: `${parent.name} / ${child.name}`,
+            path: child.path,
+            files: filesByFolder[child.path] ?? [],
+          });
+          
+          // Handle nested children (e.g., Summaries/Meetings)
+          if (child.children?.length) {
+            for (const grandchild of child.children) {
+              entries.push({
+                label: `${parent.name} / ${child.name} / ${grandchild.name}`,
+                path: grandchild.path,
+                files: filesByFolder[grandchild.path] ?? [],
+              });
+            }
+          }
+        }
+      } else {
+        // Handle folders without children (Staging)
         entries.push({
-          label: `${parent.name} / ${child.name}`,
-          path: child.path,
-          files: filesByFolder[child.path] ?? [],
+          label: parent.name,
+          path: parent.path,
+          files: filesByFolder[parent.path] ?? [],
         });
       }
     }
@@ -381,7 +570,14 @@ export function FileExplorer({
                 onToggleParent={(path) =>
                   setOpenParent((prev) => (prev === path ? null : path))
                 }
-                onSelectFolder={(path) => setActivePath(path)}
+                onSelectFolder={(path) => {
+                  setActivePath(path);
+                  // Ensure parent folder is opened
+                  const topLevelParent = path.split("/")[0];
+                  if (topLevelParent) {
+                    setOpenParent(topLevelParent);
+                  }
+                }}
                 className="flex-1 overflow-y-auto"
               />
             ) : (
@@ -428,6 +624,8 @@ export function FileExplorer({
                         selectedFileId={selectedFileId}
                         onAddToChat={onAddFileToChat}
                         onPreview={onPreviewFile}
+                        isStaging={isStaging}
+                        onMoveToFolder={isStaging ? handleMoveToFolder : undefined}
                       />
                     </div>
                   </>
