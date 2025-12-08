@@ -40,6 +40,7 @@ export type FileRow = {
   source_type: string | null;
   uploaded_at: string | null;
   meta: FileMeta | null;
+  uploader_id: string | null;
 };
 
 export type Tag = {

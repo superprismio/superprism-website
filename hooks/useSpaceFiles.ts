@@ -23,14 +23,8 @@ export type UseSpaceFilesResult = {
 
 const SPACE_FOLDERS: FolderNode[] = [
   {
-    name: "Public",
-    path: "public",
-    children: [
-      {
-        name: "Artifacts",
-        path: "public/artifacts",
-      },
-    ],
+    name: "Staging",
+    path: "staging",
   },
   {
     name: "Local",
@@ -61,8 +55,14 @@ const SPACE_FOLDERS: FolderNode[] = [
     ],
   },
   {
-    name: "Staging",
-    path: "staging",
+    name: "Public",
+    path: "public",
+    children: [
+      {
+        name: "Artifacts",
+        path: "public/artifacts",
+      },
+    ],
   },
 ];
 

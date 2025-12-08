@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Folder, FolderOpen } from "lucide-react";
+import {
+  Binoculars,
+  Folder,
+  FolderOpen,
+  MessageCirclePlus,
+  File,
+  FileText,
+  FileImage,
+  FileSpreadsheet,
+} from "lucide-react";
 import { FileRow } from "@/components/heaps/types";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { useQueryClient } from "@tanstack/react-query";
@@ -51,6 +60,28 @@ const LOCAL_FOLDER_OPTIONS = [
   { value: "notes", label: "Notes", folders: ["notes"] },
 ];
 
+function getFileIcon(storagePath: string | null | undefined) {
+  if (!storagePath) {
+    return File;
+  }
+
+  const extension = storagePath.split(".").pop()?.toLowerCase();
+
+  if (extension === "txt" || extension === "md") {
+    return FileText;
+  }
+
+  if (["png", "jpg", "jpeg", "svg"].includes(extension || "")) {
+    return FileImage;
+  }
+
+  if (["csv", "xlsx", "xls"].includes(extension || "")) {
+    return FileSpreadsheet;
+  }
+
+  return File;
+}
+
 function FileList({
   files,
   emptyMessage,
@@ -73,24 +104,26 @@ function FileList({
   };
 
   if (files.length === 0) {
-    return <div className="text-sm text-muted-foreground">{emptyMessage}</div>;
+    return (
+      <div className="text-sm text-muted-foreground p-10">{emptyMessage}</div>
+    );
   }
 
   return (
-    <ul className="space-y-2">
-      {files.map((file) => (
-        <li key={file.id} className="p-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 space-y-1">
-              <div className="text-sm font-medium">
-                {file.file_name ?? "Untitled file"}
+    <ul className="space-y-2 p-3">
+      {files.map((file) => {
+        const FileIcon = getFileIcon(
+          (file as FileRow & { storage_path?: string | null }).storage_path
+        );
+        return (
+          <li key={file.id} className="p-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex-1 space-y-1">
+                <div className="text-md font-medium flex items-center gap-2">
+                  <FileIcon className="h-4 w-4 shrink-0" />
+                  {file.file_name ?? "Untitled file"}
+                </div>
               </div>
-              {file.meta?.summary_short ? (
-                <p className="text-xs text-muted-foreground">
-                  {file.meta.summary_short}
-                </p>
-              ) : null}
-            </div>
             <div className="flex gap-2 shrink-0">
               {isStaging ? (
                 <Select
@@ -122,8 +155,9 @@ function FileList({
                   size="sm"
                   variant="ghost"
                   onClick={() => onAddToChat?.(file)}
+                  disabled={true}
                 >
-                  Add to chat
+                  <MessageCirclePlus />
                 </Button>
               )}
               <Button
@@ -133,12 +167,13 @@ function FileList({
                 onClick={() => onPreview?.(file)}
                 aria-pressed={selectedFileId === file.id}
               >
-                Preview
+                <Binoculars />
               </Button>
             </div>
           </div>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }
@@ -225,8 +260,9 @@ function FolderList({
                           child.children && child.children.length > 0;
                         const childPath = child.path;
                         const isChildActive = activePath === childPath;
-                        const childFileCount = filesByFolder[childPath]?.length ?? 0;
-                        
+                        const childFileCount =
+                          filesByFolder[childPath]?.length ?? 0;
+
                         return (
                           <li key={child.path}>
                             <button
@@ -478,7 +514,7 @@ export function FileExplorer({
             path: child.path,
             files: filesByFolder[child.path] ?? [],
           });
-          
+
           // Handle nested children (e.g., Summaries/Meetings)
           if (child.children?.length) {
             for (const grandchild of child.children) {
@@ -550,10 +586,6 @@ export function FileExplorer({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <header className="gap-3 border-b w-full px-3 py-4 flex items-center">
-        <div className="flex-1 text-sm font-medium">Knowledge files</div>
-      </header>
-
       <div className="flex-1 overflow-hidden">
         <div className="flex h-full flex-col sm:flex-row">
           <div className="sm:h-full sm:w-56 border-b sm:border-b-0 sm:border-r flex flex-col">
@@ -593,7 +625,7 @@ export function FileExplorer({
           </div>
           <section className="flex-1 min-h-[220px] space-y-4 overflow-hidden flex flex-col">
             {isLoading ? (
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground p-10">
                 Loading files…
               </div>
             ) : null}
@@ -620,17 +652,19 @@ export function FileExplorer({
                     <div className="flex-1 min-h-0 overflow-y-auto">
                       <FileList
                         files={activeFolder.files}
-                        emptyMessage="No files in this folder yet."
+                        emptyMessage="Ingestion before digestion"
                         selectedFileId={selectedFileId}
                         onAddToChat={onAddFileToChat}
                         onPreview={onPreviewFile}
                         isStaging={isStaging}
-                        onMoveToFolder={isStaging ? handleMoveToFolder : undefined}
+                        onMoveToFolder={
+                          isStaging ? handleMoveToFolder : undefined
+                        }
                       />
                     </div>
                   </>
                 ) : (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground p-10">
                     Select a folder to view its files.
                   </div>
                 )
