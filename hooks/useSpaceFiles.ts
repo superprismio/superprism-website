@@ -23,22 +23,44 @@ export type UseSpaceFilesResult = {
 
 const SPACE_FOLDERS: FolderNode[] = [
   {
-    name: "Uploads",
-    path: "uploads",
+    name: "Staging",
+    path: "staging",
+  },
+  {
+    name: "Local",
+    path: "local",
     children: [
       {
-        name: "Library",
-        path: "uploads/library",
+        name: "Artifacts",
+        path: "local/artifacts",
+      },
+      {
+        name: "Summaries",
+        path: "local/summaries",
+        children: [
+          {
+            name: "Meetings",
+            path: "local/summaries/meetings",
+          },
+        ],
+      },
+      {
+        name: "Documents",
+        path: "local/documents",
+      },
+      {
+        name: "Notes",
+        path: "local/notes",
       },
     ],
   },
   {
-    name: "Summaries",
-    path: "summaries",
+    name: "Public",
+    path: "public",
     children: [
       {
-        name: "Meetings",
-        path: "summaries/meetings",
+        name: "Artifacts",
+        path: "public/artifacts",
       },
     ],
   },
@@ -66,18 +88,53 @@ function groupFilesByFolder(files: FileRow[]): Record<string, FileRow[]> {
     ALL_FOLDER_PATHS.map((path) => [path, [] as FileRow[]])
   );
 
+  // Also initialize staging folder
+  byFolder["staging"] = [];
+
   for (const file of files) {
     const folderSegments = Array.isArray(file.meta?.folders)
       ? file.meta?.folders.filter((segment) => typeof segment === "string")
       : [];
 
+    let folderPath: string | null = null;
+
     if (folderSegments.length === 0) {
-      continue;
+      // No folders specified, put in Staging
+      folderPath = "staging";
+    } else {
+      // Map folder segments to full path (prepending "local" for now since no Public flag yet)
+      const normalizedSegments = folderSegments.map((s) =>
+        s.toLowerCase().trim()
+      );
+      // Check if it matches prescribed Local paths
+      if (
+        normalizedSegments.length === 1 &&
+        normalizedSegments[0] === "artifacts"
+      ) {
+        folderPath = "local/artifacts";
+      } else if (
+        normalizedSegments.length === 2 &&
+        normalizedSegments[0] === "summaries" &&
+        normalizedSegments[1] === "meetings"
+      ) {
+        folderPath = "local/summaries/meetings";
+      } else if (
+        normalizedSegments.length === 1 &&
+        normalizedSegments[0] === "documents"
+      ) {
+        folderPath = "local/documents";
+      } else if (
+        normalizedSegments.length === 1 &&
+        normalizedSegments[0] === "notes"
+      ) {
+        folderPath = "local/notes";
+      } else {
+        // Doesn't match prescribed paths, put in Staging
+        folderPath = "staging";
+      }
     }
 
-    const folderPath = folderSegments.join("/").toLowerCase();
-
-    if (folderPath in byFolder) {
+    if (folderPath && folderPath in byFolder) {
       byFolder[folderPath].push(file);
     }
   }
@@ -147,5 +204,3 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     refetch: query.refetch,
   };
 }
-
-

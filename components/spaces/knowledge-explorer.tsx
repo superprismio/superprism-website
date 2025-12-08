@@ -52,9 +52,11 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
   const renderSecondaryContent = () => {
     switch (secondaryView) {
       case "graph":
-        return <KnowledgeGraph />;
+        return <KnowledgeGraph heapId={heapId} />;
       case "preview":
-        return <FilePreview file={previewFile} onClose={showGraph} />;
+        return (
+          <FilePreview file={previewFile} onClose={showGraph} heapId={heapId} />
+        );
       case "text-editor":
         return <TextEditor heapId={heapId} />;
       case "upload":
@@ -74,7 +76,7 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
 
   return (
     <>
-      <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
+      <header className="gap-4 border-b w-full px-3 py-4 flex justify-between items-center">
         <h3 className="font-semibold text-foreground">Knowledge Explorer</h3>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -87,16 +89,28 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
             <DropdownMenuItem onSelect={() => handleSelectView("upload")}>
               Upload
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => handleSelectView("scrape-web")}>
+            <DropdownMenuItem
+              onSelect={() => handleSelectView("scrape-web")}
+              disabled={true}
+            >
               Scrape Web
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => handleSelectView("import-drive")}>
+            <DropdownMenuItem
+              onSelect={() => handleSelectView("import-drive")}
+              disabled={true}
+            >
               Import from Drive
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => handleSelectView("ingest-api")}>
+            <DropdownMenuItem
+              onSelect={() => handleSelectView("ingest-api")}
+              disabled={true}
+            >
               Ingest from API
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => handleSelectView("ingest-mcp")}>
+            <DropdownMenuItem
+              onSelect={() => handleSelectView("ingest-mcp")}
+              disabled={true}
+            >
               Ingest from MCP
             </DropdownMenuItem>
           </DropdownMenuContent>

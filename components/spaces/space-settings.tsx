@@ -3,7 +3,6 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import type { Space, Tag } from "./types";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
