@@ -68,7 +68,7 @@ export function drag(
   }
 
   return d3
-    .drag<SVGCircleElement, GraphNode>()
+    .drag<SVGCircleElement, GraphNode, GraphNode>()
     .on("start", dragstarted)
     .on("drag", dragged)
     .on("end", dragended);
