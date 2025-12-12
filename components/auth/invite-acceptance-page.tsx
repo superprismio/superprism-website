@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { useInviteDetails, useAcceptInvite } from "@/hooks/useMembership";
+import { useInviteDetails, useAcceptInvite } from "@/hooks/useInvites";
 import {
   Card,
   CardContent,
@@ -25,8 +25,15 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
   const [showSignUp, setShowSignUp] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  const { data: inviteDetails, isLoading: inviteLoading, error: inviteError } = useInviteDetails(token);
+  const {
+    data: inviteDetails,
+    isLoading: inviteLoading,
+    error: inviteError,
+  } = useInviteDetails(token);
   const acceptInvite = useAcceptInvite();
+
+  console.log("token", token);
+  console.log("inviteDetails", inviteDetails);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -35,7 +42,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      
+
       setIsAuthenticated(!!user);
       setUserEmail(user?.email || null);
     };
@@ -63,7 +70,13 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
       handleAcceptInvite();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, inviteDetails, userEmail, acceptInvite.isPending, acceptInvite.isSuccess]);
+  }, [
+    isAuthenticated,
+    inviteDetails,
+    userEmail,
+    acceptInvite.isPending,
+    acceptInvite.isSuccess,
+  ]);
 
   async function handleAcceptInvite() {
     if (!token) return;
@@ -262,17 +275,35 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
 
 // Wrapper components that handle redirect after auth
 function LoginFormWithRedirect({ token }: { token: string }) {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
+  const { data: inviteDetails } = useInviteDetails(token);
+  const [email, setEmail] = useState(inviteDetails?.email || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Update email when inviteDetails loads
+  useEffect(() => {
+    if (inviteDetails?.email) {
+      setEmail(inviteDetails.email);
+    }
+  }, [inviteDetails?.email]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const supabase = createClient();
     setIsLoading(true);
     setError(null);
+
+    // Validate email match if invite has an email
+    if (inviteDetails?.email) {
+      if (inviteDetails.email.toLowerCase() !== email.toLowerCase()) {
+        setError(
+          `This invite is for ${inviteDetails.email}. Please use that email address.`
+        );
+        setIsLoading(false);
+        return;
+      }
+    }
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -303,7 +334,13 @@ function LoginFormWithRedirect({ token }: { token: string }) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={!!inviteDetails?.email}
               />
+              {inviteDetails?.email && (
+                <p className="text-xs text-muted-foreground">
+                  This invite is for {inviteDetails.email}
+                </p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="login-password">Password</Label>
@@ -327,11 +364,19 @@ function LoginFormWithRedirect({ token }: { token: string }) {
 }
 
 function SignUpFormWithRedirect({ token }: { token: string }) {
-  const [email, setEmail] = useState("");
+  const { data: inviteDetails } = useInviteDetails(token);
+  const [email, setEmail] = useState(inviteDetails?.email || "");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Update email when inviteDetails loads
+  useEffect(() => {
+    if (inviteDetails?.email) {
+      setEmail(inviteDetails.email);
+    }
+  }, [inviteDetails?.email]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -343,6 +388,36 @@ function SignUpFormWithRedirect({ token }: { token: string }) {
       setError("Passwords do not match");
       setIsLoading(false);
       return;
+    }
+
+    // Validate invite token and email match
+    if (!inviteDetails) {
+      setError("Invalid invite. Please check the invite link.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (inviteDetails.isExpired) {
+      setError("This invite has expired.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (inviteDetails.isUsed) {
+      setError("This invite has already been used.");
+      setIsLoading(false);
+      return;
+    }
+
+    // Check email match if invite has an email
+    if (inviteDetails.email) {
+      if (inviteDetails.email.toLowerCase() !== email.toLowerCase()) {
+        setError(
+          `This invite is for ${inviteDetails.email}. Please use that email address.`
+        );
+        setIsLoading(false);
+        return;
+      }
     }
 
     try {
@@ -377,7 +452,13 @@ function SignUpFormWithRedirect({ token }: { token: string }) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={!!inviteDetails?.email}
               />
+              {inviteDetails?.email && (
+                <p className="text-xs text-muted-foreground">
+                  This invite is for {inviteDetails.email}
+                </p>
+              )}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>

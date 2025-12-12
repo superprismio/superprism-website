@@ -28,6 +28,8 @@ export function SignUpForm({
   const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
+    if (process.env.NEXT_PUBLIC_SIGNUP_PAUSED) return;
+
     e.preventDefault();
     const supabase = createClient();
     setIsLoading(true);
@@ -102,7 +104,14 @@ export function SignUpForm({
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              {process.env.NEXT_PUBLIC_SIGNUP_PAUSED && (
+                <p className="text-sm text-red-500">Invite Only</p>
+              )}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || !!process.env.NEXT_PUBLIC_SIGNUP_PAUSED}
+              >
                 {isLoading ? "Creating an account..." : "Sign up"}
               </Button>
             </div>
