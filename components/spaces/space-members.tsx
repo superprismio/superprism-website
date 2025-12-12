@@ -4,14 +4,15 @@ import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import { useEffect, useState } from "react";
 import type { Member } from "./types";
 import { Button } from "../ui/button";
-import { PlusIcon, Copy, Check } from "lucide-react";
+import { PlusIcon, CopyIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
+  DialogDescription,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -22,19 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { usePendingInvites, useCreateInvite, useIsHeapOwner } from "@/hooks/useMembership";
+import { useHeapInvites, useCreateInvite, type HeapInvite } from "@/hooks/useInvites";
 
 export function SpaceMembers({ heapId }: WorkspacePaneComponentProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"member" | "owner">("member");
-  const [copiedLink, setCopiedLink] = useState<string | null>(null);
-
-  const { data: isOwner, isLoading: isOwnerLoading } = useIsHeapOwner(heapId);
-  const { data: invites, isLoading: invitesLoading } = usePendingInvites(heapId);
-  const createInvite = useCreateInvite(heapId);
+  const { data: invites, isLoading: invitesLoading } = useHeapInvites(heapId);
+  const createInvite = useCreateInvite();
 
   useEffect(() => {
     let mounted = true;
@@ -50,193 +45,184 @@ export function SpaceMembers({ heapId }: WorkspacePaneComponentProps) {
       }
     })();
     return () => {
-      mounted = false;
+      mounted = false;  
     };
   }, [heapId]);
 
-  async function handleCreateInvite(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim()) return;
-
-    try {
-      const result = await createInvite.mutateAsync({
-        email: email.trim(),
-        role,
-      });
-
-      // Copy link to clipboard
-      if (result.invite_link) {
-        await navigator.clipboard.writeText(result.invite_link);
-        setCopiedLink(result.invite_link);
-        setTimeout(() => setCopiedLink(null), 2000);
-      }
-
-      // Reset form and close dialog
-      setEmail("");
-      setRole("member");
-      setInviteDialogOpen(false);
-    } catch (error) {
-      // Error is handled by the mutation
-      console.error("Failed to create invite:", error);
-    }
-  }
-
-  async function handleCopyLink(link: string) {
-    await navigator.clipboard.writeText(link);
-    setCopiedLink(link);
-    setTimeout(() => setCopiedLink(null), 2000);
-  }
+  // Filter open invites (not expired and not used)
+  const openInvites = invites?.filter(
+    (invite) => !invite.is_expired && !invite.is_used
+  ) || [];
 
   return (
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
         <h3 className="font-semibold text-foreground">Members</h3>
-        {!isOwnerLoading && isOwner && (
-          <Button
-            size="sm"
-            onClick={() => setInviteDialogOpen(true)}
-          >
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Invite member
-          </Button>
-        )}
+        <CreateInviteDialog heapId={heapId} />
       </header>
       <div className="space-y-3 text-sm text-muted-foreground px-3 py-4">
-        {loading && (
-          <div className="text-sm text-muted-foreground">Loading...</div>
-        )}
-        {!loading && members.length === 0 && (
-          <div className="text-sm text-muted-foreground">No members</div>
-        )}
-        {!loading &&
-          members.map((m) => (
-            <div key={m.membership_id} className="text-sm">
-              <span className="font-medium">
-                {m.display_name || m.user_name || m.user_email}
-              </span>
-              <span className="text-muted-foreground"> — {m.role}</span>
+          {loading && (
+            <div className="text-sm text-muted-foreground">Loading...</div>
+          )}
+        {!loading && members.length === 0 && openInvites.length === 0 && (
+            <div className="text-sm text-muted-foreground">No members</div>
+          )}
+          {!loading &&
+            members.map((m) => (
+              <div key={m.membership_id} className="text-sm">
+                <span className="font-medium">
+                  {m.display_name || m.user_name || m.user_email}
+                </span>
+                <span className="text-muted-foreground"> — {m.role}</span>
+              </div>
+            ))}
+        {openInvites.length > 0 && (
+          <div className="mt-4 pt-4 border-t">
+            <div className="text-xs font-medium text-muted-foreground mb-2">
+              Open Invites
             </div>
-          ))}
-
-        {/* Pending Invites Section */}
-        {!isOwnerLoading && isOwner && (
-          <div className="mt-6 pt-6 border-t">
-            <div className="mb-3 text-sm font-medium">Pending Invites</div>
-            {invitesLoading ? (
-              <div className="text-sm text-muted-foreground">
-                Loading invites...
-              </div>
-            ) : !invites || invites.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No pending invites
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {invites.map((invite) => {
-                  const baseUrl =
-                    typeof window !== "undefined"
-                      ? window.location.origin
-                      : "https://superprism.io";
-                  const inviteLink = `${baseUrl}/invite/${invite.token}`;
-                  const isCopied = copiedLink === inviteLink;
-
-                  return (
-                    <div
-                      key={invite.invite_id}
-                      className="flex items-center justify-between rounded border p-2 text-sm"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{invite.email}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Role: {invite.role}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleCopyLink(inviteLink)}
-                        className="ml-2"
-                      >
-                        {isCopied ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {openInvites.map((invite) => (
+              <InviteRow key={invite.invite_id} invite={invite} />
+            ))}
           </div>
         )}
       </div>
-
-      {/* Invite Dialog */}
-      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invite Member</DialogTitle>
-            <DialogDescription>
-              Create an invite link to add a new member to this space.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateInvite}>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="invite-email">Email</Label>
-                <Input
-                  id="invite-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="user@example.com"
-                  disabled={createInvite.isPending}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="invite-role">Role</Label>
-                <Select
-                  value={role}
-                  onValueChange={(value) => setRole(value as "member" | "owner")}
-                  disabled={createInvite.isPending}
-                >
-                  <SelectTrigger id="invite-role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="owner">Owner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {createInvite.error && (
-                <div className="text-sm text-destructive">
-                  {createInvite.error.message}
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setInviteDialogOpen(false)}
-                disabled={createInvite.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createInvite.isPending || !email.trim()}
-              >
-                {createInvite.isPending ? "Creating..." : "Create Invite"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </>
+  );
+}
+
+function CreateInviteDialog({ heapId }: { heapId: string }) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("member");
+  const [error, setError] = useState<string | null>(null);
+  const createInvite = useCreateInvite();
+
+  const handleCreate = async () => {
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+
+    setError(null);
+    try {
+      await createInvite.mutateAsync({
+        heapId,
+        invite: {
+          email: email.trim(),
+          role,
+          expiresInDays: 7,
+        },
+      });
+      setOpen(false);
+      setEmail("");
+      setRole("member");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create invite");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Invite member
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Invite Member</DialogTitle>
+          <DialogDescription>
+            Send an invitation to join this space.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="invite-email">Email</Label>
+            <Input
+              id="invite-email"
+              type="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="invite-role">Role</Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger id="invite-role">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="member">Member</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreate}
+            disabled={createInvite.isPending || !email.trim()}
+          >
+            {createInvite.isPending ? "Creating..." : "Send Invite"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InviteRow({ invite }: { invite: HeapInvite }) {
+  const [copied, setCopied] = useState(false);
+  const inviteUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/invite/${invite.token}`
+      : `/invite/${invite.token}`;
+
+  const handleCopy = async () => {
+    if (typeof window === "undefined") return;
+    
+    const fullUrl = `${window.location.origin}/invite/${invite.token}`;
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = fullUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-between text-sm py-2">
+      <div>
+        <span className="font-medium">{invite.email}</span>
+        <span className="text-muted-foreground"> — {invite.role}</span>
+      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleCopy}
+        className="h-8 w-8 p-0"
+        title={copied ? "Copied!" : "Copy invite link"}
+      >
+        <CopyIcon className="h-4 w-4" />
+        <span className="sr-only">Copy invite link</span>
+      </Button>
+    </div>
   );
 }
 

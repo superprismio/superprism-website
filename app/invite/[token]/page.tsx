@@ -1,4 +1,4 @@
-import { InviteAcceptancePage } from "@/components/spaces/invite-acceptance-page";
+import { InviteAcceptancePage } from "@/components/auth/invite-acceptance-page";
 
 type Params = { params: Promise<{ token: string }> };
 

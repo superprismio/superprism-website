@@ -7,10 +7,10 @@ import { useGraphData } from "@/hooks/useGraphData";
 import { GraphCanvas } from "./graph-canvas";
 import { getNodeTypeColor } from "@/lib/graph/utils";
 import type { GraphNode } from "@/lib/graph/types";
-import type { FileRow } from "@/components/heaps/types";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { FileRow } from "./types";
 
 interface KnowledgeGraphProps {
   heapId: string;

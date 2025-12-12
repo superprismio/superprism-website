@@ -4,7 +4,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "send-invites": "tsx scripts/send-invites.ts"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -50,8 +51,10 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
     "postcss": "^8",
+    "dotenv": "^16.4.5",
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
+    "tsx": "^4.7.0",
     "typescript": "^5"
   }
 }
