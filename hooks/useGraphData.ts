@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import type { FileRow } from "@/components/heaps/types";
 import type { GraphData, GraphNode, GraphLink } from "@/lib/graph/types";
+import { FileRow } from "@/components/spaces/types";
 
 export function useGraphData(files: FileRow[]): GraphData {
   return useMemo(() => {
@@ -45,7 +45,6 @@ export function useGraphData(files: FileRow[]): GraphData {
         });
       });
 
-  
       const uploaderId = file.uploader_id;
       if (uploaderId) {
         const userId = `user-${uploaderId}`;

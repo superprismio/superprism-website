@@ -11,7 +11,6 @@ import {
   FileImage,
   FileSpreadsheet,
 } from "lucide-react";
-import { FileRow } from "@/components/heaps/types";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { FileRow } from "./types";
 
 type FileExplorerProps = {
   heapId: string;
@@ -124,54 +124,54 @@ function FileList({
                   {file.file_name ?? "Untitled file"}
                 </div>
               </div>
-            <div className="flex gap-2 shrink-0">
-              {isStaging ? (
-                <Select
-                  value=""
-                  onValueChange={(value) => {
-                    const option = LOCAL_FOLDER_OPTIONS.find(
-                      (opt) => opt.value === value
-                    );
-                    if (option) {
-                      void handleMoveToFolder(file.id, option.folders);
-                    }
-                  }}
-                  disabled={movingFileId === file.id}
-                >
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Move to folder..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LOCAL_FOLDER_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
+              <div className="flex gap-2 shrink-0">
+                {isStaging ? (
+                  <Select
+                    value=""
+                    onValueChange={(value) => {
+                      const option = LOCAL_FOLDER_OPTIONS.find(
+                        (opt) => opt.value === value
+                      );
+                      if (option) {
+                        void handleMoveToFolder(file.id, option.folders);
+                      }
+                    }}
+                    disabled={movingFileId === file.id}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Move to folder..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LOCAL_FOLDER_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onAddToChat?.(file)}
+                    disabled={true}
+                  >
+                    <MessageCirclePlus />
+                  </Button>
+                )}
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
-                  onClick={() => onAddToChat?.(file)}
-                  disabled={true}
+                  variant="outline"
+                  onClick={() => onPreview?.(file)}
+                  aria-pressed={selectedFileId === file.id}
                 >
-                  <MessageCirclePlus />
+                  <Binoculars />
                 </Button>
-              )}
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onPreview?.(file)}
-                aria-pressed={selectedFileId === file.id}
-              >
-                <Binoculars />
-              </Button>
+              </div>
             </div>
-          </div>
-        </li>
+          </li>
         );
       })}
     </ul>

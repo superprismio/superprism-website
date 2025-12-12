@@ -18,8 +18,8 @@ import { FileUpload } from "./file-upload";
 import { KnowledgeGraph } from "./knowledge-graph";
 import { TextEditor } from "./text-editor";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
-import type { FileRow } from "../heaps/types";
 import { FilePreview } from "./file-preview";
+import { FileRow } from "./types";
 
 type SecondaryView =
   | "graph"

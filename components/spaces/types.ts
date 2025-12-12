@@ -39,6 +39,7 @@ export type FileRow = {
   status: string | null;
   source_type: string | null;
   uploaded_at: string | null;
+  uploader_id: string | null;
   meta: FileMeta | null;
 };
 
@@ -46,7 +47,6 @@ export type Tag = {
   slug: string;
   label: string;
 };
-
 
 export type Member = {
   membership_id: string;
@@ -57,4 +57,3 @@ export type Member = {
   display_name: string;
   avatar_url: string;
 };
-

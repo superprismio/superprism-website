@@ -2,7 +2,6 @@
 
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import type { FileRow } from "@/components/heaps/types";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { X, ChevronRight } from "lucide-react";
+import { FileRow } from "./types";
 
 type FilePreviewProps = {
   file: FileRow | null;

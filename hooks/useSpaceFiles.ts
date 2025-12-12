@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
-import type { FileRow } from "@/components/heaps/types";
+import { FileRow } from "@/components/spaces/types";
 
 export type FolderNode = {
   name: string;
