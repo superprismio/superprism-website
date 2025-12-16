@@ -84,7 +84,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
     try {
       await acceptInvite.mutateAsync(token);
       // Redirect to dashboard on success
-      router.push("/dashboard");
+      router.push(`/dashboard/${inviteDetails?.heap_id}`);
     } catch (error) {
       // Error is handled by the mutation state
       console.error("Failed to accept invite:", error);
@@ -153,7 +153,9 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
                 </CardHeader>
                 <CardContent>
                   <Button
-                    onClick={() => router.push("/dashboard")}
+                    onClick={() =>
+                      router.push(`/dashboard/${inviteDetails?.heap_id}`)
+                    }
                     className="w-full"
                   >
                     Go to Dashboard
