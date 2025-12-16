@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Plus, Pyramid } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -17,19 +18,18 @@ import { Workspace } from "./workspace";
 import { Space } from "./types";
 import { useUserHeaps, USER_HEAPS_QUERY_KEY } from "../../hooks/spaces";
 
-export function SpaceRoot() {
+type SpaceRootProps = {
+  heapId?: string;
+};
+
+export function SpaceRoot({ heapId }: SpaceRootProps) {
+  const router = useRouter();
+  const params = useParams();
   const queryClient = useQueryClient();
   const { data: spaces = [], isPending, error } = useUserHeaps();
-  const [activeSpaceId, setActiveSpaceId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (spaces.length === 0) {
-      setActiveSpaceId(null);
-      return;
-    }
-
-    setActiveSpaceId((current) => current ?? spaces[0]?.id ?? null);
-  }, [spaces]);
+  
+  // Get heapId from props (server) or params (client navigation)
+  const activeSpaceId = heapId ?? (params?.heapId as string | undefined) ?? null;
 
   const handleCreatedSpace = useCallback(
     (space: Space) => {
@@ -41,9 +41,16 @@ export function SpaceRoot() {
           return [space, ...prev];
         }
       );
-      setActiveSpaceId(space.id);
+      router.push(`/dashboard/${space.id}`);
     },
-    [queryClient]
+    [queryClient, router]
+  );
+
+  const handleSpaceChange = useCallback(
+    (newSpaceId: string) => {
+      router.push(`/dashboard/${newSpaceId}`);
+    },
+    [router]
   );
 
   const isLoading = isPending;
@@ -55,7 +62,7 @@ export function SpaceRoot() {
         <div className="flex items-center gap-3 min-w-[220px]">
           <Select
             value={activeSpaceId ?? ""}
-            onValueChange={setActiveSpaceId}
+            onValueChange={handleSpaceChange}
             disabled={isLoading || spaces.length === 0}
           >
             <SelectTrigger className="w-56 border-none focus:ring-none focus:ring-0 text-lg">

@@ -84,7 +84,7 @@ export function CreateSpaceDialog({
       setNewName("");
       setNewDescription("");
       setNewTagsCsv("");
-      router.push(`/heaps/${created.id}`);
+      router.push(`/dashboard/${created.id}`);
       onCreated?.(created);
     } catch (e) {
       // no-op minimal error handling
