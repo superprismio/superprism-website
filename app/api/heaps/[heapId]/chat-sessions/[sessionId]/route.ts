@@ -7,10 +7,11 @@ type Params = { params: Promise<{ heapId: string; sessionId: string }> };
 export async function PATCH(request: Request, { params }: Params) {
   const { heapId, sessionId } = await params;
   const body = await request.json().catch(() => ({}));
-  const { title } = body ?? {};
+  const { title, meta } = body ?? {};
 
   const updates: Record<string, unknown> = {};
   if (title !== undefined) updates.title = title;
+  if (meta !== undefined) updates.meta = meta;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json(

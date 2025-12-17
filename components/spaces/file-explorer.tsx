@@ -155,7 +155,6 @@ function FileList({
                     size="sm"
                     variant="ghost"
                     onClick={() => onAddToChat?.(file)}
-                    disabled={true}
                   >
                     <MessageCirclePlus />
                   </Button>

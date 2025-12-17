@@ -1,22 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useProjectUpdate } from "@/hooks/useProjects";
+import { useState, useEffect, useMemo } from "react";
+import { useProjectUpdate, useCreateProject } from "@/hooks/useProjects";
 import type { Database } from "@/lib/types/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { ProjectFileList } from "@/components/spaces/project-file-list";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
-type ProjectDetailProps = {
-  heapId: string;
-  project: ChatSession | null;
+type PendingProject = {
+  id: null;
+  title: string;
+  meta: { isProject: true; fileIds: string[] };
+  created_at: null;
 };
 
-export function ProjectDetail({ heapId, project }: ProjectDetailProps) {
+type ProjectDetailProps = {
+  heapId: string;
+  project: ChatSession | PendingProject | null;
+  onUpdatePendingProject?: (fileIds: string[]) => void;
+  onProjectCreated?: (project: ChatSession) => void;
+};
+
+export function ProjectDetail({ heapId, project, onUpdatePendingProject, onProjectCreated }: ProjectDetailProps) {
   const [title, setTitle] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const updateProject = useProjectUpdate();
+  const createProject = useCreateProject();
+
+  const isPending = project !== null && project.id === null;
 
   useEffect(() => {
     if (project) {
@@ -24,6 +37,18 @@ export function ProjectDetail({ heapId, project }: ProjectDetailProps) {
       setIsEditing(false);
     }
   }, [project]);
+
+  const fileIds = useMemo(() => {
+    if (!project?.meta || typeof project.meta !== "object" || Array.isArray(project.meta)) {
+      return [];
+    }
+    const meta = project.meta as Record<string, unknown>;
+    const ids = meta.fileIds || meta.file_ids;
+    if (Array.isArray(ids)) {
+      return ids.filter((id): id is string => typeof id === "string");
+    }
+    return [];
+  }, [project?.meta]);
 
   if (!project) {
     return (
@@ -34,26 +59,47 @@ export function ProjectDetail({ heapId, project }: ProjectDetailProps) {
   }
 
   const handleSave = async () => {
-    if (!project || title.trim() === (project.title || "")) {
-      setIsEditing(false);
-      return;
-    }
+    if (!project) return;
 
-    try {
-      await updateProject.mutateAsync({
-        heapId,
-        sessionId: project.id,
-        title: title.trim(),
-      });
-      setIsEditing(false);
-    } catch (error) {
-      console.error("Failed to update project:", error);
+    if (isPending) {
+      // Create new project
+      try {
+        const newProject = await createProject.mutateAsync({
+          heapId,
+          title: title.trim() || "New Project",
+          fileIds,
+        });
+        if (onProjectCreated) {
+          onProjectCreated(newProject);
+        }
+      } catch (error) {
+        console.error("Failed to create project:", error);
+      }
+    } else {
+      // Update existing project
+      if (title.trim() === (project.title || "")) {
+        setIsEditing(false);
+        return;
+      }
+
+      try {
+        await updateProject.mutateAsync({
+          heapId,
+          sessionId: project.id,
+          title: title.trim(),
+        });
+        setIsEditing(false);
+      } catch (error) {
+        console.error("Failed to update project:", error);
+      }
     }
   };
 
   const handleCancel = () => {
-    setTitle(project.title || "");
-    setIsEditing(false);
+    if (project) {
+      setTitle(project.title || "");
+      setIsEditing(false);
+    }
   };
 
   const formatDate = (dateString: string | null) => {
@@ -69,11 +115,34 @@ export function ProjectDetail({ heapId, project }: ProjectDetailProps) {
     }
   };
 
+  const handleRemoveFile = (fileId: string) => {
+    if (isPending && onUpdatePendingProject) {
+      const updatedFileIds = fileIds.filter((id) => id !== fileId);
+      onUpdatePendingProject(updatedFileIds);
+    } else if (project && !isPending) {
+      // Update existing project's fileIds
+      const updatedFileIds = fileIds.filter((id) => id !== fileId);
+      const updatedMeta = {
+        ...(project.meta as Record<string, unknown>),
+        fileIds: updatedFileIds,
+      };
+      updateProject.mutate({
+        heapId,
+        sessionId: project.id,
+        meta: updatedMeta,
+      });
+    }
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground">Name</label>
-        {isEditing ? (
+        {isPending ? (
+          <div className="px-3 py-2 border border-border rounded-md min-h-[36px] flex items-center text-muted-foreground">
+            {title || "New Project"}
+          </div>
+        ) : isEditing ? (
           <div className="space-y-2">
             <Input
               value={title}
@@ -116,12 +185,34 @@ export function ProjectDetail({ heapId, project }: ProjectDetailProps) {
         )}
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Created</label>
-        <div className="px-3 py-2 text-sm text-muted-foreground">
-          {formatDate(project.created_at)}
+      {!isPending && (
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Created</label>
+          <div className="px-3 py-2 text-sm text-muted-foreground">
+            {formatDate(project.created_at)}
+          </div>
         </div>
-      </div>
+      )}
+
+      {(fileIds.length > 0 || isPending) && (
+        <ProjectFileList
+          heapId={heapId}
+          fileIds={fileIds}
+          onRemoveFile={handleRemoveFile}
+        />
+      )}
+
+      {isPending && (
+        <div className="flex gap-2 pt-4">
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={createProject.isPending}
+          >
+            {createProject.isPending ? "Creating..." : "Create Project"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

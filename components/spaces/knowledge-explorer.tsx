@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -20,6 +20,17 @@ import { TextEditor } from "./text-editor";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import { FilePreview } from "./file-preview";
 import { FileRow } from "./types";
+import { ProjectDetail } from "./project-detail";
+import type { Database } from "@/lib/types/supabase";
+
+type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
+
+type PendingProject = {
+  id: null;
+  title: string;
+  meta: { isProject: true; fileIds: string[] };
+  created_at: null;
+};
 
 type SecondaryView =
   | "graph"
@@ -29,11 +40,13 @@ type SecondaryView =
   | "scrape-web"
   | "import-drive"
   | "ingest-api"
-  | "ingest-mcp";
+  | "ingest-mcp"
+  | "project";
 
 export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
+  const [pendingProject, setPendingProject] = useState<PendingProject | null>(null);
 
   const showGraph = () => setSecondaryView("graph");
 
@@ -49,6 +62,51 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
     setSecondaryView(view);
   };
 
+  const getOrCreatePendingProject = useCallback((): PendingProject => {
+    if (pendingProject) {
+      return pendingProject;
+    }
+    return {
+      id: null,
+      title: "New Project",
+      meta: { isProject: true, fileIds: [] },
+      created_at: null,
+    };
+  }, [pendingProject]);
+
+  const handleAddFileToProject = useCallback((file: FileRow) => {
+    const pending = getOrCreatePendingProject();
+    if (!pending.meta.fileIds.includes(file.id)) {
+      const updatedPending: PendingProject = {
+        ...pending,
+        meta: {
+          ...pending.meta,
+          fileIds: [...pending.meta.fileIds, file.id],
+        },
+      };
+      setPendingProject(updatedPending);
+      setSecondaryView("project");
+    }
+  }, [getOrCreatePendingProject]);
+
+  const handleUpdatePendingProject = useCallback((fileIds: string[]) => {
+    if (pendingProject) {
+      const updatedPending: PendingProject = {
+        ...pendingProject,
+        meta: {
+          ...pendingProject.meta,
+          fileIds,
+        },
+      };
+      setPendingProject(updatedPending);
+    }
+  }, [pendingProject]);
+
+  const handleProjectCreated = useCallback((project: ChatSession) => {
+    setPendingProject(null);
+    setSecondaryView("graph");
+  }, []);
+
   const renderSecondaryContent = () => {
     switch (secondaryView) {
       case "graph":
@@ -57,6 +115,15 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
         return (
           <FilePreview file={previewFile} onClose={showGraph} heapId={heapId} />
         );
+      case "project":
+        return pendingProject ? (
+          <ProjectDetail
+            heapId={heapId}
+            project={pendingProject}
+            onUpdatePendingProject={handleUpdatePendingProject}
+            onProjectCreated={handleProjectCreated}
+          />
+        ) : null;
       case "text-editor":
         return <TextEditor heapId={heapId} />;
       case "upload":
@@ -124,6 +191,7 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
               heapId={heapId}
               onPreviewFile={showPreview}
               selectedFileId={previewFile?.id ?? null}
+              onAddFileToChat={handleAddFileToProject}
             />
           </div>
         </ResizablePanel>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import {
   ResizablePanelGroup,
@@ -13,10 +13,67 @@ import type { Database } from "@/lib/types/supabase";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
+type PendingProject = {
+  id: null;
+  title: string;
+  meta: { isProject: true; fileIds: string[] };
+  created_at: null;
+};
+
 export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
-  const [selectedProject, setSelectedProject] = useState<ChatSession | null>(
+  const [selectedProject, setSelectedProject] = useState<ChatSession | PendingProject | null>(
     null
   );
+
+  // Create or get pending project
+  const getOrCreatePendingProject = useCallback((): PendingProject => {
+    if (selectedProject && selectedProject.id === null) {
+      return selectedProject as PendingProject;
+    }
+    return {
+      id: null,
+      title: "New Project",
+      meta: { isProject: true, fileIds: [] },
+      created_at: null,
+    };
+  }, [selectedProject]);
+
+  // Handle adding file to pending project
+  const handleAddFileToProject = useCallback((fileId: string) => {
+    const pending = getOrCreatePendingProject();
+    if (!pending.meta.fileIds.includes(fileId)) {
+      const updatedPending: PendingProject = {
+        ...pending,
+        meta: {
+          ...pending.meta,
+          fileIds: [...pending.meta.fileIds, fileId],
+        },
+      };
+      setSelectedProject(updatedPending);
+    }
+  }, [getOrCreatePendingProject]);
+
+  // Handle updating pending project fileIds
+  const handleUpdatePendingProject = useCallback((fileIds: string[]) => {
+    if (selectedProject && selectedProject.id === null) {
+      const updatedPending: PendingProject = {
+        ...selectedProject as PendingProject,
+        meta: {
+          ...(selectedProject as PendingProject).meta,
+          fileIds,
+        },
+      };
+      setSelectedProject(updatedPending);
+    }
+  }, [selectedProject]);
+
+  // Expose handler to window for cross-pane communication
+  useEffect(() => {
+    (window as unknown as { addFileToProject?: (fileId: string) => void }).addFileToProject = handleAddFileToProject;
+    return () => {
+      delete (window as unknown as { addFileToProject?: (fileId: string) => void }).addFileToProject;
+    };
+  }, [handleAddFileToProject]);
 
   console.log("projects");
 
@@ -31,14 +88,26 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
               <ProjectList
                 heapId={heapId}
                 selectedProjectId={selectedProject?.id || null}
-                onSelectProject={setSelectedProject}
+                onSelectProject={(project) => {
+                  // Only set if it's a real project (not pending)
+                  if (project && project.id !== null) {
+                    setSelectedProject(project);
+                  }
+                }}
               />
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={50} minSize={20}>
         
-              <ProjectDetail heapId={heapId} project={selectedProject} />
+              <ProjectDetail 
+                heapId={heapId} 
+                project={selectedProject} 
+                onUpdatePendingProject={handleUpdatePendingProject}
+                onProjectCreated={(project) => {
+                  setSelectedProject(project);
+                }}
+              />
           </ResizablePanel>
         </ResizablePanelGroup>
 
