@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import {
   Box,
   CircleUserRound,
-  Globe,
+  // Globe,
   Library,
   Pyramid,
   Settings,
@@ -12,7 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { WorkspacePaneKey } from "./workspace-pane-types";
-import { AuthButton } from "../auth/auth-button";
+// import { AuthButton } from "../auth/auth-button";
 import { LogoutButton } from "../auth/logout-button";
 import {
   DropdownMenu,
@@ -53,11 +53,11 @@ const NAV_ITEMS: SpaceNavItem[] = [
     label: "Space Members",
     icon: UserPlus,
   },
-  {
-    key: "spacePublish",
-    label: "Publish",
-    icon: Globe,
-  },
+  // {
+  //   key: "spacePublish",
+  //   label: "Publish",
+  //   icon: Globe,
+  // },
   {
     key: "spaceSettings",
     label: "Space Settings",
@@ -79,7 +79,7 @@ export function SpaceNav({
   return (
     <nav className="flex h-full flex-col border-r p-2">
       <div className="flex flex-1 flex-col items-center justify-between">
-        <ul className="flex flex-row items-center justify-between gap-2 md:flex-col md:items-stretch">
+        <ul className="flex flex-row items-center justify-between gap-1 md:flex-col md:items-stretch">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive =
