@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useQuery, UseQueryResult } from "@tanstack/react-query";
+import { useQuery, UseQueryResult, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileRow } from "@/components/spaces/types";
 
 export type FolderNode = {
@@ -19,6 +19,7 @@ export type UseSpaceFilesResult = {
   isError: boolean;
   error: Error | null;
   refetch: UseQueryResult<FileRow[], Error>["refetch"];
+  deleteFile: (fileId: string) => Promise<void>;
 };
 
 const SPACE_FOLDERS: FolderNode[] = [
@@ -173,6 +174,8 @@ function normalizeFiles(input: unknown): FileRow[] {
 }
 
 export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
+  const queryClient = useQueryClient();
+
   const query = useQuery<FileRow[], Error>({
     queryKey: ["space-files", heapId],
     queryFn: async () => {
@@ -193,6 +196,33 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     },
     enabled: Boolean(heapId),
     staleTime: 30_000,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (fileId: string) => {
+      if (!heapId) {
+        throw new Error("Heap ID is required");
+      }
+
+      const response = await fetch(`/api/heaps/${heapId}/injest/delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file_id: fileId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Failed to delete file");
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch files after successful deletion
+      void queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    },
   });
 
   const filesByFolder = useMemo(
@@ -224,5 +254,8 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     isError: query.isError,
     error: query.error ?? null,
     refetch: query.refetch,
+    deleteFile: async (fileId: string) => {
+      await deleteMutation.mutateAsync(fileId);
+    },
   };
 }

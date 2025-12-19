@@ -22,7 +22,6 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import Link from "next/link";
 
 type SpaceNavItem = {
   key: WorkspacePaneKey;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -21,6 +22,7 @@ import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import { FilePreview } from "./file-preview";
 import { FileRow } from "./types";
 import { ProjectDetail } from "./project-detail";
+import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import type { Database } from "@/lib/types/supabase";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
@@ -44,10 +46,15 @@ type SecondaryView =
   | "project";
 
 export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
+  const queryClient = useQueryClient();
+  const { deleteFile } = useSpaceFiles(heapId);
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
   const [pendingProject, setPendingProject] = useState<PendingProject | null>(null);
   const [createdProject, setCreatedProject] = useState<ChatSession | null>(null);
+  const [editorContent, setEditorContent] = useState<string>("");
+  const [editorFileId, setEditorFileId] = useState<string | undefined>(undefined);
+  const [editorFileName, setEditorFileName] = useState<string | undefined>(undefined);
 
   const showGraph = () => setSecondaryView("graph");
 
@@ -59,6 +66,12 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
   const handleSelectView = (view: SecondaryView) => {
     if (view !== "preview") {
       setPreviewFile(null);
+    }
+    if (view === "text-editor" && !editorFileId) {
+      // Clear editor state when opening from menu (not from edit)
+      setEditorContent("");
+      setEditorFileId(undefined);
+      setEditorFileName(undefined);
     }
     setSecondaryView(view);
   };
@@ -129,13 +142,59 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
     setSecondaryView("graph");
   }, []);
 
+  const handleEditFile = useCallback((file: FileRow, content: string) => {
+    setEditorContent(content);
+    setEditorFileId(file.id);
+    setEditorFileName(file.file_name || undefined);
+    setSecondaryView("text-editor");
+  }, []);
+
+  const handleToggleVisibility = useCallback(async (
+    fileId: string,
+    visibility: "public" | "private"
+  ) => {
+    try {
+      const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ visibility }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Failed to update file visibility");
+      }
+
+      // Invalidate and refetch files
+      await queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    } catch (error) {
+      console.error("Failed to toggle file visibility:", error);
+      throw error;
+    }
+  }, [heapId, queryClient]);
+
+  const handleDeleteFile = useCallback(async (fileId: string) => {
+    await deleteFile(fileId);
+  }, [deleteFile]);
+
   const renderSecondaryContent = () => {
     switch (secondaryView) {
       case "graph":
         return <KnowledgeGraph heapId={heapId} />;
       case "preview":
         return (
-          <FilePreview file={previewFile} onClose={showGraph} heapId={heapId} />
+          <FilePreview 
+            file={previewFile} 
+            onClose={showGraph} 
+            heapId={heapId}
+            onEditFile={handleEditFile}
+            onToggleVisibility={handleToggleVisibility}
+            onDeleteFile={handleDeleteFile}
+          />
         );
       case "project":
         return (pendingProject || createdProject) ? (
@@ -150,7 +209,14 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
           />
         ) : null;
       case "text-editor":
-        return <TextEditor heapId={heapId} />;
+        return (
+          <TextEditor 
+            heapId={heapId} 
+            initialMarkdown={editorContent}
+            fileId={editorFileId}
+            initialFileName={editorFileName}
+          />
+        );
       case "upload":
         return <FileUpload heapId={heapId} />;
       case "scrape-web":

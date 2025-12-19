@@ -50,10 +50,6 @@ type FileListProps = {
   onMoveToFolder?: (fileId: string, folders: string[]) => Promise<void>;
   currentUserId?: string | null;
   heapId: string;
-  onToggleVisibility?: (
-    fileId: string,
-    visibility: "public" | "private"
-  ) => Promise<void>;
 };
 
 const LOCAL_FOLDER_OPTIONS = [
@@ -99,10 +95,8 @@ function FileList({
   isStaging = false,
   onMoveToFolder,
   currentUserId,
-  onToggleVisibility,
 }: FileListProps) {
   const [movingFileId, setMovingFileId] = useState<string | null>(null);
-  const [togglingFileId, setTogglingFileId] = useState<string | null>(null);
 
   const handleMoveToFolder = async (fileId: string, folders: string[]) => {
     if (!onMoveToFolder) return;
@@ -111,17 +105,6 @@ function FileList({
       await onMoveToFolder(fileId, folders);
     } finally {
       setMovingFileId(null);
-    }
-  };
-
-  const handleToggleVisibility = async (file: FileRow) => {
-    if (!onToggleVisibility) return;
-    const newVisibility = file.visibility === "public" ? "private" : "public";
-    setTogglingFileId(file.id);
-    try {
-      await onToggleVisibility(file.id, newVisibility);
-    } finally {
-      setTogglingFileId(null);
     }
   };
 
@@ -176,38 +159,14 @@ function FileList({
                     </SelectContent>
                   </Select>
                 ) : (
-                  <>
-                    {currentUserId &&
-                    file.uploader_id === currentUserId &&
-                    onToggleVisibility ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleToggleVisibility(file)}
-                        disabled={togglingFileId === file.id}
-                        title={
-                          file.visibility === "public"
-                            ? "Make private"
-                            : "Make public"
-                        }
-                      >
-                        {file.visibility === "public" ? (
-                          <Eye className="h-4 w-4" />
-                        ) : (
-                          <EyeOff className="h-4 w-4" />
-                        )}
-                      </Button>
-                    ) : null}
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => onAddToChat?.(file)}
-                    >
-                      <MessageCirclePlus />
-                    </Button>
-                  </>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => onAddToChat?.(file)}
+                  >
+                    <MessageCirclePlus />
+                  </Button>
                 )}
               </div>
             </div>
@@ -742,7 +701,6 @@ export function FileExplorer({
                         }
                         currentUserId={currentUserId}
                         heapId={heapId}
-                        onToggleVisibility={handleToggleVisibility}
                       />
                     </div>
                   </>
@@ -765,7 +723,6 @@ export function FileExplorer({
                     onPreview={onPreviewFile}
                     currentUserId={currentUserId}
                     heapId={heapId}
-                    onToggleVisibility={handleToggleVisibility}
                   />
                 </div>
               )

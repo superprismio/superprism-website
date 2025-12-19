@@ -42,10 +42,17 @@ function GraphLegend() {
           />
           <span className="text-xs text-foreground">File</span>
         </div>
-        <p className="text-[8px] text-muted-foreground">
-          File colors show upload date: newer = yellow/green, older =
-          blue/purple
-        </p>
+        <div>
+          <p className="text-[8px] text-muted-foreground leading-none">
+            File colors show upload date:
+          </p>
+          <p className="text-[8px] text-muted-foreground leading-none">
+            newer = yellow/green
+          </p>
+          <p className="text-[8px] text-muted-foreground leading-none">
+            older = blue/purple
+          </p>
+        </div>
       </div>
     </div>
   );

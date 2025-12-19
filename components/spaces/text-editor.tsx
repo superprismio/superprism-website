@@ -9,9 +9,11 @@ import { Textarea } from "../ui/textarea";
 type TextEditorProps = {
   heapId: string;
   initialMarkdown?: string;
+  fileId?: string;
+  initialFileName?: string;
 };
 
-export function TextEditor({ heapId, initialMarkdown }: TextEditorProps) {
+export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName }: TextEditorProps) {
   const queryClient = useQueryClient();
   const [markdown, setMarkdown] = useState(initialMarkdown || "");
   
@@ -20,10 +22,20 @@ export function TextEditor({ heapId, initialMarkdown }: TextEditorProps) {
       setMarkdown(initialMarkdown);
     }
   }, [initialMarkdown]);
-  const [fileName, setFileName] = useState("");
+  
+  const [fileName, setFileName] = useState(initialFileName || "");
+  
+  useEffect(() => {
+    if (initialFileName !== undefined) {
+      setFileName(initialFileName);
+    }
+  }, [initialFileName]);
+  
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  
+  const isEditMode = Boolean(fileId);
 
   const handleSave = async () => {
     if (!heapId || !markdown.trim()) return;
@@ -41,6 +53,8 @@ export function TextEditor({ heapId, initialMarkdown }: TextEditorProps) {
           body: JSON.stringify({
             markdown,
             file_name: fileName.trim() || undefined,
+            file_id: fileId || undefined,
+            file_op: isEditMode ? "update" : "create",
           }),
         }
       );
@@ -56,8 +70,10 @@ export function TextEditor({ heapId, initialMarkdown }: TextEditorProps) {
         queryKey: ["space-files", heapId],
       });
       setSuccess(true);
-      setMarkdown("");
-      setFileName("");
+      if (!isEditMode) {
+        setMarkdown("");
+        setFileName("");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save markdown");
     } finally {
@@ -70,7 +86,7 @@ export function TextEditor({ heapId, initialMarkdown }: TextEditorProps) {
       <div>
         <h4 className="text-lg font-semibold text-foreground">Text Editor</h4>
         <p className="text-sm text-muted-foreground">
-          Draft markdown and ingest it into this heap.
+          {isEditMode ? "Edit markdown file." : "Draft markdown and ingest it into this heap."}
         </p>
       </div>
 
@@ -104,7 +120,7 @@ export function TextEditor({ heapId, initialMarkdown }: TextEditorProps) {
 
       {success && (
         <div className="rounded border border-green-500/50 bg-green-500/10 p-2 text-sm text-green-600">
-          Markdown saved.
+          {isEditMode ? "File updated." : "Markdown saved."}
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { ATTACHMENT_MIME_LOOKUP } from "@/lib/attachments";
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
 const UPLOAD_ENDPOINT =
   "https://n8n-workflows-production-d083.up.railway.app/webhook/ingest-pipeline";
@@ -20,10 +20,7 @@ export async function POST(request: Request, { params }: Params) {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json().catch(() => null);
@@ -32,6 +29,50 @@ export async function POST(request: Request, { params }: Params) {
         { error: "Missing or invalid markdown payload." },
         { status: 400 }
       );
+    }
+
+    // Determine if this is an update or create operation
+    const fileOp =
+      typeof body.file_op === "string" && body.file_op === "update"
+        ? "update"
+        : "create";
+    const isUpdate = fileOp === "update";
+
+    console.log("fileOp", fileOp);
+
+    // Get file_id for updates, or generate new one for creates
+    const fileId =
+      isUpdate && typeof body.file_id === "string" && body.file_id.trim()
+        ? body.file_id.trim()
+        : crypto.randomUUID();
+
+    // For updates, verify the user is the uploader
+    if (isUpdate) {
+      const serviceClient = await createServiceRoleClient();
+      const { data: currentFile, error: fetchError } = await serviceClient
+        .from("files")
+        .select("uploader_id")
+        .eq("id", fileId)
+        .eq("heap_id", heapId)
+        .maybeSingle();
+
+      if (fetchError) {
+        return NextResponse.json(
+          { error: "Failed to verify file ownership" },
+          { status: 400 }
+        );
+      }
+
+      if (!currentFile) {
+        return NextResponse.json({ error: "File not found" }, { status: 404 });
+      }
+
+      if (currentFile.uploader_id !== user.id) {
+        return NextResponse.json(
+          { error: "Only the file uploader can edit this file" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get filename from request or use default
@@ -55,13 +96,14 @@ export async function POST(request: Request, { params }: Params) {
     // Create FormData similar to the upload route
     const formData = new FormData();
     formData.set("file", file);
-    formData.set("file_id", crypto.randomUUID());
+    formData.set("file_id", fileId);
     formData.set("file_name", fileName);
-    formData.set("file_mime", ATTACHMENT_MIME_LOOKUP.md);
     formData.set("heap_id", heapId);
     formData.set("user_id", user.id);
     formData.set("file_ext", "md");
+    formData.set("file_mime", ATTACHMENT_MIME_LOOKUP.md);
     formData.set("file_mime_type", ATTACHMENT_MIME_LOOKUP.md);
+    formData.set("file_op", fileOp);
 
     // Handle optional fields (can be extended later if needed)
     const fileTags = body.file_tags;
@@ -76,7 +118,7 @@ export async function POST(request: Request, { params }: Params) {
       formData.set("file_folders", JSON.stringify(fileFolders));
     } else {
       // Default folders for markdown notes
-      formData.set("file_folders", JSON.stringify(["uploads", "library", "notes"]));
+      formData.set("file_folders", JSON.stringify(["staging"]));
     }
 
     const upstreamResponse = await fetch(UPLOAD_ENDPOINT, {
@@ -124,4 +166,3 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

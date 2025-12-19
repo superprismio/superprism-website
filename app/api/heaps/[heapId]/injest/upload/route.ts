@@ -68,14 +68,22 @@ export async function POST(request: Request, { params }: Params) {
       );
     }
 
+    // const fileOp =
+    //   typeof body.file_op === "string" && body.file_op === "update"
+    //     ? "update"
+    //     : "create";
+    // TODO: handle update flow when defined
+    const fileOp = "create";
+
     // Add required fields for the upstream API
     formData.set("file_id", crypto.randomUUID());
     formData.set("file_name", file.name);
-    formData.set("file_mime", ATTACHMENT_MIME_LOOKUP[extension]);
     formData.set("heap_id", heapId);
     formData.set("user_id", user.id);
     formData.set("file_ext", extension);
+    formData.set("file_mime", ATTACHMENT_MIME_LOOKUP[extension]);
     formData.set("file_mime_type", ATTACHMENT_MIME_LOOKUP[extension]);
+    formData.set("file_op", fileOp);
 
     // Handle optional fields
     const fileTags = formData.get("file_tags");
