@@ -23,11 +23,20 @@ export async function PATCH(request: Request, { params }: Params) {
 
     // Parse body
     const body = await request.json();
-    const { folders } = body ?? {};
+    const { folders, visibility } = body ?? {};
 
-    if (!Array.isArray(folders) || folders.some((f) => typeof f !== "string")) {
+    if (folders !== undefined) {
+      if (!Array.isArray(folders) || folders.some((f) => typeof f !== "string")) {
+        return NextResponse.json(
+          { error: "folders must be an array of strings" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (visibility !== undefined && visibility !== "public" && visibility !== "private") {
       return NextResponse.json(
-        { error: "folders must be an array of strings" },
+        { error: "visibility must be 'public' or 'private'" },
         { status: 400 }
       );
     }
@@ -55,28 +64,43 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    // Build updated meta
-    const currentMeta =
-      currentFile.meta &&
-      typeof currentFile.meta === "object" &&
-      !Array.isArray(currentFile.meta)
-        ? (currentFile.meta as Record<string, unknown>)
-        : {};
+    // Check if user is the uploader (required for visibility changes)
+    if (visibility !== undefined && currentFile.uploader_id !== user.id) {
+      return NextResponse.json(
+        { error: "Only the file uploader can change visibility" },
+        { status: 403 }
+      );
+    }
 
-    const updatedMeta = {
-      ...currentMeta,
-      folders: folders.map((f: string) => f.toLowerCase()),
-    };
+    // Build update object
+    const updateData: Record<string, unknown> = {};
 
-    console.log("updatedMeta", updatedMeta);
+    // Update folders in meta if provided
+    if (folders !== undefined) {
+      const currentMeta =
+        currentFile.meta &&
+        typeof currentFile.meta === "object" &&
+        !Array.isArray(currentFile.meta)
+          ? (currentFile.meta as Record<string, unknown>)
+          : {};
+
+      updateData.meta = {
+        ...currentMeta,
+        folders: folders.map((f: string) => f.toLowerCase()),
+      };
+    }
+
+    // Update visibility if provided
+    if (visibility !== undefined) {
+      updateData.visibility = visibility;
+    }
 
     // Apply update
     const { data: updateResult, error: updateError } = await serviceClient
       .from("files")
-      .upsert({ id: fileId, meta: updatedMeta })
-      // .update({ meta: updatedMeta })
-      // .eq("id", fileId)
-      // .eq("heap_id", heapId)
+      .update(updateData)
+      .eq("id", fileId)
+      .eq("heap_id", heapId)
       .select()
       .maybeSingle();
 

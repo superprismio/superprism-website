@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useQuery, UseQueryResult } from "@tanstack/react-query";
+import { useQuery, UseQueryResult, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FileRow } from "@/components/spaces/types";
 
 export type FolderNode = {
@@ -19,6 +19,7 @@ export type UseSpaceFilesResult = {
   isError: boolean;
   error: Error | null;
   refetch: UseQueryResult<FileRow[], Error>["refetch"];
+  deleteFile: (fileId: string) => Promise<void>;
 };
 
 const SPACE_FOLDERS: FolderNode[] = [
@@ -62,6 +63,24 @@ const SPACE_FOLDERS: FolderNode[] = [
         name: "Artifacts",
         path: "public/artifacts",
       },
+      {
+        name: "Summaries",
+        path: "public/summaries",
+        children: [
+          {
+            name: "Meetings",
+            path: "public/summaries/meetings",
+          },
+        ],
+      },
+      {
+        name: "Documents",
+        path: "public/documents",
+      },
+      {
+        name: "Notes",
+        path: "public/notes",
+      },
     ],
   },
 ];
@@ -96,38 +115,42 @@ function groupFilesByFolder(files: FileRow[]): Record<string, FileRow[]> {
       ? file.meta?.folders.filter((segment) => typeof segment === "string")
       : [];
 
+    const isPublic = file.visibility === "public";
+    const basePath = isPublic ? "public" : "local";
+
     let folderPath: string | null = null;
 
     if (folderSegments.length === 0) {
       // No folders specified, put in Staging
       folderPath = "staging";
     } else {
-      // Map folder segments to full path (prepending "local" for now since no Public flag yet)
+      // Map folder segments to full path (prepend "public" or "local" based on visibility)
       const normalizedSegments = folderSegments.map((s) =>
         s.toLowerCase().trim()
       );
-      // Check if it matches prescribed Local paths
+      
+      // Check if it matches prescribed paths
       if (
         normalizedSegments.length === 1 &&
         normalizedSegments[0] === "artifacts"
       ) {
-        folderPath = "local/artifacts";
+        folderPath = `${basePath}/artifacts`;
       } else if (
         normalizedSegments.length === 2 &&
         normalizedSegments[0] === "summaries" &&
         normalizedSegments[1] === "meetings"
       ) {
-        folderPath = "local/summaries/meetings";
+        folderPath = `${basePath}/summaries/meetings`;
       } else if (
         normalizedSegments.length === 1 &&
         normalizedSegments[0] === "documents"
       ) {
-        folderPath = "local/documents";
+        folderPath = `${basePath}/documents`;
       } else if (
         normalizedSegments.length === 1 &&
         normalizedSegments[0] === "notes"
       ) {
-        folderPath = "local/notes";
+        folderPath = `${basePath}/notes`;
       } else {
         // Doesn't match prescribed paths, put in Staging
         folderPath = "staging";
@@ -151,6 +174,8 @@ function normalizeFiles(input: unknown): FileRow[] {
 }
 
 export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
+  const queryClient = useQueryClient();
+
   const query = useQuery<FileRow[], Error>({
     queryKey: ["space-files", heapId],
     queryFn: async () => {
@@ -171,6 +196,33 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     },
     enabled: Boolean(heapId),
     staleTime: 30_000,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (fileId: string) => {
+      if (!heapId) {
+        throw new Error("Heap ID is required");
+      }
+
+      const response = await fetch(`/api/heaps/${heapId}/injest/delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file_id: fileId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Failed to delete file");
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch files after successful deletion
+      void queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    },
   });
 
   const filesByFolder = useMemo(
@@ -202,5 +254,8 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     isError: query.isError,
     error: query.error ?? null,
     refetch: query.refetch,
+    deleteFile: async (fileId: string) => {
+      await deleteMutation.mutateAsync(fileId);
+    },
   };
 }

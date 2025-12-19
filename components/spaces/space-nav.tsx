@@ -8,7 +8,7 @@ import {
   Library,
   Pyramid,
   Settings,
-  UserPlus,
+  // UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import { WorkspacePaneKey } from "./workspace-pane-types";
@@ -22,7 +22,6 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
-import Link from "next/link";
 
 type SpaceNavItem = {
   key: WorkspacePaneKey;
@@ -48,11 +47,11 @@ const NAV_ITEMS: SpaceNavItem[] = [
     label: "Space Projects",
     icon: Box,
   },
-  {
-    key: "spaceMembers",
-    label: "Space Members",
-    icon: UserPlus,
-  },
+  // {
+  //   key: "spaceMembers",
+  //   label: "Space Members",
+  //   icon: UserPlus,
+  // },
   // {
   //   key: "spacePublish",
   //   label: "Publish",
@@ -110,32 +109,29 @@ export function SpaceNav({
               </li>
             );
           })}
+          <div className="flex justify-center mt-10">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label="Open account menu"
+                  size="icon"
+                  variant="ghost"
+                >
+                  <CircleUserRound />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-background">
+                <DropdownMenuItem asChild disabled={true}>
+                  <p>User settings</p>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="px-1 pb-1">
+                  <LogoutButton />
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </ul>
-        <div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-label="Open account menu"
-                size="icon"
-                variant="ghost"
-              >
-                <CircleUserRound />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-background">
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard">Dashboard</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="#">User settings</Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <div className="px-1 pb-1">
-                <LogoutButton />
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
       </div>
     </nav>
   );

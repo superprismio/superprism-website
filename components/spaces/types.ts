@@ -40,6 +40,7 @@ export type FileRow = {
   source_type: string | null;
   uploaded_at: string | null;
   uploader_id: string | null;
+  visibility: "public" | "private" | null;
   meta: FileMeta | null;
 };
 
@@ -54,6 +55,7 @@ export type Member = {
   user_email: string;
   user_name: string;
   role: string;
-  display_name: string;
+  display_name: string | null;
   avatar_url: string;
+  member_bio: string | null;
 };

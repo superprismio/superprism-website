@@ -4,9 +4,8 @@ import { useState, useMemo, useEffect } from "react";
 import { useProjectList } from "@/hooks/useProjects";
 import type { Database } from "@/lib/types/supabase";
 import { cn } from "@/lib/utils";
-import { Binoculars, Folder, FolderOpen } from "lucide-react";
+import { Folder, FolderOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -14,7 +13,6 @@ type ProjectListProps = {
   heapId: string;
   selectedProjectId: string | null;
   onSelectProject: (project: ChatSession | null) => void;
-  onOpenProject?: (project: ChatSession) => void;
 };
 
 type FolderType = "your-projects" | "space-projects";
@@ -159,7 +157,6 @@ type ProjectListContentProps = {
   projects: ChatSession[];
   selectedProjectId: string | null;
   onSelectProject: (project: ChatSession | null) => void;
-  onOpenProject?: (project: ChatSession) => void;
   emptyMessage: string;
 };
 
@@ -167,7 +164,6 @@ function ProjectListContent({
   projects,
   selectedProjectId,
   onSelectProject,
-  onOpenProject,
   emptyMessage,
 }: ProjectListContentProps) {
   if (projects.length === 0) {
@@ -195,15 +191,6 @@ function ProjectListContent({
                   {project.title || "Untitled Project"}
                 </span>
               </button>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onOpenProject?.(project)}
-                aria-pressed={isSelected}
-              >
-                <Binoculars />
-              </Button>
             </div>
           </li>
         );
@@ -216,10 +203,13 @@ export function ProjectList({
   heapId,
   selectedProjectId,
   onSelectProject,
-  onOpenProject,
 }: ProjectListProps) {
-  const { data: projectFolders, isLoading, isError, error } =
-    useProjectList(heapId);
+  const {
+    data: projectFolders,
+    isLoading,
+    isError,
+    error,
+  } = useProjectList(heapId);
   const [mode, setMode] = useState<"explore" | "search">("explore");
   const [activeFolder, setActiveFolder] = useState<FolderType | null>(null);
   const [search, setSearch] = useState("");
@@ -318,7 +308,6 @@ export function ProjectList({
                     projects={activeProjects}
                     selectedProjectId={selectedProjectId}
                     onSelectProject={onSelectProject}
-                    onOpenProject={onOpenProject}
                     emptyMessage="No projects in this folder."
                   />
                 </div>
@@ -333,7 +322,6 @@ export function ProjectList({
                   projects={activeProjects}
                   selectedProjectId={selectedProjectId}
                   onSelectProject={onSelectProject}
-                  onOpenProject={onOpenProject}
                   emptyMessage={
                     search
                       ? "No projects match your search."

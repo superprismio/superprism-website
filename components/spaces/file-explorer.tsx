@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Binoculars,
   Folder,
   FolderOpen,
   MessageCirclePlus,
@@ -10,6 +9,8 @@ import {
   FileText,
   FileImage,
   FileSpreadsheet,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { FileRow } from "./types";
+import { createClient } from "@/lib/supabase/client";
 
 type FileExplorerProps = {
   heapId: string;
@@ -46,6 +48,8 @@ type FileListProps = {
   onPreview?: (file: FileRow) => void;
   isStaging?: boolean;
   onMoveToFolder?: (fileId: string, folders: string[]) => Promise<void>;
+  currentUserId?: string | null;
+  heapId: string;
 };
 
 const LOCAL_FOLDER_OPTIONS = [
@@ -90,6 +94,7 @@ function FileList({
   onPreview,
   isStaging = false,
   onMoveToFolder,
+  currentUserId,
 }: FileListProps) {
   const [movingFileId, setMovingFileId] = useState<string | null>(null);
 
@@ -118,12 +123,16 @@ function FileList({
         return (
           <li key={file.id} className="p-1">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex-1 space-y-1">
-                <div className="text-md font-medium flex items-center gap-2">
-                  <FileIcon className="h-4 w-4 shrink-0" />
-                  {file.file_name ?? "Untitled file"}
-                </div>
-              </div>
+              <button
+                className={cn(
+                  "flex gap-2 items-center text-md font-medium hover:bg-muted transition px-2 py-1 rounded w-full",
+                  selectedFileId === file.id && "bg-muted"
+                )}
+                onClick={() => onPreview?.(file)}
+              >
+                <FileIcon className="h-4 w-4 shrink-0" />
+                {file.file_name ?? "Untitled file"}
+              </button>
               <div className="flex gap-2 shrink-0">
                 {isStaging ? (
                   <Select
@@ -159,15 +168,6 @@ function FileList({
                     <MessageCirclePlus />
                   </Button>
                 )}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onPreview?.(file)}
-                  aria-pressed={selectedFileId === file.id}
-                >
-                  <Binoculars />
-                </Button>
               </div>
             </div>
           </li>
@@ -472,6 +472,18 @@ export function FileExplorer({
   const [mode, setMode] = useState<"explore" | "search">("explore");
   const [search, setSearch] = useState("");
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id ?? null);
+    };
+    void getCurrentUser();
+  }, []);
 
   const handleMoveToFolder = async (fileId: string, folders: string[]) => {
     try {
@@ -494,6 +506,34 @@ export function FileExplorer({
       });
     } catch (error) {
       console.error("Failed to move file:", error);
+      throw error;
+    }
+  };
+
+  const handleToggleVisibility = async (
+    fileId: string,
+    visibility: "public" | "private"
+  ) => {
+    try {
+      const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ visibility }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Failed to update file visibility");
+      }
+
+      // Invalidate and refetch files
+      await queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    } catch (error) {
+      console.error("Failed to toggle file visibility:", error);
       throw error;
     }
   };
@@ -659,6 +699,8 @@ export function FileExplorer({
                         onMoveToFolder={
                           isStaging ? handleMoveToFolder : undefined
                         }
+                        currentUserId={currentUserId}
+                        heapId={heapId}
                       />
                     </div>
                   </>
@@ -679,6 +721,8 @@ export function FileExplorer({
                     selectedFileId={selectedFileId}
                     onAddToChat={onAddFileToChat}
                     onPreview={onPreviewFile}
+                    currentUserId={currentUserId}
+                    heapId={heapId}
                   />
                 </div>
               )
