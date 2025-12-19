@@ -12,7 +12,8 @@ export async function GET(_request: Request, { params }: Params) {
     .select("*")
     .eq("heap_id", heapId)
     .order("created_at", { ascending: false });
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json({ data });
 }
 
@@ -22,10 +23,7 @@ export async function POST(request: Request, { params }: Params) {
   const { title, meta } = body ?? {};
 
   if (!title || typeof title !== "string") {
-    return NextResponse.json(
-      { error: "Title is required" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Title is required" }, { status: 400 });
   }
 
   const supabase = await createClient();
@@ -40,6 +38,8 @@ export async function POST(request: Request, { params }: Params) {
     return authResult.response;
   }
 
+  const { user } = authResult;
+
   const serviceClient = await createServiceRoleClient();
 
   const { data, error } = await serviceClient
@@ -48,7 +48,8 @@ export async function POST(request: Request, { params }: Params) {
       id: crypto.randomUUID(),
       heap_id: heapId,
       title,
-      meta: meta ?? { isProject: true, fileIds: [] },
+      created_by: user.id,
+      meta: meta ?? { isProject: true, fileIds: [], artifactIds: [] },
     })
     .select("*")
     .single();
@@ -58,5 +59,3 @@ export async function POST(request: Request, { params }: Params) {
   }
   return NextResponse.json({ data });
 }
-
-

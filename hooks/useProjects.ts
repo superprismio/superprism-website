@@ -1,6 +1,8 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/types/supabase";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
@@ -10,12 +12,28 @@ type ApiResponse<T> = {
   error?: string;
 };
 
+type ProjectFolders = {
+  yourProjects: ChatSession[];
+  spaceProjects: ChatSession[];
+};
+
 export function useProjectList(heapId: string | null) {
-  return useQuery<ChatSession[], Error>({
-    queryKey: ["projects", heapId],
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const getUserId = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id ?? null);
+    };
+    void getUserId();
+  }, []);
+
+  return useQuery<ProjectFolders, Error>({
+    queryKey: ["projects", heapId, userId],
     queryFn: async () => {
       if (!heapId) {
-        return [];
+        return { yourProjects: [], spaceProjects: [] };
       }
 
       const response = await fetch(`/api/heaps/${heapId}/chat-sessions`, {
@@ -28,9 +46,32 @@ export function useProjectList(heapId: string | null) {
       }
 
       const json = (await response.json()) as ApiResponse<ChatSession[]>;
-      return json.data || [];
+      const allProjects = json.data || [];
+
+      // Filter projects where meta.isProject is true
+      const projects = allProjects.filter(
+        (session) =>
+          session.meta &&
+          typeof session.meta === "object" &&
+          !Array.isArray(session.meta) &&
+          (session.meta as Record<string, unknown>).isProject === true
+      );
+
+      // Separate by created_by
+      const yourProjects: ChatSession[] = [];
+      const spaceProjects: ChatSession[] = [];
+
+      for (const project of projects) {
+        if (userId && project.created_by === userId) {
+          yourProjects.push(project);
+        } else {
+          spaceProjects.push(project);
+        }
+      }
+
+      return { yourProjects, spaceProjects };
     },
-    enabled: Boolean(heapId),
+    enabled: Boolean(heapId) && userId !== null,
     staleTime: 30_000,
   });
 }

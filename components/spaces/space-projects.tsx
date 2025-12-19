@@ -67,6 +67,17 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
     }
   }, [selectedProject]);
 
+  // Handle updating pending project title
+  const handleUpdatePendingProjectTitle = useCallback((title: string) => {
+    if (selectedProject && selectedProject.id === null) {
+      const updatedPending: PendingProject = {
+        ...selectedProject as PendingProject,
+        title,
+      };
+      setSelectedProject(updatedPending);
+    }
+  }, [selectedProject]);
+
   // Expose handler to window for cross-pane communication
   useEffect(() => {
     (window as unknown as { addFileToProject?: (fileId: string) => void }).addFileToProject = handleAddFileToProject;
@@ -94,6 +105,9 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
                     setSelectedProject(project);
                   }
                 }}
+                onOpenProject={(project) => {
+                  setSelectedProject(project);
+                }}
               />
             </div>
           </ResizablePanel>
@@ -104,7 +118,11 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
                 heapId={heapId} 
                 project={selectedProject} 
                 onUpdatePendingProject={handleUpdatePendingProject}
+                onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
                 onProjectCreated={(project) => {
+                  setSelectedProject(project);
+                }}
+                onProjectUpdated={(project) => {
                   setSelectedProject(project);
                 }}
               />

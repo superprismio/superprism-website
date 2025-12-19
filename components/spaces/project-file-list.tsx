@@ -6,7 +6,8 @@ import { FileRow } from "@/components/spaces/types";
 type ProjectFileListProps = {
   heapId: string;
   fileIds: string[];
-  onRemoveFile: (fileId: string) => void;
+  onRemoveFile?: (fileId: string) => void;
+  label?: string;
 };
 
 function normalizeFiles(input: unknown): FileRow[] {
@@ -21,6 +22,7 @@ export function ProjectFileList({
   heapId,
   fileIds,
   onRemoveFile,
+  label = "Files",
 }: ProjectFileListProps) {
   const { data: files, isLoading, isError } = useQuery<FileRow[], Error>({
     queryKey: ["project-files", heapId, fileIds],
@@ -55,9 +57,9 @@ export function ProjectFileList({
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Files</label>
+        <label className="text-sm font-medium text-foreground">{label}</label>
         <div className="px-3 py-2 text-sm text-muted-foreground">
-          Loading files...
+          Loading {label.toLowerCase()}...
         </div>
       </div>
     );
@@ -66,9 +68,9 @@ export function ProjectFileList({
   if (isError) {
     return (
       <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Files</label>
+        <label className="text-sm font-medium text-foreground">{label}</label>
         <div className="px-3 py-2 text-sm text-destructive">
-          Failed to load files
+          Failed to load {label.toLowerCase()}
         </div>
       </div>
     );
@@ -80,7 +82,7 @@ export function ProjectFileList({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground">Files</label>
+      <label className="text-sm font-medium text-foreground">{label}</label>
       <div className="space-y-1">
         {files.map((file) => (
           <div
@@ -88,12 +90,14 @@ export function ProjectFileList({
             className="px-3 py-2 text-sm text-foreground border border-border rounded-md flex items-center justify-between hover:bg-muted/50"
           >
             <span>{file.file_name || "Untitled"}</span>
-            <button
-              onClick={() => onRemoveFile(file.id)}
-              className="text-muted-foreground hover:text-destructive text-xs"
-            >
-              Remove
-            </button>
+            {onRemoveFile && (
+              <button
+                onClick={() => onRemoveFile(file.id)}
+                className="text-muted-foreground hover:text-destructive text-xs"
+              >
+                Remove
+              </button>
+            )}
           </div>
         ))}
       </div>

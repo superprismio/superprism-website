@@ -47,6 +47,7 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
   const [pendingProject, setPendingProject] = useState<PendingProject | null>(null);
+  const [createdProject, setCreatedProject] = useState<ChatSession | null>(null);
 
   const showGraph = () => setSecondaryView("graph");
 
@@ -102,7 +103,28 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
     }
   }, [pendingProject]);
 
+  const handleUpdatePendingProjectTitle = useCallback((title: string) => {
+    if (pendingProject) {
+      const updatedPending: PendingProject = {
+        ...pendingProject,
+        title,
+      };
+      setPendingProject(updatedPending);
+    }
+  }, [pendingProject]);
+
   const handleProjectCreated = useCallback((project: ChatSession) => {
+    setPendingProject(null);
+    setCreatedProject(project);
+    // Keep the project view open
+  }, []);
+
+  const handleProjectUpdated = useCallback((project: ChatSession) => {
+    setCreatedProject(project);
+  }, []);
+
+  const handleCloseProject = useCallback(() => {
+    setCreatedProject(null);
     setPendingProject(null);
     setSecondaryView("graph");
   }, []);
@@ -116,12 +138,15 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
           <FilePreview file={previewFile} onClose={showGraph} heapId={heapId} />
         );
       case "project":
-        return pendingProject ? (
+        return (pendingProject || createdProject) ? (
           <ProjectDetail
             heapId={heapId}
-            project={pendingProject}
+            project={createdProject || pendingProject}
             onUpdatePendingProject={handleUpdatePendingProject}
+            onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
             onProjectCreated={handleProjectCreated}
+            onProjectUpdated={handleProjectUpdated}
+            onClose={handleCloseProject}
           />
         ) : null;
       case "text-editor":

@@ -62,6 +62,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
       if (inviteDetails.email && userEmail) {
         if (inviteDetails.email.toLowerCase() !== userEmail.toLowerCase()) {
           // Email mismatch - show error
+          console.log("email mismatch");
           return;
         }
       }
