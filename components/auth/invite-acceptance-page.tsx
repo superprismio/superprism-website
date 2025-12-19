@@ -154,9 +154,7 @@ export function InviteAcceptancePage({ token }: InviteAcceptancePageProps) {
                 </CardHeader>
                 <CardContent>
                   <Button
-                    onClick={() =>
-                      router.push(`/dashboard/${inviteDetails?.heap_id}`)
-                    }
+                    onClick={() => router.push(`/dashboard`)}
                     className="w-full"
                   >
                     Go to Dashboard
