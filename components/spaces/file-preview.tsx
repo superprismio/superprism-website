@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useState } from "react";
-import { X, ChevronRight } from "lucide-react";
+import { X, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { FileRow } from "./types";
 
 type FilePreviewProps = {
@@ -95,16 +95,42 @@ export function FilePreview({ file, onClose, heapId }: FilePreviewProps) {
             )}
           </div>
 
-          {file.meta ? (
-            <div className="space-y-4 text-sm">
-              {file.meta.summary_short ? (
-                <div>
-                  <div className="font-medium mb-1">Summary</div>
-                  <div className="text-muted-foreground">
-                    {file.meta.summary_short}
-                  </div>
+          <div className="space-y-4 text-sm">
+            {file.visibility !== undefined && file.visibility !== null ? (
+              <div>
+                <div className="font-medium mb-1">Visibility</div>
+                <div className="flex items-center gap-2">
+                  {file.visibility === "public" ? (
+                    <Eye className="h-4 w-4 text-primary" />
+                  ) : (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <span className="text-muted-foreground capitalize">
+                    {file.visibility}
+                  </span>
                 </div>
-              ) : null}
+              </div>
+            ) : null}
+
+            {file.uploader_id ? (
+              <div>
+                <div className="font-medium mb-1">Uploaded by</div>
+                <div className="text-muted-foreground text-xs font-mono">
+                  {file.uploader_id}
+                </div>
+              </div>
+            ) : null}
+
+            {file.meta ? (
+              <div className="space-y-4">
+                {file.meta.summary_short ? (
+                  <div>
+                    <div className="font-medium mb-1">Summary</div>
+                    <div className="text-muted-foreground">
+                      {file.meta.summary_short}
+                    </div>
+                  </div>
+                ) : null}
 
               {(() => {
                 const folders = file.meta.folders;
@@ -158,8 +184,9 @@ export function FilePreview({ file, onClose, heapId }: FilePreviewProps) {
                   </div>
                 </div>
               ) : null}
-            </div>
-          ) : null}
+              </div>
+            ) : null}
+          </div>
         </div>
       )}
 

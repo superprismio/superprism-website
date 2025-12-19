@@ -21,9 +21,9 @@ type PendingProject = {
 };
 
 export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
-  const [selectedProject, setSelectedProject] = useState<ChatSession | PendingProject | null>(
-    null
-  );
+  const [selectedProject, setSelectedProject] = useState<
+    ChatSession | PendingProject | null
+  >(null);
 
   // Create or get pending project
   const getOrCreatePendingProject = useCallback((): PendingProject => {
@@ -39,50 +39,63 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
   }, [selectedProject]);
 
   // Handle adding file to pending project
-  const handleAddFileToProject = useCallback((fileId: string) => {
-    const pending = getOrCreatePendingProject();
-    if (!pending.meta.fileIds.includes(fileId)) {
-      const updatedPending: PendingProject = {
-        ...pending,
-        meta: {
-          ...pending.meta,
-          fileIds: [...pending.meta.fileIds, fileId],
-        },
-      };
-      setSelectedProject(updatedPending);
-    }
-  }, [getOrCreatePendingProject]);
+  const handleAddFileToProject = useCallback(
+    (fileId: string) => {
+      const pending = getOrCreatePendingProject();
+      if (!pending.meta.fileIds.includes(fileId)) {
+        const updatedPending: PendingProject = {
+          ...pending,
+          meta: {
+            ...pending.meta,
+            fileIds: [...pending.meta.fileIds, fileId],
+          },
+        };
+        setSelectedProject(updatedPending);
+      }
+    },
+    [getOrCreatePendingProject]
+  );
 
   // Handle updating pending project fileIds
-  const handleUpdatePendingProject = useCallback((fileIds: string[]) => {
-    if (selectedProject && selectedProject.id === null) {
-      const updatedPending: PendingProject = {
-        ...selectedProject as PendingProject,
-        meta: {
-          ...(selectedProject as PendingProject).meta,
-          fileIds,
-        },
-      };
-      setSelectedProject(updatedPending);
-    }
-  }, [selectedProject]);
+  const handleUpdatePendingProject = useCallback(
+    (fileIds: string[]) => {
+      if (selectedProject && selectedProject.id === null) {
+        const updatedPending: PendingProject = {
+          ...(selectedProject as PendingProject),
+          meta: {
+            ...(selectedProject as PendingProject).meta,
+            fileIds,
+          },
+        };
+        setSelectedProject(updatedPending);
+      }
+    },
+    [selectedProject]
+  );
 
   // Handle updating pending project title
-  const handleUpdatePendingProjectTitle = useCallback((title: string) => {
-    if (selectedProject && selectedProject.id === null) {
-      const updatedPending: PendingProject = {
-        ...selectedProject as PendingProject,
-        title,
-      };
-      setSelectedProject(updatedPending);
-    }
-  }, [selectedProject]);
+  const handleUpdatePendingProjectTitle = useCallback(
+    (title: string) => {
+      if (selectedProject && selectedProject.id === null) {
+        const updatedPending: PendingProject = {
+          ...(selectedProject as PendingProject),
+          title,
+        };
+        setSelectedProject(updatedPending);
+      }
+    },
+    [selectedProject]
+  );
 
   // Expose handler to window for cross-pane communication
   useEffect(() => {
-    (window as unknown as { addFileToProject?: (fileId: string) => void }).addFileToProject = handleAddFileToProject;
+    (
+      window as unknown as { addFileToProject?: (fileId: string) => void }
+    ).addFileToProject = handleAddFileToProject;
     return () => {
-      delete (window as unknown as { addFileToProject?: (fileId: string) => void }).addFileToProject;
+      delete (
+        window as unknown as { addFileToProject?: (fileId: string) => void }
+      ).addFileToProject;
     };
   }, [handleAddFileToProject]);
 
@@ -93,43 +106,39 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
         <h3 className="font-semibold text-foreground">Projects</h3>
       </header>
-        <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
-          <ResizablePanel defaultSize={60} minSize={20}>
-            <div className="h-full overflow-y-auto">
-              <ProjectList
-                heapId={heapId}
-                selectedProjectId={selectedProject?.id || null}
-                onSelectProject={(project) => {
-                  // Only set if it's a real project (not pending)
-                  if (project && project.id !== null) {
-                    setSelectedProject(project);
-                  }
-                }}
-                onOpenProject={(project) => {
+      <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
+        <ResizablePanel defaultSize={60} minSize={20}>
+          <div className="h-full overflow-y-auto">
+            <ProjectList
+              heapId={heapId}
+              selectedProjectId={selectedProject?.id || null}
+              onSelectProject={(project) => {
+                // Only set if it's a real project (not pending)
+                if (project && project.id !== null) {
                   setSelectedProject(project);
-                }}
-              />
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={50} minSize={20}>
-        
-              <ProjectDetail 
-                heapId={heapId} 
-                project={selectedProject} 
-                onUpdatePendingProject={handleUpdatePendingProject}
-                onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
-                onProjectCreated={(project) => {
-                  setSelectedProject(project);
-                }}
-                onProjectUpdated={(project) => {
-                  setSelectedProject(project);
-                }}
-              />
-          </ResizablePanel>
-        </ResizablePanelGroup>
+                }
+              }}
+            />
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={50} minSize={20}>
+          <ProjectDetail
+            heapId={heapId}
+            project={selectedProject}
+            onUpdatePendingProject={handleUpdatePendingProject}
+            onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
+            onProjectCreated={(project) => {
+              setSelectedProject(project);
+            }}
+            onProjectUpdated={(project) => {
+              setSelectedProject(project);
+            }}
+          />
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
-        {/* <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
+      {/* <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
         <ResizablePanel defaultSize={60} minSize={10}>
           <div className="h-full overflow-y-auto">
             <FileExplorer

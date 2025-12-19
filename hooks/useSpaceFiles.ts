@@ -62,6 +62,24 @@ const SPACE_FOLDERS: FolderNode[] = [
         name: "Artifacts",
         path: "public/artifacts",
       },
+      {
+        name: "Summaries",
+        path: "public/summaries",
+        children: [
+          {
+            name: "Meetings",
+            path: "public/summaries/meetings",
+          },
+        ],
+      },
+      {
+        name: "Documents",
+        path: "public/documents",
+      },
+      {
+        name: "Notes",
+        path: "public/notes",
+      },
     ],
   },
 ];
@@ -96,38 +114,42 @@ function groupFilesByFolder(files: FileRow[]): Record<string, FileRow[]> {
       ? file.meta?.folders.filter((segment) => typeof segment === "string")
       : [];
 
+    const isPublic = file.visibility === "public";
+    const basePath = isPublic ? "public" : "local";
+
     let folderPath: string | null = null;
 
     if (folderSegments.length === 0) {
       // No folders specified, put in Staging
       folderPath = "staging";
     } else {
-      // Map folder segments to full path (prepending "local" for now since no Public flag yet)
+      // Map folder segments to full path (prepend "public" or "local" based on visibility)
       const normalizedSegments = folderSegments.map((s) =>
         s.toLowerCase().trim()
       );
-      // Check if it matches prescribed Local paths
+      
+      // Check if it matches prescribed paths
       if (
         normalizedSegments.length === 1 &&
         normalizedSegments[0] === "artifacts"
       ) {
-        folderPath = "local/artifacts";
+        folderPath = `${basePath}/artifacts`;
       } else if (
         normalizedSegments.length === 2 &&
         normalizedSegments[0] === "summaries" &&
         normalizedSegments[1] === "meetings"
       ) {
-        folderPath = "local/summaries/meetings";
+        folderPath = `${basePath}/summaries/meetings`;
       } else if (
         normalizedSegments.length === 1 &&
         normalizedSegments[0] === "documents"
       ) {
-        folderPath = "local/documents";
+        folderPath = `${basePath}/documents`;
       } else if (
         normalizedSegments.length === 1 &&
         normalizedSegments[0] === "notes"
       ) {
-        folderPath = "local/notes";
+        folderPath = `${basePath}/notes`;
       } else {
         // Doesn't match prescribed paths, put in Staging
         folderPath = "staging";
