@@ -118,7 +118,7 @@ export async function POST(request: Request, { params }: Params) {
       formData.set("file_folders", JSON.stringify(fileFolders));
     } else {
       // Default folders for markdown notes
-      formData.set("file_folders", JSON.stringify(["staging"]));
+      formData.set("file_folders", JSON.stringify(["notes"]));
     }
 
     const upstreamResponse = await fetch(UPLOAD_ENDPOINT, {

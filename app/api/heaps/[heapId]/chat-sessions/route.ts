@@ -11,6 +11,7 @@ export async function GET(_request: Request, { params }: Params) {
     .from("chat_sessions")
     .select("*")
     .eq("heap_id", heapId)
+    .or("archived.is.null,archived.eq.false")
     .order("created_at", { ascending: false });
   if (error)
     return NextResponse.json({ error: error.message }, { status: 400 });

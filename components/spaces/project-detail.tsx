@@ -9,6 +9,14 @@ import { ProjectFileList } from "@/components/spaces/project-file-list";
 import { createClient } from "@/lib/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -43,6 +51,7 @@ export function ProjectDetail({
   const [title, setTitle] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const updateProject = useProjectUpdate();
   const createProject = useCreateProject();
 
@@ -253,15 +262,73 @@ export function ProjectDetail({
     }
   };
 
+  const handleArchive = async () => {
+    if (!canEdit || !project || isPending) return;
+
+    try {
+      await updateProject.mutateAsync({
+        heapId,
+        sessionId: project.id,
+        archived: true,
+      });
+      setIsArchiveDialogOpen(false);
+      if (onClose) {
+        onClose();
+      }
+    } catch (error) {
+      console.error("Failed to archive project:", error);
+    }
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {onClose && (
-        <div className="flex justify-end mb-2">
-          <Button type="button" size="sm" variant="ghost" onClick={onClose}>
-            Close
-          </Button>
-        </div>
-      )}
+    <>
+      <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Archive Project</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to archive "{project?.title || "this project"}"? Archived projects will be hidden from the project list.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsArchiveDialogOpen(false)}
+              disabled={updateProject.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleArchive}
+              disabled={updateProject.isPending}
+            >
+              {updateProject.isPending ? "Archiving..." : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {onClose && (
+          <div className="flex justify-end mb-2 gap-2">
+            {canEdit && !isPending && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setIsArchiveDialogOpen(true)}
+              >
+                Archive
+              </Button>
+            )}
+            <Button type="button" size="sm" variant="ghost" onClick={onClose}>
+              Close
+            </Button>
+          </div>
+        )}
       <div className="space-y-2">
         <label className="text-sm font-medium text-foreground">Name</label>
         {isPending ? (
@@ -367,6 +434,7 @@ export function ProjectDetail({
           </Button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
