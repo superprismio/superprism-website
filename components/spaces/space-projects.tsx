@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/resizable";
 import { ProjectList } from "./project-list";
 import { ProjectDetail } from "./project-detail";
+import { KnowledgeExplorer } from "./knowledge-explorer";
+import { useProjectUpdate } from "@/hooks/useProjects";
 import type { Database } from "@/lib/types/supabase";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
@@ -24,6 +26,7 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
   const [selectedProject, setSelectedProject] = useState<
     ChatSession | PendingProject | null
   >(null);
+  const updateProject = useProjectUpdate();
 
   // Create or get pending project
   const getOrCreatePendingProject = useCallback((): PendingProject => {
@@ -38,22 +41,53 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
     };
   }, [selectedProject]);
 
-  // Handle adding file to pending project
+  // Handle adding file to project (existing or pending)
   const handleAddFileToProject = useCallback(
-    (fileId: string) => {
-      const pending = getOrCreatePendingProject();
-      if (!pending.meta.fileIds.includes(fileId)) {
-        const updatedPending: PendingProject = {
-          ...pending,
-          meta: {
-            ...pending.meta,
-            fileIds: [...pending.meta.fileIds, fileId],
-          },
+    async (fileId: string) => {
+      // If there's a selected real project (not pending), add to it
+      if (selectedProject && selectedProject.id !== null) {
+        const project = selectedProject as ChatSession;
+        const meta = (project.meta as Record<string, unknown>) || {};
+        const currentFileIds = (meta.fileIds || meta.file_ids || []) as string[];
+        
+        // Don't add if already in the list
+        if (currentFileIds.includes(fileId)) {
+          return;
+        }
+
+        // Update the project with the new fileId
+        const updatedFileIds = [...currentFileIds, fileId];
+        const updatedMeta = {
+          ...meta,
+          fileIds: updatedFileIds,
         };
-        setSelectedProject(updatedPending);
+
+        try {
+          const updatedProject = await updateProject.mutateAsync({
+            heapId,
+            sessionId: project.id,
+            meta: updatedMeta,
+          });
+          setSelectedProject(updatedProject);
+        } catch (error) {
+          console.error("Failed to add file to project:", error);
+        }
+      } else {
+        // No real project selected, create/update pending project
+        const pending = getOrCreatePendingProject();
+        if (!pending.meta.fileIds.includes(fileId)) {
+          const updatedPending: PendingProject = {
+            ...pending,
+            meta: {
+              ...pending.meta,
+              fileIds: [...pending.meta.fileIds, fileId],
+            },
+          };
+          setSelectedProject(updatedPending);
+        }
       }
     },
-    [getOrCreatePendingProject]
+    [selectedProject, getOrCreatePendingProject, heapId, updateProject]
   );
 
   // Handle updating pending project fileIds
@@ -87,6 +121,11 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
     [selectedProject]
   );
 
+  // Handle closing project detail
+  const handleCloseProject = useCallback(() => {
+    setSelectedProject(null);
+  }, []);
+
   // Expose handler to window for cross-pane communication
   useEffect(() => {
     (
@@ -99,8 +138,6 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
     };
   }, [handleAddFileToProject]);
 
-  console.log("projects");
-
   return (
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
@@ -109,50 +146,45 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
       <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
         <ResizablePanel defaultSize={60} minSize={20}>
           <div className="h-full overflow-y-auto">
-            <ProjectList
-              heapId={heapId}
-              selectedProjectId={selectedProject?.id || null}
-              onSelectProject={(project) => {
-                // Only set if it's a real project (not pending)
-                if (project && project.id !== null) {
+            {selectedProject ? (
+              <ProjectDetail
+                heapId={heapId}
+                project={selectedProject}
+                onUpdatePendingProject={handleUpdatePendingProject}
+                onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
+                onProjectCreated={(project) => {
                   setSelectedProject(project);
-                }
-              }}
-            />
+                }}
+                onProjectUpdated={(project) => {
+                  setSelectedProject(project);
+                }}
+                onClose={handleCloseProject}
+              />
+            ) : (
+              <ProjectList
+                heapId={heapId}
+                selectedProjectId={null}
+                onSelectProject={(project) => {
+                  // Only set if it's a real project (not pending)
+                  if (project && project.id !== null) {
+                    setSelectedProject(project);
+                  }
+                }}
+              />
+            )}
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50} minSize={20}>
-          <ProjectDetail
-            heapId={heapId}
-            project={selectedProject}
-            onUpdatePendingProject={handleUpdatePendingProject}
-            onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
-            onProjectCreated={(project) => {
-              setSelectedProject(project);
-            }}
-            onProjectUpdated={(project) => {
-              setSelectedProject(project);
-            }}
-          />
+          {selectedProject ? (
+            <KnowledgeExplorer heapId={heapId} useDialogForPreview={true} />
+          ) : (
+            <div className="p-4 text-sm text-muted-foreground">
+              Select a project to view details and add files
+            </div>
+          )}
         </ResizablePanel>
       </ResizablePanelGroup>
-
-      {/* <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
-        <ResizablePanel defaultSize={60} minSize={10}>
-          <div className="h-full overflow-y-auto">
-            <FileExplorer
-              heapId={heapId}
-              onPreviewFile={showPreview}
-              selectedFileId={previewFile?.id ?? null}
-            />
-          </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={40} minSize={10}>
-          {renderSecondaryContent()}
-        </ResizablePanel>
-      </ResizablePanelGroup> */}
     </>
   );
 }

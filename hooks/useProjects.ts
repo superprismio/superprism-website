@@ -82,12 +82,13 @@ export function useProjectUpdate() {
   return useMutation<
     ChatSession,
     Error,
-    { heapId: string; sessionId: string; title?: string; meta?: Record<string, unknown> }
+    { heapId: string; sessionId: string; title?: string; meta?: Record<string, unknown>; archived?: boolean }
   >({
-    mutationFn: async ({ heapId, sessionId, title, meta }) => {
+    mutationFn: async ({ heapId, sessionId, title, meta, archived }) => {
       const updates: Record<string, unknown> = {};
       if (title !== undefined) updates.title = title;
       if (meta !== undefined) updates.meta = meta;
+      if (archived !== undefined) updates.archived = archived;
 
       const response = await fetch(
         `/api/heaps/${heapId}/chat-sessions/${sessionId}`,

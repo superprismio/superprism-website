@@ -45,7 +45,11 @@ type SecondaryView =
   | "ingest-mcp"
   | "project";
 
-export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
+type KnowledgeExplorerProps = WorkspacePaneComponentProps & {
+  useDialogForPreview?: boolean;
+};
+
+export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: KnowledgeExplorerProps) {
   const queryClient = useQueryClient();
   const { deleteFile } = useSpaceFiles(heapId);
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
@@ -60,7 +64,9 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
 
   const showPreview = (file: FileRow) => {
     setPreviewFile(file);
-    setSecondaryView("preview");
+    if (!useDialogForPreview) {
+      setSecondaryView("preview");
+    }
   };
 
   const handleSelectView = (view: SecondaryView) => {
@@ -89,6 +95,13 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
   }, [pendingProject]);
 
   const handleAddFileToProject = useCallback((file: FileRow) => {
+    // If in projects workspace, use the window function
+    if (useDialogForPreview && (window as unknown as { addFileToProject?: (fileId: string) => void }).addFileToProject) {
+      (window as unknown as { addFileToProject: (fileId: string) => void }).addFileToProject(file.id);
+      return;
+    }
+    
+    // Otherwise, use the local pending project logic
     const pending = getOrCreatePendingProject();
     if (!pending.meta.fileIds.includes(file.id)) {
       const updatedPending: PendingProject = {
@@ -101,7 +114,7 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
       setPendingProject(updatedPending);
       setSecondaryView("project");
     }
-  }, [getOrCreatePendingProject]);
+  }, [getOrCreatePendingProject, useDialogForPreview]);
 
   const handleUpdatePendingProject = useCallback((fileIds: string[]) => {
     if (pendingProject) {
@@ -182,97 +195,128 @@ export function KnowledgeExplorer({ heapId }: WorkspacePaneComponentProps) {
   }, [deleteFile]);
 
   const renderSecondaryContent = () => {
-    switch (secondaryView) {
-      case "graph":
-        return <KnowledgeGraph heapId={heapId} />;
-      case "preview":
-        return (
+    const content = (() => {
+      switch (secondaryView) {
+        case "graph":
+          return <KnowledgeGraph heapId={heapId} />;
+        case "preview":
+          if (!useDialogForPreview) {
+            return (
+              <FilePreview 
+                file={previewFile} 
+                onClose={showGraph} 
+                heapId={heapId}
+                onEditFile={handleEditFile}
+                onToggleVisibility={handleToggleVisibility}
+                onDeleteFile={handleDeleteFile}
+                useDialog={useDialogForPreview}
+              />
+            );
+          }
+          return <KnowledgeGraph heapId={heapId} />;
+        case "project":
+          return (pendingProject || createdProject) ? (
+            <ProjectDetail
+              heapId={heapId}
+              project={createdProject || pendingProject}
+              onUpdatePendingProject={handleUpdatePendingProject}
+              onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
+              onProjectCreated={handleProjectCreated}
+              onProjectUpdated={handleProjectUpdated}
+              onClose={handleCloseProject}
+            />
+          ) : null;
+        case "text-editor":
+          return (
+            <TextEditor 
+              heapId={heapId} 
+              initialMarkdown={editorContent}
+              fileId={editorFileId}
+              initialFileName={editorFileName}
+            />
+          );
+        case "upload":
+          return <FileUpload heapId={heapId} />;
+        case "scrape-web":
+          return <PlaceholderPane title="Scrape Web" />;
+        case "import-drive":
+          return <PlaceholderPane title="Import from Drive" />;
+        case "ingest-api":
+          return <PlaceholderPane title="Ingest from API" />;
+        case "ingest-mcp":
+          return <PlaceholderPane title="Ingest from MCP" />;
+        default:
+          return null;
+      }
+    })();
+
+    // When in dialog mode and previewFile is set, render the dialog
+    if (useDialogForPreview && previewFile) {
+      return (
+        <>
+          {content}
           <FilePreview 
             file={previewFile} 
-            onClose={showGraph} 
+            onClose={() => {
+              setPreviewFile(null);
+              showGraph();
+            }} 
             heapId={heapId}
             onEditFile={handleEditFile}
             onToggleVisibility={handleToggleVisibility}
             onDeleteFile={handleDeleteFile}
+            useDialog={useDialogForPreview}
           />
-        );
-      case "project":
-        return (pendingProject || createdProject) ? (
-          <ProjectDetail
-            heapId={heapId}
-            project={createdProject || pendingProject}
-            onUpdatePendingProject={handleUpdatePendingProject}
-            onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
-            onProjectCreated={handleProjectCreated}
-            onProjectUpdated={handleProjectUpdated}
-            onClose={handleCloseProject}
-          />
-        ) : null;
-      case "text-editor":
-        return (
-          <TextEditor 
-            heapId={heapId} 
-            initialMarkdown={editorContent}
-            fileId={editorFileId}
-            initialFileName={editorFileName}
-          />
-        );
-      case "upload":
-        return <FileUpload heapId={heapId} />;
-      case "scrape-web":
-        return <PlaceholderPane title="Scrape Web" />;
-      case "import-drive":
-        return <PlaceholderPane title="Import from Drive" />;
-      case "ingest-api":
-        return <PlaceholderPane title="Ingest from API" />;
-      case "ingest-mcp":
-        return <PlaceholderPane title="Ingest from MCP" />;
-      default:
-        return null;
+        </>
+      );
     }
+
+    return content;
   };
 
   return (
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between items-center">
         <h3 className="font-semibold text-foreground">Knowledge Explorer</h3>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">Add Knowledge</Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 bg-background">
-            <DropdownMenuItem onSelect={() => handleSelectView("text-editor")}>
-              Text Editor
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => handleSelectView("upload")}>
-              Upload
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => handleSelectView("scrape-web")}
-              disabled={true}
-            >
-              Scrape Web
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => handleSelectView("import-drive")}
-              disabled={true}
-            >
-              Import from Drive
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => handleSelectView("ingest-api")}
-              disabled={true}
-            >
-              Ingest from API
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => handleSelectView("ingest-mcp")}
-              disabled={true}
-            >
-              Ingest from MCP
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {!useDialogForPreview && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">Add Knowledge</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-background">
+              <DropdownMenuItem onSelect={() => handleSelectView("text-editor")}>
+                Text Editor
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => handleSelectView("upload")}>
+                Upload
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => handleSelectView("scrape-web")}
+                disabled={true}
+              >
+                Scrape Web
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => handleSelectView("import-drive")}
+                disabled={true}
+              >
+                Import from Drive
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => handleSelectView("ingest-api")}
+                disabled={true}
+              >
+                Ingest from API
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => handleSelectView("ingest-mcp")}
+                disabled={true}
+              >
+                Ingest from MCP
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </header>
 
       <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
