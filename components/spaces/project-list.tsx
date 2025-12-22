@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useProjectList } from "@/hooks/useProjects";
+import { useChat } from "@/hooks/useChat";
 import type { Database } from "@/lib/types/supabase";
 import { cn } from "@/lib/utils";
 import { Folder, FolderOpen } from "lucide-react";
@@ -166,6 +167,8 @@ function ProjectListContent({
   onSelectProject,
   emptyMessage,
 }: ProjectListContentProps) {
+  const { setActiveChatSession } = useChat();
+
   if (projects.length === 0) {
     return (
       <div className="text-sm text-muted-foreground p-10">{emptyMessage}</div>
@@ -181,7 +184,10 @@ function ProjectListContent({
             <div className="flex items-center justify-between gap-2">
               <button
                 type="button"
-                onClick={() => onSelectProject(project)}
+                onClick={() => {
+                  onSelectProject(project);
+                  setActiveChatSession(project);
+                }}
                 className={cn(
                   "flex-1 text-left text-md font-medium hover:bg-muted transition px-2 py-1 rounded",
                   isSelected && "bg-muted"
@@ -210,6 +216,7 @@ export function ProjectList({
     isError,
     error,
   } = useProjectList(heapId);
+  const { setActiveChatSession } = useChat();
   const [mode, setMode] = useState<"explore" | "search">("explore");
   const [activeFolder, setActiveFolder] = useState<FolderType | null>(null);
   const [search, setSearch] = useState("");
@@ -224,6 +231,13 @@ export function ProjectList({
       }
     }
   }, [activeFolder, projectFolders]);
+
+  // Clear active chat session when no project is selected
+  useEffect(() => {
+    if (selectedProjectId === null) {
+      setActiveChatSession(null);
+    }
+  }, [selectedProjectId, setActiveChatSession]);
 
   const activeProjects = useMemo(() => {
     if (!projectFolders) return [];

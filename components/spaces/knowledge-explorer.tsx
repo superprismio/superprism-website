@@ -23,6 +23,7 @@ import { FilePreview } from "./file-preview";
 import { FileRow } from "./types";
 import { ProjectDetail } from "./project-detail";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
+import { useChat } from "@/hooks/useChat";
 import type { Database } from "@/lib/types/supabase";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
@@ -52,6 +53,7 @@ type KnowledgeExplorerProps = WorkspacePaneComponentProps & {
 export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: KnowledgeExplorerProps) {
   const queryClient = useQueryClient();
   const { deleteFile } = useSpaceFiles(heapId);
+  const { setActiveChatSession } = useChat();
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
   const [pendingProject, setPendingProject] = useState<PendingProject | null>(null);
@@ -112,9 +114,10 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
         },
       };
       setPendingProject(updatedPending);
+      setActiveChatSession(updatedPending);
       setSecondaryView("project");
     }
-  }, [getOrCreatePendingProject, useDialogForPreview]);
+  }, [getOrCreatePendingProject, useDialogForPreview, setActiveChatSession]);
 
   const handleUpdatePendingProject = useCallback((fileIds: string[]) => {
     if (pendingProject) {
@@ -126,8 +129,9 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
         },
       };
       setPendingProject(updatedPending);
+      setActiveChatSession(updatedPending);
     }
-  }, [pendingProject]);
+  }, [pendingProject, setActiveChatSession]);
 
   const handleUpdatePendingProjectTitle = useCallback((title: string) => {
     if (pendingProject) {
@@ -136,24 +140,28 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
         title,
       };
       setPendingProject(updatedPending);
+      setActiveChatSession(updatedPending);
     }
-  }, [pendingProject]);
+  }, [pendingProject, setActiveChatSession]);
 
   const handleProjectCreated = useCallback((project: ChatSession) => {
     setPendingProject(null);
     setCreatedProject(project);
+    setActiveChatSession(project);
     // Keep the project view open
-  }, []);
+  }, [setActiveChatSession]);
 
   const handleProjectUpdated = useCallback((project: ChatSession) => {
     setCreatedProject(project);
-  }, []);
+    setActiveChatSession(project);
+  }, [setActiveChatSession]);
 
   const handleCloseProject = useCallback(() => {
     setCreatedProject(null);
     setPendingProject(null);
+    setActiveChatSession(null);
     setSecondaryView("graph");
-  }, []);
+  }, [setActiveChatSession]);
 
   const handleEditFile = useCallback((file: FileRow, content: string) => {
     setEditorContent(content);

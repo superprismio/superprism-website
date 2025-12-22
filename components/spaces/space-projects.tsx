@@ -11,6 +11,7 @@ import { ProjectList } from "./project-list";
 import { ProjectDetail } from "./project-detail";
 import { KnowledgeExplorer } from "./knowledge-explorer";
 import { useProjectUpdate } from "@/hooks/useProjects";
+import { useChat } from "@/hooks/useChat";
 import type { Database } from "@/lib/types/supabase";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
@@ -27,6 +28,7 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
     ChatSession | PendingProject | null
   >(null);
   const updateProject = useProjectUpdate();
+  const { setActiveChatSession } = useChat();
 
   // Create or get pending project
   const getOrCreatePendingProject = useCallback((): PendingProject => {
@@ -124,7 +126,13 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
   // Handle closing project detail
   const handleCloseProject = useCallback(() => {
     setSelectedProject(null);
-  }, []);
+    setActiveChatSession(null);
+  }, [setActiveChatSession]);
+
+  // Update active chat session when selected project changes
+  useEffect(() => {
+    setActiveChatSession(selectedProject);
+  }, [selectedProject, setActiveChatSession]);
 
   // Expose handler to window for cross-pane communication
   useEffect(() => {
@@ -154,9 +162,11 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
                 onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
                 onProjectCreated={(project) => {
                   setSelectedProject(project);
+                  setActiveChatSession(project);
                 }}
                 onProjectUpdated={(project) => {
                   setSelectedProject(project);
+                  setActiveChatSession(project);
                 }}
                 onClose={handleCloseProject}
               />
@@ -168,6 +178,7 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
                   // Only set if it's a real project (not pending)
                   if (project && project.id !== null) {
                     setSelectedProject(project);
+                    setActiveChatSession(project);
                   }
                 }}
               />
