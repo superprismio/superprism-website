@@ -30,10 +30,10 @@ export async function POST(request: Request, { params }: Params) {
   const { user } = authResult;
   const serviceClient = await createServiceRoleClient();
 
-  let finalSessionId = sessionId;
+  let finalSessionId = sessionId || undefined;
 
-  // For space chat (isProject: false), create a session on first message if no sessionId provided
-  if (!finalSessionId && isProject === false) {
+  // For space chat (not a project), create a session on first message if no sessionId provided
+  if (!finalSessionId && !isProject) {
     const { data: newSession, error: sessionError } = await serviceClient
       .from("chat_sessions")
       .insert({
@@ -53,7 +53,7 @@ export async function POST(request: Request, { params }: Params) {
     finalSessionId = newSession.id;
   }
 
-  // If still no sessionId, it's an error
+  // If still no sessionId, it's an error (project chats require an existing session)
   if (!finalSessionId) {
     return NextResponse.json(
       { error: "sessionId is required for project chats" },
