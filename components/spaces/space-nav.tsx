@@ -22,6 +22,12 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Button } from "../ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 
 type SpaceNavItem = {
   key: WorkspacePaneKey;
@@ -77,47 +83,67 @@ export function SpaceNav({
 }: SpaceNavProps) {
   return (
     <nav className="flex h-full flex-col border-r p-2">
-      <div className="flex flex-1 flex-col items-center justify-between">
-        <ul className="flex flex-row items-center justify-between gap-1 md:flex-col md:items-stretch">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              item.key === activePrimary || item.key === activeSecondary;
+      <div className="flex w-full flex-1 flex-row items-start justify-between md:flex-col md:items-center md:justify-between">
+        <TooltipProvider delayDuration={200}>
+          <ul className="flex flex-1 flex-row items-start justify-between gap-1 md:flex-initial md:flex-col md:items-stretch">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive =
+                item.key === activePrimary || item.key === activeSecondary;
 
-            return (
-              <li key={item.key} className="flex flex-1 md:flex-initial">
-                <button
-                  type="button"
-                  onClick={() => onSelect(item.key)}
-                  className={cn(
-                    "flex w-full flex-col items-center justify-center rounded-md px-2 py-3 text-xs font-medium transition-colors md:px-3 md:py-4",
-                    isActive
-                      ? "text-foreground"
-                      : "text-primary hover:text-foreground",
-                    item.key === "spaceFeed" ? "mb-8" : "",
-                    item.key === "spaceSettings" ? "mt-8" : ""
-                  )}
-                  aria-pressed={isActive}
-                >
-                  <Icon className="h-5 w-5" aria-hidden="true" />
-                  {item.badge ? (
-                    <span className="mt-2 rounded-[4px] inline-flex items-center bg-primary px-2 py-[2px] text-[10px] font-semibold text-background md:mt-3">
-                      {item.badge}
-                    </span>
-                  ) : null}
-                </button>
-              </li>
-            );
-          })}
-          <div className="flex justify-center mt-10">
+              return (
+                <li key={item.key} className="flex flex-1 md:flex-initial">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => onSelect(item.key)}
+                        className={cn(
+                          "flex w-full flex-col items-center justify-center rounded-md px-2 py-3 text-xs font-medium transition-colors md:px-3 md:py-4",
+                          isActive
+                            ? "text-foreground"
+                            : "text-primary hover:text-foreground",
+                          item.key === "spaceFeed" ? "md:mb-8" : "",
+                          item.key === "spaceSettings" ? "md:mt-8" : ""
+                        )}
+                        aria-pressed={isActive}
+                        aria-label={item.label}
+                      >
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                        <span className="mt-2 text-[11px] text-foreground md:hidden">
+                          {item.label}
+                        </span>
+                        {item.badge ? (
+                          <span className="mt-2 rounded-[4px] inline-flex items-center bg-primary px-2 py-[2px] text-[10px] font-semibold text-background md:mt-3">
+                            {item.badge}
+                          </span>
+                        ) : null}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="right"
+                      className="hidden md:block border-border bg-background text-foreground"
+                    >
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="ml-2 flex justify-center md:ml-0 md:mt-10">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   aria-label="Open account menu"
                   size="icon"
                   variant="ghost"
+                  className="h-auto w-auto flex-col px-2 py-3 md:h-9 md:w-9 md:px-0 md:py-0"
                 >
                   <CircleUserRound />
+                  <span className="mt-2 text-[11px] text-foreground md:hidden">
+                    Profile
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-background">
@@ -131,7 +157,7 @@ export function SpaceNav({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </ul>
+        </TooltipProvider>
       </div>
     </nav>
   );
