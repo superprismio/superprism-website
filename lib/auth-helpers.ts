@@ -115,3 +115,332 @@ export async function requireHeapMember(
 
   return authResult;
 }
+
+/**
+ * Verifies that a user is authenticated AND is an owner of the specified heap.
+ * Returns the user object if authorized, or an error response if not.
+ *
+ * @param supabase - The Supabase client instance
+ * @param heapId - The heap ID to check ownership for
+ * @param errorMessage - Optional custom error message (default: "You must be an owner of this heap")
+ * @returns Either { success: true, user, supabase } or { success: false, response }
+ *
+ * @example
+ * ```typescript
+ * const supabase = await createClient();
+ * const { heapId } = await params;
+ *
+ * const authResult = await requireHeapOwner(supabase, heapId);
+ *
+ * if (!authResult.success) {
+ *   return authResult.response;
+ * }
+ *
+ * const { user } = authResult;
+ * // User is authenticated and is a heap owner, continue with route logic
+ * ```
+ */
+export async function requireHeapOwner(
+  supabase: SupabaseClient,
+  heapId: string,
+  errorMessage?: string
+): Promise<AuthResult> {
+  // First check authentication
+  const authResult = await requireAuth(supabase);
+  if (!authResult.success) {
+    return authResult;
+  }
+
+  // Check if user has owner role in this heap
+  const { data: membership, error: memberError } = await supabase
+    .from("memberships")
+    .select("role")
+    .eq("heap_id", heapId)
+    .eq("user_id", authResult.user.id)
+    .maybeSingle();
+
+  if (memberError || !membership || membership.role !== "owner") {
+    return {
+      success: false,
+      response: NextResponse.json(
+        {
+          error:
+            errorMessage ||
+            "You must be an owner of this heap to perform this action",
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return authResult;
+}
+
+/**
+ * Verifies that a user is authenticated AND is an admin (or owner) of the specified heap.
+ * Returns the user object if authorized, or an error response if not.
+ *
+ * @param supabase - The Supabase client instance
+ * @param heapId - The heap ID to check admin status for
+ * @param errorMessage - Optional custom error message (default: "You must be an admin of this heap")
+ * @returns Either { success: true, user, supabase } or { success: false, response }
+ *
+ * @example
+ * ```typescript
+ * const supabase = await createClient();
+ * const { heapId } = await params;
+ *
+ * const authResult = await requireHeapAdmin(supabase, heapId);
+ *
+ * if (!authResult.success) {
+ *   return authResult.response;
+ * }
+ *
+ * const { user } = authResult;
+ * // User is authenticated and is a heap admin, continue with route logic
+ * ```
+ */
+export async function requireHeapAdmin(
+  supabase: SupabaseClient,
+  heapId: string,
+  errorMessage?: string
+): Promise<AuthResult> {
+  // First check authentication
+  const authResult = await requireAuth(supabase);
+  if (!authResult.success) {
+    return authResult;
+  }
+
+  // Check if user has admin or owner role in this heap
+  const { data: membership, error: memberError } = await supabase
+    .from("memberships")
+    .select("role")
+    .eq("heap_id", heapId)
+    .eq("user_id", authResult.user.id)
+    .maybeSingle();
+
+  if (
+    memberError ||
+    !membership ||
+    (membership.role !== "admin" && membership.role !== "owner")
+  ) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        {
+          error:
+            errorMessage ||
+            "You must be an admin of this heap to perform this action",
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return authResult;
+}
+
+/**
+ * Verifies that a user is authenticated AND is the creator of the specified file.
+ * Returns the user object if authorized, or an error response if not.
+ *
+ * @param supabase - The Supabase client instance
+ * @param heapId - The heap ID the file belongs to
+ * @param fileId - The file ID to check ownership for
+ * @param errorMessage - Optional custom error message (default: "You must be the file creator")
+ * @returns Either { success: true, user, supabase } or { success: false, response }
+ *
+ * @example
+ * ```typescript
+ * const supabase = await createClient();
+ * const { heapId, fileId } = await params;
+ *
+ * const authResult = await isFileCreator(supabase, heapId, fileId);
+ *
+ * if (!authResult.success) {
+ *   return authResult.response;
+ * }
+ *
+ * const { user } = authResult;
+ * // User is authenticated and is the file creator, continue with route logic
+ * ```
+ */
+export async function isFileCreator(
+  supabase: SupabaseClient,
+  heapId: string,
+  fileId: string,
+  errorMessage?: string
+): Promise<AuthResult> {
+  // First check authentication
+  const authResult = await requireAuth(supabase);
+  if (!authResult.success) {
+    return authResult;
+  }
+
+  // Fetch the file to check uploader_id
+  const { data: file, error: fileError } = await supabase
+    .from("files")
+    .select("uploader_id")
+    .eq("id", fileId)
+    .eq("heap_id", heapId)
+    .maybeSingle();
+
+  if (fileError || !file) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "File not found" },
+        { status: 404 }
+      ),
+    };
+  }
+
+  if (file.uploader_id !== authResult.user.id) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        {
+          error:
+            errorMessage || "You must be the file creator to perform this action",
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return authResult;
+}
+
+/**
+ * Verifies that a user is authenticated AND is the creator of the specified project (chat session).
+ * Returns the user object if authorized, or an error response if not.
+ *
+ * @param supabase - The Supabase client instance
+ * @param heapId - The heap ID the project belongs to
+ * @param sessionId - The chat session ID to check ownership for
+ * @param errorMessage - Optional custom error message (default: "You must be the project creator")
+ * @returns Either { success: true, user, supabase } or { success: false, response }
+ *
+ * @example
+ * ```typescript
+ * const supabase = await createClient();
+ * const { heapId, sessionId } = await params;
+ *
+ * const authResult = await isProjectCreator(supabase, heapId, sessionId);
+ *
+ * if (!authResult.success) {
+ *   return authResult.response;
+ * }
+ *
+ * const { user } = authResult;
+ * // User is authenticated and is the project creator, continue with route logic
+ * ```
+ */
+export async function isProjectCreator(
+  supabase: SupabaseClient,
+  heapId: string,
+  sessionId: string,
+  errorMessage?: string
+): Promise<AuthResult> {
+  // First check authentication
+  const authResult = await requireAuth(supabase);
+  if (!authResult.success) {
+    return authResult;
+  }
+
+  // Fetch the chat session to check created_by
+  const { data: session, error: sessionError } = await supabase
+    .from("chat_sessions")
+    .select("created_by")
+    .eq("id", sessionId)
+    .eq("heap_id", heapId)
+    .maybeSingle();
+
+  if (sessionError || !session) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: "Project not found" },
+        { status: 404 }
+      ),
+    };
+  }
+
+  if (session.created_by !== authResult.user.id) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        {
+          error:
+            errorMessage ||
+            "You must be the project creator to perform this action",
+        },
+        { status: 403 }
+      ),
+    };
+  }
+
+  return authResult;
+}
+
+// ============================================================================
+// Client-side helper functions
+// These functions are for use in frontend components and assume IDs are
+// already available (no database queries needed).
+// ============================================================================
+
+/**
+ * Checks if a user is the creator of a file (client-side).
+ * This is a simple ID comparison and does not query the database.
+ *
+ * @param userId - The current user's ID
+ * @param fileUploaderId - The uploader_id from the file record
+ * @returns true if the user is the file creator, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const file = await fetchFile(fileId);
+ * const { data: { user } } = await supabase.auth.getUser();
+ *
+ * if (isFileCreatorClient(user?.id, file.uploader_id)) {
+ *   // Show edit/delete buttons
+ * }
+ * ```
+ */
+export function isFileCreatorClient(
+  userId: string | null | undefined,
+  fileUploaderId: string | null | undefined
+): boolean {
+  if (!userId || !fileUploaderId) {
+    return false;
+  }
+  return userId === fileUploaderId;
+}
+
+/**
+ * Checks if a user is the creator of a project/chat session (client-side).
+ * This is a simple ID comparison and does not query the database.
+ *
+ * @param userId - The current user's ID
+ * @param projectCreatedBy - The created_by from the chat_session record
+ * @returns true if the user is the project creator, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const project = await fetchProject(projectId);
+ * const { data: { user } } = await supabase.auth.getUser();
+ *
+ * if (isProjectCreatorClient(user?.id, project.created_by)) {
+ *   // Show project settings/delete buttons
+ * }
+ * ```
+ */
+export function isProjectCreatorClient(
+  userId: string | null | undefined,
+  projectCreatedBy: string | null | undefined
+): boolean {
+  if (!userId || !projectCreatedBy) {
+    return false;
+  }
+  return userId === projectCreatedBy;
+}
