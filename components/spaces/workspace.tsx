@@ -2,6 +2,7 @@
 
 import { ComponentType, ReactNode, useCallback, useState } from "react";
 import { useHeap } from "../../hooks/spaces";
+import { ChatProvider } from "../../hooks/useChat";
 import { SpaceNav } from "./space-nav";
 import { PaneOne } from "./pane-one";
 import { PaneTwo } from "./pane-two";
@@ -135,60 +136,62 @@ export function Workspace({
     : null;
 
   return (
-    <div>
-      <div
-        className={`flex flex-col min-h-[calc(100vh)] md:grid ${layoutColumns}`}
-        role="region"
-        aria-label="Workspace layout"
-      >
-        <SpaceNav
-          activePrimary={primaryPane}
-          activeSecondary={secondaryPane}
-          onSelect={handleSelectPrimary}
-        />
-        {SecondaryComponent ? (
-          <ResizablePanelGroup
-            direction="horizontal"
-            className="flex min-h-[320px] flex-col"
-          >
-            <ResizablePanel
-              defaultSize={60}
-              minSize={10}
-              className="min-w-[280px]"
+    <ChatProvider>
+      <div>
+        <div
+          className={`flex flex-col min-h-[calc(100vh)] md:grid ${layoutColumns}`}
+          role="region"
+          aria-label="Workspace layout"
+        >
+          <SpaceNav
+            activePrimary={primaryPane}
+            activeSecondary={secondaryPane}
+            onSelect={handleSelectPrimary}
+          />
+          {SecondaryComponent ? (
+            <ResizablePanelGroup
+              direction="horizontal"
+              className="flex min-h-[320px] flex-col"
             >
+              <ResizablePanel
+                defaultSize={60}
+                minSize={10}
+                className="min-w-[280px]"
+              >
+                <PaneOne title={primaryDefinition.label}>
+                  <PrimaryComponent
+                    onOpenPaneTwo={handleOpenSecondary}
+                    heapId={spaceId}
+                  />
+                </PaneOne>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel
+                defaultSize={40}
+                minSize={10}
+                className="min-w-[240px]"
+              >
+                <PaneTwo title={secondaryDefinition?.label}>
+                  <SecondaryComponent
+                    onOpenPaneTwo={handleOpenSecondary}
+                    heapId={spaceId}
+                  />
+                </PaneTwo>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          ) : (
+            <>
               <PaneOne title={primaryDefinition.label}>
                 <PrimaryComponent
                   onOpenPaneTwo={handleOpenSecondary}
                   heapId={spaceId}
                 />
               </PaneOne>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel
-              defaultSize={40}
-              minSize={10}
-              className="min-w-[240px]"
-            >
-              <PaneTwo title={secondaryDefinition?.label}>
-                <SecondaryComponent
-                  onOpenPaneTwo={handleOpenSecondary}
-                  heapId={spaceId}
-                />
-              </PaneTwo>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : (
-          <>
-            <PaneOne title={primaryDefinition.label}>
-              <PrimaryComponent
-                onOpenPaneTwo={handleOpenSecondary}
-                heapId={spaceId}
-              />
-            </PaneOne>
-            <PaneTwo title={secondaryDefinition?.label} />
-          </>
-        )}
+              <PaneTwo title={secondaryDefinition?.label} />
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </ChatProvider>
   );
 }
