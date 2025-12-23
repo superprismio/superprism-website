@@ -4,7 +4,8 @@ import { requireHeapMember } from "@/lib/auth-helpers";
 
 type Params = { params: Promise<{ heapId: string }> };
 
-const webhookUrl = "https://n8n-workflows-production-d083.up.railway.app/webhook/chat";
+const webhookUrl =
+  "https://n8n-workflows-production-d083.up.railway.app/webhook/chat";
 
 export async function POST(request: Request, { params }: Params) {
   const { heapId } = await params;
@@ -12,7 +13,10 @@ export async function POST(request: Request, { params }: Params) {
   const { chatInput, sessionId, isProject } = body ?? {};
 
   if (!chatInput || typeof chatInput !== "string") {
-    return NextResponse.json({ error: "chatInput is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "chatInput is required" },
+      { status: 400 }
+    );
   }
 
   const supabase = await createClient();
@@ -41,13 +45,16 @@ export async function POST(request: Request, { params }: Params) {
         heap_id: heapId,
         title: "Space Chat",
         created_by: user.id,
-        meta: { isProject: false, fileIds: [] },
+        meta: { isProject: false, file_id: [] },
       })
       .select("*")
       .single();
 
     if (sessionError) {
-      return NextResponse.json({ error: sessionError.message }, { status: 400 });
+      return NextResponse.json(
+        { error: sessionError.message },
+        { status: 400 }
+      );
     }
 
     finalSessionId = newSession.id;
@@ -74,7 +81,10 @@ export async function POST(request: Request, { params }: Params) {
     });
 
   if (userMessageError) {
-    return NextResponse.json({ error: userMessageError.message }, { status: 400 });
+    return NextResponse.json(
+      { error: userMessageError.message },
+      { status: 400 }
+    );
   }
 
   // Call n8n webhook
@@ -128,10 +138,11 @@ export async function POST(request: Request, { params }: Params) {
     });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to call webhook" },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to call webhook",
+      },
       { status: 500 }
     );
   }
 }
-
-

@@ -43,6 +43,13 @@ export async function POST(request: Request, { params }: Params) {
 
   const serviceClient = await createServiceRoleClient();
 
+  const filters =
+    meta?.file_id.length > 0
+      ? {
+          in: { file_id: meta.file_id },
+        }
+      : null;
+
   const { data, error } = await serviceClient
     .from("chat_sessions")
     .insert({
@@ -50,7 +57,8 @@ export async function POST(request: Request, { params }: Params) {
       heap_id: heapId,
       title,
       created_by: user.id,
-      meta: meta ?? { isProject: true, fileIds: [], artifactIds: [] },
+      meta: meta ?? { isProject: true, file_id: [] },
+      filters,
     })
     .select("*")
     .single();

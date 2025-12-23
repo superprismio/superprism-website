@@ -9,8 +9,6 @@ import {
   FileText,
   FileImage,
   FileSpreadsheet,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { useQueryClient } from "@tanstack/react-query";
@@ -94,7 +92,6 @@ function FileList({
   onPreview,
   isStaging = false,
   onMoveToFolder,
-  currentUserId,
 }: FileListProps) {
   const [movingFileId, setMovingFileId] = useState<string | null>(null);
 
@@ -506,34 +503,6 @@ export function FileExplorer({
       });
     } catch (error) {
       console.error("Failed to move file:", error);
-      throw error;
-    }
-  };
-
-  const handleToggleVisibility = async (
-    fileId: string,
-    visibility: "public" | "private"
-  ) => {
-    try {
-      const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ visibility }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? "Failed to update file visibility");
-      }
-
-      // Invalidate and refetch files
-      await queryClient.invalidateQueries({
-        queryKey: ["space-files", heapId],
-      });
-    } catch (error) {
-      console.error("Failed to toggle file visibility:", error);
       throw error;
     }
   };

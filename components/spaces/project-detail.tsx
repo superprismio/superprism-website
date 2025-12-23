@@ -23,7 +23,7 @@ type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 type PendingProject = {
   id: null;
   title: string;
-  meta: { isProject: true; fileIds: string[] };
+  meta: { isProject: true; file_id: string[] };
   created_at: null;
 };
 
@@ -57,13 +57,17 @@ export function ProjectDetail({
 
   const isPending = project !== null && project.id === null;
   const isRealProject = project !== null && project.id !== null;
-  const projectCreatorId = isRealProject ? (project as ChatSession).created_by : null;
+  const projectCreatorId = isRealProject
+    ? (project as ChatSession).created_by
+    : null;
 
   // Get current user ID
   useEffect(() => {
     const getCurrentUser = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setCurrentUserId(user?.id ?? null);
     };
     void getCurrentUser();
@@ -87,7 +91,7 @@ export function ProjectDetail({
         .select("*")
         .eq("user_id", projectCreatorId)
         .maybeSingle();
-      
+
       if (error) {
         console.error("Failed to fetch creator profile:", error);
         return null;
@@ -114,28 +118,16 @@ export function ProjectDetail({
       return [];
     }
     const meta = project.meta as Record<string, unknown>;
-    const ids = meta.fileIds || meta.file_ids;
+
+    console.log("meta", meta);
+    const ids = meta.file_id || [];
     if (Array.isArray(ids)) {
       return ids.filter((id): id is string => typeof id === "string");
     }
     return [];
   }, [project?.meta]);
 
-  const artifactIds = useMemo(() => {
-    if (
-      !project?.meta ||
-      typeof project.meta !== "object" ||
-      Array.isArray(project.meta)
-    ) {
-      return [];
-    }
-    const meta = project.meta as Record<string, unknown>;
-    const ids = meta.artifactIds || meta.artifact_ids;
-    if (Array.isArray(ids)) {
-      return ids.filter((id): id is string => typeof id === "string");
-    }
-    return [];
-  }, [project?.meta]);
+  console.log("fileIds", fileIds);
 
   if (!project) {
     return (
@@ -207,7 +199,7 @@ export function ProjectDetail({
 
   const handleRemoveFile = async (fileId: string) => {
     if (!canEdit) return;
-    
+
     if (isPending && onUpdatePendingProject) {
       const updatedFileIds = fileIds.filter((id) => id !== fileId);
       onUpdatePendingProject(updatedFileIds);
@@ -229,35 +221,6 @@ export function ProjectDetail({
         }
       } catch (error) {
         console.error("Failed to remove file:", error);
-      }
-    }
-  };
-
-  const handleRemoveArtifact = async (artifactId: string) => {
-    if (!canEdit) return;
-    
-    if (isPending && onUpdatePendingProject) {
-      // For pending projects, we'd need a separate handler for artifacts
-      // For now, we'll only support removing artifacts from created projects
-      return;
-    } else if (project && !isPending) {
-      // Update existing project's artifactIds
-      const updatedArtifactIds = artifactIds.filter((id) => id !== artifactId);
-      const updatedMeta = {
-        ...(project.meta as Record<string, unknown>),
-        artifactIds: updatedArtifactIds,
-      };
-      try {
-        const updatedProject = await updateProject.mutateAsync({
-          heapId,
-          sessionId: project.id,
-          meta: updatedMeta,
-        });
-        if (onProjectUpdated) {
-          onProjectUpdated(updatedProject);
-        }
-      } catch (error) {
-        console.error("Failed to remove artifact:", error);
       }
     }
   };
@@ -287,7 +250,9 @@ export function ProjectDetail({
           <DialogHeader>
             <DialogTitle>Archive Project</DialogTitle>
             <DialogDescription>
-              Are you sure you want to archive "{project?.title || "this project"}"? Archived projects will be hidden from the project list.
+              Are you sure you want to archive &quot;
+              {project?.title || "this project"}&quot;? Archived projects will
+              be hidden from the project list.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -329,111 +294,109 @@ export function ProjectDetail({
             </Button>
           </div>
         )}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">Name</label>
-        {isPending ? (
-          <Input
-            value={title}
-            onChange={(e) => {
-              const newTitle = e.target.value;
-              setTitle(newTitle);
-              if (onUpdatePendingProjectTitle) {
-                onUpdatePendingProjectTitle(newTitle);
-              }
-            }}
-            placeholder="New Project"
-          />
-        ) : isEditing ? (
-          <div className="space-y-2">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Name</label>
+          {isPending ? (
             <Input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  void handleSave();
-                } else if (e.key === "Escape") {
-                  handleCancel();
+              onChange={(e) => {
+                const newTitle = e.target.value;
+                setTitle(newTitle);
+                if (onUpdatePendingProjectTitle) {
+                  onUpdatePendingProjectTitle(newTitle);
                 }
               }}
-              disabled={updateProject.isPending}
-              autoFocus
+              placeholder="New Project"
             />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={handleSave}
+          ) : isEditing ? (
+            <div className="space-y-2">
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    void handleSave();
+                  } else if (e.key === "Escape") {
+                    handleCancel();
+                  }
+                }}
                 disabled={updateProject.isPending}
-              >
-                {updateProject.isPending ? "Saving..." : "Save"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={updateProject.isPending}
-              >
-                Cancel
-              </Button>
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={updateProject.isPending}
+                >
+                  {updateProject.isPending ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={updateProject.isPending}
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div
-            className={cn(
-              "px-3 py-2 border border-transparent rounded-md min-h-[36px] flex items-center",
-              canEdit && "hover:border-border cursor-text"
-            )}
-            onClick={() => canEdit && setIsEditing(true)}
-          >
-            {title || project.title || "Untitled Project"}
+          ) : (
+            <div
+              className={cn(
+                "px-3 py-2 border border-transparent rounded-md min-h-[36px] flex items-center",
+                canEdit && "hover:border-border cursor-text"
+              )}
+              onClick={() => canEdit && setIsEditing(true)}
+            >
+              {title || project.title || "Untitled Project"}
+            </div>
+          )}
+        </div>
+
+        {!isPending && (
+          <>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Created
+              </label>
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                {formatDate(project.created_at)}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Created by
+              </label>
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                {creatorProfile?.name ||
+                  creatorProfile?.user_id ||
+                  projectCreatorId ||
+                  "Unknown"}
+              </div>
+            </div>
+          </>
+        )}
+
+        {(fileIds.length > 0 || isPending) && (
+          <ProjectFileList
+            heapId={heapId}
+            fileIds={fileIds}
+            onRemoveFile={canEdit ? handleRemoveFile : undefined}
+          />
+        )}
+
+        {isPending && (
+          <div className="flex gap-2 pt-4">
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={createProject.isPending}
+            >
+              {createProject.isPending ? "Creating..." : "Create Project"}
+            </Button>
           </div>
         )}
-      </div>
-
-      {!isPending && (
-        <>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Created</label>
-            <div className="px-3 py-2 text-sm text-muted-foreground">
-              {formatDate(project.created_at)}
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Created by</label>
-            <div className="px-3 py-2 text-sm text-muted-foreground">
-              {creatorProfile?.name || creatorProfile?.user_id || projectCreatorId || "Unknown"}
-            </div>
-          </div>
-        </>
-      )}
-
-      {(fileIds.length > 0 || isPending) && (
-        <ProjectFileList
-          heapId={heapId}
-          fileIds={fileIds}
-          onRemoveFile={canEdit ? handleRemoveFile : undefined}
-        />
-      )}
-
-      {artifactIds.length > 0 && (
-        <ProjectFileList
-          heapId={heapId}
-          fileIds={artifactIds}
-          onRemoveFile={canEdit ? handleRemoveArtifact : undefined}
-          label="Artifacts"
-        />
-      )}
-
-      {isPending && (
-        <div className="flex gap-2 pt-4">
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={createProject.isPending}
-          >
-            {createProject.isPending ? "Creating..." : "Create Project"}
-          </Button>
-        </div>
-      )}
       </div>
     </>
   );

@@ -9,7 +9,7 @@ type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 type PendingProject = {
   id: null;
   title: string;
-  meta: { isProject: true; fileIds: string[] };
+  meta: { isProject: true; file_id: string[] };
   created_at: null;
 };
 
@@ -25,7 +25,8 @@ type ChatContextType = {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const [activeChatSession, setActiveChatSession] = useState<ActiveChatSession>(null);
+  const [activeChatSession, setActiveChatSession] =
+    useState<ActiveChatSession>(null);
 
   const isProject = (() => {
     if (activeChatSession === null) return false;
@@ -34,13 +35,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Check ChatSession meta for isProject flag
     return Boolean(
       activeChatSession.meta &&
-      typeof activeChatSession.meta === "object" &&
-      !Array.isArray(activeChatSession.meta) &&
-      (activeChatSession.meta as Record<string, unknown>).isProject === true
+        typeof activeChatSession.meta === "object" &&
+        !Array.isArray(activeChatSession.meta) &&
+        (activeChatSession.meta as Record<string, unknown>).isProject === true
     );
   })();
 
-  const isPresaved = activeChatSession !== null && activeChatSession.id === null;
+  const isPresaved =
+    activeChatSession !== null && activeChatSession.id === null;
 
   return (
     <ChatContext.Provider
@@ -75,9 +77,10 @@ export function useChatMessages(heapId: string | null) {
   const { activeChatSession } = useChat();
 
   // Only fetch messages if we have an active session with an ID (not pending)
-  const sessionId = activeChatSession && activeChatSession.id !== null 
-    ? activeChatSession.id 
-    : null;
+  const sessionId =
+    activeChatSession && activeChatSession.id !== null
+      ? activeChatSession.id
+      : null;
 
   return useQuery<ChatMessage[], Error>({
     queryKey: ["chat-messages", heapId, sessionId],
@@ -117,9 +120,10 @@ export function useSendChatMessage(heapId: string | null) {
   const { activeChatSession, setActiveChatSession, isProject } = useChat();
   const queryClient = useQueryClient();
 
-  const sessionId = activeChatSession && activeChatSession.id !== null 
-    ? activeChatSession.id 
-    : null;
+  const sessionId =
+    activeChatSession && activeChatSession.id !== null
+      ? activeChatSession.id
+      : null;
 
   return useMutation<SendMessageResponse, Error, SendMessageParams>({
     mutationFn: async ({ chatInput }) => {
@@ -147,7 +151,7 @@ export function useSendChatMessage(heapId: string | null) {
         throw new Error(data.error);
       }
 
-      console.log('data', data);
+      console.log("data", data);
 
       return data.data!;
     },
@@ -179,4 +183,3 @@ export function useSendChatMessage(heapId: string | null) {
     },
   });
 }
-
