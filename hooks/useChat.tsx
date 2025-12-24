@@ -4,13 +4,16 @@ import { createContext, useContext, useState, ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/lib/types/supabase";
 
-type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
+type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"] & {
+  filters?: Record<string, unknown>;
+};
 
 type PendingProject = {
   id: null;
   title: string;
-  meta: { isProject: true; fileIds: string[] };
+  meta: { isProject: true; file_id: string[] };
   created_at: null;
+  filters?: Record<string, unknown>;
 };
 
 type ActiveChatSession = ChatSession | PendingProject | null;
@@ -25,7 +28,8 @@ type ChatContextType = {
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const [activeChatSession, setActiveChatSession] = useState<ActiveChatSession>(null);
+  const [activeChatSession, setActiveChatSession] =
+    useState<ActiveChatSession>(null);
 
   const isProject = (() => {
     if (activeChatSession === null) return false;
@@ -34,13 +38,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // Check ChatSession meta for isProject flag
     return Boolean(
       activeChatSession.meta &&
-      typeof activeChatSession.meta === "object" &&
-      !Array.isArray(activeChatSession.meta) &&
-      (activeChatSession.meta as Record<string, unknown>).isProject === true
+        typeof activeChatSession.meta === "object" &&
+        !Array.isArray(activeChatSession.meta) &&
+        (activeChatSession.meta as Record<string, unknown>).isProject === true
     );
   })();
 
-  const isPresaved = activeChatSession !== null && activeChatSession.id === null;
+  const isPresaved =
+    activeChatSession !== null && activeChatSession.id === null;
 
   return (
     <ChatContext.Provider
@@ -64,7 +69,17 @@ export function useChat() {
   return context;
 }
 
-type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
+type N8nChatHistory = Database["public"]["Tables"]["n8n_chat_histories"]["Row"];
+
+type N8nMessage = {
+  type: "human" | "ai" | "assistant";
+  content: string;
+};
+
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
 
 type ApiResponse<T> = {
   data?: T;
@@ -75,9 +90,10 @@ export function useChatMessages(heapId: string | null) {
   const { activeChatSession } = useChat();
 
   // Only fetch messages if we have an active session with an ID (not pending)
-  const sessionId = activeChatSession && activeChatSession.id !== null 
-    ? activeChatSession.id 
-    : null;
+  const sessionId =
+    activeChatSession && activeChatSession.id !== null
+      ? activeChatSession.id
+      : null;
 
   return useQuery<ChatMessage[], Error>({
     queryKey: ["chat-messages", heapId, sessionId],
@@ -96,8 +112,23 @@ export function useChatMessages(heapId: string | null) {
         throw new Error(error.error || "Failed to load messages");
       }
 
-      const json = (await response.json()) as ApiResponse<ChatMessage[]>;
-      return json.data || [];
+      const json = (await response.json()) as ApiResponse<N8nChatHistory[]>;
+      const histories = json.data || [];
+      
+      // Transform n8n chat history format to ChatMessage format
+      return histories
+        .map((history) => {
+          const message = history.message as N8nMessage;
+          if (!message || typeof message !== "object" || !message.type || !message.content) {
+            return null;
+          }
+          
+          return {
+            role: message.type === "human" ? "user" : "assistant",
+            content: message.content,
+          } as ChatMessage;
+        })
+        .filter((msg): msg is ChatMessage => msg !== null);
     },
     enabled: Boolean(heapId && sessionId),
     staleTime: 30_000, // 30 seconds
@@ -117,9 +148,10 @@ export function useSendChatMessage(heapId: string | null) {
   const { activeChatSession, setActiveChatSession, isProject } = useChat();
   const queryClient = useQueryClient();
 
-  const sessionId = activeChatSession && activeChatSession.id !== null 
-    ? activeChatSession.id 
-    : null;
+  const sessionId =
+    activeChatSession && activeChatSession.id !== null
+      ? activeChatSession.id
+      : null;
 
   return useMutation<SendMessageResponse, Error, SendMessageParams>({
     mutationFn: async ({ chatInput }) => {
@@ -127,14 +159,31 @@ export function useSendChatMessage(heapId: string | null) {
         throw new Error("heapId is required");
       }
 
+      const requestBody: Record<string, unknown> = {
+        chatInput,
+        sessionId,
+        isProject,
+      };
+
+      // Include meta and filter from activeChatSession if available
+      if (activeChatSession?.meta !== undefined) {
+        requestBody.meta = activeChatSession.meta;
+      }
+
+      // Check for filter or filters field (database uses filters, but API accepts filter)
+      const sessionFilter = activeChatSession?.filters;
+      if (sessionFilter !== undefined) {
+        requestBody.filter = sessionFilter;
+      }
+
+      console.log("activeChatSession", activeChatSession);  
+      console.log("requestBody", requestBody);        
+
+
       const response = await fetch(`/api/heaps/${heapId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chatInput,
-          sessionId,
-          isProject,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -147,7 +196,7 @@ export function useSendChatMessage(heapId: string | null) {
         throw new Error(data.error);
       }
 
-      console.log('data', data);
+      console.log("data", data);
 
       return data.data!;
     },
@@ -179,4 +228,3 @@ export function useSendChatMessage(heapId: string | null) {
     },
   });
 }
-

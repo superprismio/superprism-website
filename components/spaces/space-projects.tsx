@@ -19,7 +19,7 @@ type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 type PendingProject = {
   id: null;
   title: string;
-  meta: { isProject: true; fileIds: string[] };
+  meta: { isProject: true; file_id: string[] };
   created_at: null;
 };
 
@@ -38,7 +38,7 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
     return {
       id: null,
       title: "New Project",
-      meta: { isProject: true, fileIds: [] },
+      meta: { isProject: true, file_id: [] },
       created_at: null,
     };
   }, [selectedProject]);
@@ -50,8 +50,8 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
       if (selectedProject && selectedProject.id !== null) {
         const project = selectedProject as ChatSession;
         const meta = (project.meta as Record<string, unknown>) || {};
-        const currentFileIds = (meta.fileIds || meta.file_ids || []) as string[];
-        
+        const currentFileIds = (meta.file_id || []) as string[];
+
         // Don't add if already in the list
         if (currentFileIds.includes(fileId)) {
           return;
@@ -61,7 +61,7 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
         const updatedFileIds = [...currentFileIds, fileId];
         const updatedMeta = {
           ...meta,
-          fileIds: updatedFileIds,
+          file_id: updatedFileIds,
         };
 
         try {
@@ -77,12 +77,12 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
       } else {
         // No real project selected, create/update pending project
         const pending = getOrCreatePendingProject();
-        if (!pending.meta.fileIds.includes(fileId)) {
+        if (!pending.meta.file_id.includes(fileId)) {
           const updatedPending: PendingProject = {
             ...pending,
             meta: {
               ...pending.meta,
-              fileIds: [...pending.meta.fileIds, fileId],
+              file_id: [...pending.meta.file_id, fileId],
             },
           };
           setSelectedProject(updatedPending);
@@ -100,7 +100,7 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
           ...(selectedProject as PendingProject),
           meta: {
             ...(selectedProject as PendingProject).meta,
-            fileIds,
+            file_id: fileIds,
           },
         };
         setSelectedProject(updatedPending);
@@ -153,37 +153,55 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
       </header>
       <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
         <ResizablePanel defaultSize={60} minSize={20}>
-          <div className="h-full overflow-y-auto">
-            {selectedProject ? (
-              <ProjectDetail
-                heapId={heapId}
-                project={selectedProject}
-                onUpdatePendingProject={handleUpdatePendingProject}
-                onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
-                onProjectCreated={(project) => {
-                  setSelectedProject(project);
-                  setActiveChatSession(project);
-                }}
-                onProjectUpdated={(project) => {
-                  setSelectedProject(project);
-                  setActiveChatSession(project);
-                }}
-                onClose={handleCloseProject}
-              />
-            ) : (
-              <ProjectList
-                heapId={heapId}
-                selectedProjectId={null}
-                onSelectProject={(project) => {
-                  // Only set if it's a real project (not pending)
-                  if (project && project.id !== null) {
-                    setSelectedProject(project);
-                    setActiveChatSession(project);
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <div className="h-full overflow-hidden">
+                <ProjectList
+                  heapId={heapId}
+                  selectedProjectId={
+                    selectedProject && selectedProject.id !== null
+                      ? selectedProject.id
+                      : null
                   }
-                }}
-              />
-            )}
-          </div>
+                  onSelectProject={(project) => {
+                    // Only set if it's a real project (not pending)
+                    if (project && project.id !== null) {
+                      setSelectedProject(project);
+                      setActiveChatSession(project);
+                    }
+                  }}
+                />
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <div className="h-full overflow-hidden border-l">
+                {selectedProject ? (
+                  <ProjectDetail
+                    heapId={heapId}
+                    project={selectedProject}
+                    onUpdatePendingProject={handleUpdatePendingProject}
+                    onUpdatePendingProjectTitle={
+                      handleUpdatePendingProjectTitle
+                    }
+                    onProjectCreated={(project) => {
+                      setSelectedProject(project);
+                      setActiveChatSession(project);
+                    }}
+                    onProjectUpdated={(project) => {
+                      setSelectedProject(project);
+                      setActiveChatSession(project);
+                    }}
+                    onClose={handleCloseProject}
+                  />
+                ) : (
+                  <div className="p-4 text-sm text-muted-foreground h-full flex items-center justify-center">
+                    Select a project to view details
+                  </div>
+                )}
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50} minSize={20}>

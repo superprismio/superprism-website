@@ -31,7 +31,7 @@ type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 type PendingProject = {
   id: null;
   title: string;
-  meta: { isProject: true; fileIds: string[] };
+  meta: { isProject: true; file_id: string[] };
   created_at: null;
 };
 
@@ -50,17 +50,28 @@ type KnowledgeExplorerProps = WorkspacePaneComponentProps & {
   useDialogForPreview?: boolean;
 };
 
-export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: KnowledgeExplorerProps) {
+export function KnowledgeExplorer({
+  heapId,
+  useDialogForPreview = false,
+}: KnowledgeExplorerProps) {
   const queryClient = useQueryClient();
   const { deleteFile } = useSpaceFiles(heapId);
   const { setActiveChatSession } = useChat();
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
-  const [pendingProject, setPendingProject] = useState<PendingProject | null>(null);
-  const [createdProject, setCreatedProject] = useState<ChatSession | null>(null);
+  const [pendingProject, setPendingProject] = useState<PendingProject | null>(
+    null
+  );
+  const [createdProject, setCreatedProject] = useState<ChatSession | null>(
+    null
+  );
   const [editorContent, setEditorContent] = useState<string>("");
-  const [editorFileId, setEditorFileId] = useState<string | undefined>(undefined);
-  const [editorFileName, setEditorFileName] = useState<string | undefined>(undefined);
+  const [editorFileId, setEditorFileId] = useState<string | undefined>(
+    undefined
+  );
+  const [editorFileName, setEditorFileName] = useState<string | undefined>(
+    undefined
+  );
 
   const showGraph = () => setSecondaryView("graph");
 
@@ -91,70 +102,91 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
     return {
       id: null,
       title: "New Project",
-      meta: { isProject: true, fileIds: [] },
+      meta: { isProject: true, file_id: [] },
       created_at: null,
     };
   }, [pendingProject]);
 
-  const handleAddFileToProject = useCallback((file: FileRow) => {
-    // If in projects workspace, use the window function
-    if (useDialogForPreview && (window as unknown as { addFileToProject?: (fileId: string) => void }).addFileToProject) {
-      (window as unknown as { addFileToProject: (fileId: string) => void }).addFileToProject(file.id);
-      return;
-    }
-    
-    // Otherwise, use the local pending project logic
-    const pending = getOrCreatePendingProject();
-    if (!pending.meta.fileIds.includes(file.id)) {
-      const updatedPending: PendingProject = {
-        ...pending,
-        meta: {
-          ...pending.meta,
-          fileIds: [...pending.meta.fileIds, file.id],
-        },
-      };
-      setPendingProject(updatedPending);
-      setActiveChatSession(updatedPending);
-      setSecondaryView("project");
-    }
-  }, [getOrCreatePendingProject, useDialogForPreview, setActiveChatSession]);
+  const handleAddFileToProject = useCallback(
+    (file: FileRow) => {
+      // If in projects workspace, use the window function
+      if (
+        useDialogForPreview &&
+        (window as unknown as { addFileToProject?: (fileId: string) => void })
+          .addFileToProject
+      ) {
+        (
+          window as unknown as { addFileToProject: (fileId: string) => void }
+        ).addFileToProject(file.id);
+        return;
+      }
 
-  const handleUpdatePendingProject = useCallback((fileIds: string[]) => {
-    if (pendingProject) {
-      const updatedPending: PendingProject = {
-        ...pendingProject,
-        meta: {
-          ...pendingProject.meta,
-          fileIds,
-        },
-      };
-      setPendingProject(updatedPending);
-      setActiveChatSession(updatedPending);
-    }
-  }, [pendingProject, setActiveChatSession]);
+      // Otherwise, use the local pending project logic
+      const pending = getOrCreatePendingProject();
+      if (!pending.meta.file_id.includes(file.id)) {
+        const updatedPending: PendingProject = {
+          ...pending,
+          meta: {
+            ...pending.meta,
+            file_id: [...pending.meta.file_id, file.id],
+          },
+        };
+        setPendingProject(updatedPending);
+        setActiveChatSession(updatedPending);
+        setSecondaryView("project");
+      }
+    },
+    [getOrCreatePendingProject, useDialogForPreview, setActiveChatSession]
+  );
 
-  const handleUpdatePendingProjectTitle = useCallback((title: string) => {
-    if (pendingProject) {
-      const updatedPending: PendingProject = {
-        ...pendingProject,
-        title,
-      };
-      setPendingProject(updatedPending);
-      setActiveChatSession(updatedPending);
-    }
-  }, [pendingProject, setActiveChatSession]);
+  const handleUpdatePendingProject = useCallback(
+    (fileIds: string[]) => {
+      if (pendingProject) {
+        const updatedPending: PendingProject = {
+          ...pendingProject,
+          meta: {
+            ...pendingProject.meta,
+            file_id: fileIds,
+          },
+        };
+        setPendingProject(updatedPending);
+        setActiveChatSession(updatedPending);
+      }
+    },
+    [pendingProject, setActiveChatSession]
+  );
 
-  const handleProjectCreated = useCallback((project: ChatSession) => {
-    setPendingProject(null);
-    setCreatedProject(project);
-    setActiveChatSession(project);
-    // Keep the project view open
-  }, [setActiveChatSession]);
+  const handleUpdatePendingProjectTitle = useCallback(
+    (title: string) => {
+      if (pendingProject) {
+        const updatedPending: PendingProject = {
+          ...pendingProject,
+          title,
+        };
+        setPendingProject(updatedPending);
+        setActiveChatSession(updatedPending);
+      }
+    },
+    [pendingProject, setActiveChatSession]
+  );
 
-  const handleProjectUpdated = useCallback((project: ChatSession) => {
-    setCreatedProject(project);
-    setActiveChatSession(project);
-  }, [setActiveChatSession]);
+  const handleProjectCreated = useCallback(
+    (project: ChatSession) => {
+      setPendingProject(null);
+      setCreatedProject(project);
+      setActiveChatSession(project);
+      // Keep the project view open
+    },
+    [setActiveChatSession]
+  );
+
+  const handleProjectUpdated = useCallback(
+    (project: ChatSession) => {
+      setCreatedProject(project);
+      setActiveChatSession(project);
+    },
+    [setActiveChatSession]
+  );
 
   const handleCloseProject = useCallback(() => {
     setCreatedProject(null);
@@ -170,37 +202,42 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
     setSecondaryView("text-editor");
   }, []);
 
-  const handleToggleVisibility = useCallback(async (
-    fileId: string,
-    visibility: "public" | "private"
-  ) => {
-    try {
-      const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ visibility }),
-      });
+  const handleToggleVisibility = useCallback(
+    async (fileId: string, visibility: "public" | "private") => {
+      try {
+        const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ visibility }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? "Failed to update file visibility");
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error ?? "Failed to update file visibility"
+          );
+        }
+
+        // Invalidate and refetch files
+        await queryClient.invalidateQueries({
+          queryKey: ["space-files", heapId],
+        });
+      } catch (error) {
+        console.error("Failed to toggle file visibility:", error);
+        throw error;
       }
+    },
+    [heapId, queryClient]
+  );
 
-      // Invalidate and refetch files
-      await queryClient.invalidateQueries({
-        queryKey: ["space-files", heapId],
-      });
-    } catch (error) {
-      console.error("Failed to toggle file visibility:", error);
-      throw error;
-    }
-  }, [heapId, queryClient]);
-
-  const handleDeleteFile = useCallback(async (fileId: string) => {
-    await deleteFile(fileId);
-  }, [deleteFile]);
+  const handleDeleteFile = useCallback(
+    async (fileId: string) => {
+      await deleteFile(fileId);
+    },
+    [deleteFile]
+  );
 
   const renderSecondaryContent = () => {
     const content = (() => {
@@ -210,9 +247,9 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
         case "preview":
           if (!useDialogForPreview) {
             return (
-              <FilePreview 
-                file={previewFile} 
-                onClose={showGraph} 
+              <FilePreview
+                file={previewFile}
+                onClose={showGraph}
                 heapId={heapId}
                 onEditFile={handleEditFile}
                 onToggleVisibility={handleToggleVisibility}
@@ -223,7 +260,7 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
           }
           return <KnowledgeGraph heapId={heapId} />;
         case "project":
-          return (pendingProject || createdProject) ? (
+          return pendingProject || createdProject ? (
             <ProjectDetail
               heapId={heapId}
               project={createdProject || pendingProject}
@@ -236,8 +273,8 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
           ) : null;
         case "text-editor":
           return (
-            <TextEditor 
-              heapId={heapId} 
+            <TextEditor
+              heapId={heapId}
               initialMarkdown={editorContent}
               fileId={editorFileId}
               initialFileName={editorFileName}
@@ -263,12 +300,12 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
       return (
         <>
           {content}
-          <FilePreview 
-            file={previewFile} 
+          <FilePreview
+            file={previewFile}
             onClose={() => {
               setPreviewFile(null);
               showGraph();
-            }} 
+            }}
             heapId={heapId}
             onEditFile={handleEditFile}
             onToggleVisibility={handleToggleVisibility}
@@ -285,14 +322,20 @@ export function KnowledgeExplorer({ heapId, useDialogForPreview = false }: Knowl
   return (
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between items-center">
-        <h3 className="font-semibold text-foreground">Knowledge Explorer</h3>
+        <h3 className="font-semibold text-foreground">
+          {useDialogForPreview
+            ? `Add Knowledge to Project`
+            : `Knowledge Explorer`}
+        </h3>
         {!useDialogForPreview && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">Add Knowledge</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-background">
-              <DropdownMenuItem onSelect={() => handleSelectView("text-editor")}>
+              <DropdownMenuItem
+                onSelect={() => handleSelectView("text-editor")}
+              >
                 Text Editor
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => handleSelectView("upload")}>

@@ -11,7 +11,15 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const updates: Record<string, unknown> = {};
   if (title !== undefined) updates.title = title;
-  if (meta !== undefined) updates.meta = meta;
+  if (meta !== undefined) {
+    updates.meta = meta;
+    updates.filters =
+      meta?.file_id.length > 0
+        ? {
+            in: { file_id: meta.file_id },
+          }
+        : null;
+  }
   if (archived !== undefined) updates.archived = archived;
 
   if (Object.keys(updates).length === 0) {
@@ -43,8 +51,7 @@ export async function PATCH(request: Request, { params }: Params) {
     .select("*")
     .single();
 
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ data });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ data });
 }
-

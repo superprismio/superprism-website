@@ -1,7 +1,8 @@
 declare module "react-resizable-panels" {
   import * as React from "react";
 
-  export interface PanelGroupProps extends React.HTMLAttributes<HTMLDivElement> {
+  export interface PanelGroupProps
+    extends React.HTMLAttributes<HTMLDivElement> {
     direction?: "horizontal" | "vertical";
   }
 
@@ -29,4 +30,3 @@ declare module "react-resizable-panels" {
     PanelResizeHandleProps & React.RefAttributes<HTMLDivElement>
   >;
 }
-

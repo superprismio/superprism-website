@@ -132,6 +132,123 @@ export type Database = {
           }
         ];
       };
+      data_rows: {
+        Row: {
+          created_at: string | null;
+          created_by: string | null;
+          data: Json;
+          deleted_at: string | null;
+          file_id: string | null;
+          heap_id: string;
+          id: string;
+          row_number: number | null;
+          schema_id: string;
+          source_record_id: string | null;
+          source_type: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          created_by?: string | null;
+          data: Json;
+          deleted_at?: string | null;
+          file_id?: string | null;
+          heap_id: string;
+          id?: string;
+          row_number?: number | null;
+          schema_id: string;
+          source_record_id?: string | null;
+          source_type?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          created_by?: string | null;
+          data?: Json;
+          deleted_at?: string | null;
+          file_id?: string | null;
+          heap_id?: string;
+          id?: string;
+          row_number?: number | null;
+          schema_id?: string;
+          source_record_id?: string | null;
+          source_type?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "data_rows_file_id_fkey";
+            columns: ["file_id"];
+            isOneToOne: false;
+            referencedRelation: "files";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "data_rows_heap_id_fkey";
+            columns: ["heap_id"];
+            isOneToOne: false;
+            referencedRelation: "heaps";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "data_rows_schema_id_fkey";
+            columns: ["schema_id"];
+            isOneToOne: false;
+            referencedRelation: "data_schemas";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      data_schemas: {
+        Row: {
+          created_at: string | null;
+          created_by: string | null;
+          definition: Json;
+          description: string | null;
+          heap_id: string | null;
+          id: string;
+          is_system: boolean | null;
+          name: string;
+          slug: string;
+          updated_at: string | null;
+          version: number;
+        };
+        Insert: {
+          created_at?: string | null;
+          created_by?: string | null;
+          definition?: Json;
+          description?: string | null;
+          heap_id?: string | null;
+          id?: string;
+          is_system?: boolean | null;
+          name: string;
+          slug: string;
+          updated_at?: string | null;
+          version?: number;
+        };
+        Update: {
+          created_at?: string | null;
+          created_by?: string | null;
+          definition?: Json;
+          description?: string | null;
+          heap_id?: string | null;
+          id?: string;
+          is_system?: boolean | null;
+          name?: string;
+          slug?: string;
+          updated_at?: string | null;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "data_schemas_heap_id_fkey";
+            columns: ["heap_id"];
+            isOneToOne: false;
+            referencedRelation: "heaps";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       document_rows: {
         Row: {
           created_at: string | null;
@@ -397,6 +514,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "heap_api_keys_heap_id_fkey";
+            columns: ["heap_id"];
+            isOneToOne: false;
+            referencedRelation: "heaps";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      heap_tools: {
+        Row: {
+          created_at: string | null;
+          created_by: string | null;
+          description: string | null;
+          heap_id: string;
+          id: string;
+          name: string;
+          payload_schema: string | null;
+          tool_id: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          created_by?: string | null;
+          description?: string | null;
+          heap_id: string;
+          id?: string;
+          name: string;
+          payload_schema?: string | null;
+          tool_id: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          created_by?: string | null;
+          description?: string | null;
+          heap_id?: string;
+          id?: string;
+          name?: string;
+          payload_schema?: string | null;
+          tool_id?: string;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "heap_tools_heap_id_fkey";
             columns: ["heap_id"];
             isOneToOne: false;
             referencedRelation: "heaps";
@@ -705,6 +866,24 @@ export type Database = {
             referencedColumns: ["id"];
           }
         ];
+      };
+      n8n_chat_histories: {
+        Row: {
+          id: number;
+          message: Json;
+          session_id: string;
+        };
+        Insert: {
+          id?: number;
+          message: Json;
+          session_id: string;
+        };
+        Update: {
+          id?: number;
+          message?: Json;
+          session_id?: string;
+        };
+        Relationships: [];
       };
       user_profile_projects: {
         Row: {

@@ -23,7 +23,9 @@ export function useProjectList(heapId: string | null) {
   useEffect(() => {
     const getUserId = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setUserId(user?.id ?? null);
     };
     void getUserId();
@@ -82,7 +84,13 @@ export function useProjectUpdate() {
   return useMutation<
     ChatSession,
     Error,
-    { heapId: string; sessionId: string; title?: string; meta?: Record<string, unknown>; archived?: boolean }
+    {
+      heapId: string;
+      sessionId: string;
+      title?: string;
+      meta?: Record<string, unknown>;
+      archived?: boolean;
+    }
   >({
     mutationFn: async ({ heapId, sessionId, title, meta, archived }) => {
       const updates: Record<string, unknown> = {};
@@ -140,7 +148,7 @@ export function useCreateProject() {
           title,
           meta: {
             isProject: true,
-            fileIds,
+            file_id: fileIds,
           },
         }),
       });
@@ -165,4 +173,3 @@ export function useCreateProject() {
     },
   });
 }
-
