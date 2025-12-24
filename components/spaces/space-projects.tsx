@@ -153,37 +153,55 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
       </header>
       <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
         <ResizablePanel defaultSize={60} minSize={20}>
-          <div className="h-full overflow-y-auto">
-            {selectedProject ? (
-              <ProjectDetail
-                heapId={heapId}
-                project={selectedProject}
-                onUpdatePendingProject={handleUpdatePendingProject}
-                onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
-                onProjectCreated={(project) => {
-                  setSelectedProject(project);
-                  setActiveChatSession(project);
-                }}
-                onProjectUpdated={(project) => {
-                  setSelectedProject(project);
-                  setActiveChatSession(project);
-                }}
-                onClose={handleCloseProject}
-              />
-            ) : (
-              <ProjectList
-                heapId={heapId}
-                selectedProjectId={null}
-                onSelectProject={(project) => {
-                  // Only set if it's a real project (not pending)
-                  if (project && project.id !== null) {
-                    setSelectedProject(project);
-                    setActiveChatSession(project);
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <div className="h-full overflow-hidden">
+                <ProjectList
+                  heapId={heapId}
+                  selectedProjectId={
+                    selectedProject && selectedProject.id !== null
+                      ? selectedProject.id
+                      : null
                   }
-                }}
-              />
-            )}
-          </div>
+                  onSelectProject={(project) => {
+                    // Only set if it's a real project (not pending)
+                    if (project && project.id !== null) {
+                      setSelectedProject(project);
+                      setActiveChatSession(project);
+                    }
+                  }}
+                />
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <div className="h-full overflow-hidden border-l">
+                {selectedProject ? (
+                  <ProjectDetail
+                    heapId={heapId}
+                    project={selectedProject}
+                    onUpdatePendingProject={handleUpdatePendingProject}
+                    onUpdatePendingProjectTitle={
+                      handleUpdatePendingProjectTitle
+                    }
+                    onProjectCreated={(project) => {
+                      setSelectedProject(project);
+                      setActiveChatSession(project);
+                    }}
+                    onProjectUpdated={(project) => {
+                      setSelectedProject(project);
+                      setActiveChatSession(project);
+                    }}
+                    onClose={handleCloseProject}
+                  />
+                ) : (
+                  <div className="p-4 text-sm text-muted-foreground h-full flex items-center justify-center">
+                    Select a project to view details
+                  </div>
+                )}
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50} minSize={20}>

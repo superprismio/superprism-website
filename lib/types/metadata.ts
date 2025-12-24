@@ -16,11 +16,29 @@ export type FileMeta = {
   tags_raw?: string[];
   folders?: string[];
   table_of_contents?: TableOfContentsEntry[];
+  row_schema?: TabularColumnSchema[] | null;
   source_url?: string | null;
   source_path?: string | null;
   source_sha?: string | null;
   extracted_storage_path?: string | null;
   extracted_file_hash?: string | null;
+  [key: string]: unknown;
+};
+
+export type TabularColumnSchema = {
+  key: string;
+  label?: string | null;
+  data_type?:
+    | "string"
+    | "number"
+    | "boolean"
+    | "date"
+    | "timestamp"
+    | "json"
+    | string;
+  nullable?: boolean;
+  description?: string | null;
+  sample_value?: string | number | boolean | null;
   [key: string]: unknown;
 };
 

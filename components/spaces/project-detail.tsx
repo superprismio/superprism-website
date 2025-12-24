@@ -202,13 +202,14 @@ export function ProjectDetail({
 
     if (isPending && onUpdatePendingProject) {
       const updatedFileIds = fileIds.filter((id) => id !== fileId);
+
       onUpdatePendingProject(updatedFileIds);
     } else if (project && !isPending) {
       // Update existing project's fileIds
       const updatedFileIds = fileIds.filter((id) => id !== fileId);
       const updatedMeta = {
         ...(project.meta as Record<string, unknown>),
-        fileIds: updatedFileIds,
+        file_id: updatedFileIds,
       };
       try {
         const updatedProject = await updateProject.mutateAsync({
@@ -276,9 +277,9 @@ export function ProjectDetail({
         </DialogContent>
       </Dialog>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {onClose && (
-          <div className="flex justify-end mb-2 gap-2">
+          <div className="flex justify-end mb-1 gap-2">
             {canEdit && !isPending && (
               <Button
                 type="button"
@@ -294,8 +295,8 @@ export function ProjectDetail({
             </Button>
           </div>
         )}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">Name</label>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">Name</label>
           {isPending ? (
             <Input
               value={title}
@@ -307,9 +308,10 @@ export function ProjectDetail({
                 }
               }}
               placeholder="New Project"
+              className="h-8 text-sm"
             />
           ) : isEditing ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -322,12 +324,14 @@ export function ProjectDetail({
                 }}
                 disabled={updateProject.isPending}
                 autoFocus
+                className="h-8 text-sm"
               />
               <div className="flex gap-2">
                 <Button
                   size="sm"
                   onClick={handleSave}
                   disabled={updateProject.isPending}
+                  className="h-7 text-xs"
                 >
                   {updateProject.isPending ? "Saving..." : "Save"}
                 </Button>
@@ -336,6 +340,7 @@ export function ProjectDetail({
                   variant="outline"
                   onClick={handleCancel}
                   disabled={updateProject.isPending}
+                  className="h-7 text-xs"
                 >
                   Cancel
                 </Button>
@@ -344,7 +349,7 @@ export function ProjectDetail({
           ) : (
             <div
               className={cn(
-                "px-3 py-2 border border-transparent rounded-md min-h-[36px] flex items-center",
+                "px-2 py-1.5 border border-transparent rounded-md min-h-[32px] flex items-center text-sm",
                 canEdit && "hover:border-border cursor-text"
               )}
               onClick={() => canEdit && setIsEditing(true)}
@@ -356,19 +361,19 @@ export function ProjectDetail({
 
         {!isPending && (
           <>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">
                 Created
               </label>
-              <div className="px-3 py-2 text-sm text-muted-foreground">
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">
                 {formatDate(project.created_at)}
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-foreground">
                 Created by
               </label>
-              <div className="px-3 py-2 text-sm text-muted-foreground">
+              <div className="px-2 py-1.5 text-xs text-muted-foreground">
                 {creatorProfile?.name ||
                   creatorProfile?.user_id ||
                   projectCreatorId ||
@@ -387,11 +392,12 @@ export function ProjectDetail({
         )}
 
         {isPending && (
-          <div className="flex gap-2 pt-4">
+          <div className="flex gap-2 pt-2">
             <Button
               size="sm"
               onClick={handleSave}
               disabled={createProject.isPending}
+              className="h-7 text-xs"
             >
               {createProject.isPending ? "Creating..." : "Create Project"}
             </Button>

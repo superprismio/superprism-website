@@ -4,13 +4,16 @@ import { createContext, useContext, useState, ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Database } from "@/lib/types/supabase";
 
-type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
+type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"] & {
+  filters?: Record<string, unknown>;
+};
 
 type PendingProject = {
   id: null;
   title: string;
   meta: { isProject: true; file_id: string[] };
   created_at: null;
+  filters?: Record<string, unknown>;
 };
 
 type ActiveChatSession = ChatSession | PendingProject | null;
@@ -66,7 +69,17 @@ export function useChat() {
   return context;
 }
 
-type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
+type N8nChatHistory = Database["public"]["Tables"]["n8n_chat_histories"]["Row"];
+
+type N8nMessage = {
+  type: "human" | "ai" | "assistant";
+  content: string;
+};
+
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
 
 type ApiResponse<T> = {
   data?: T;
@@ -99,8 +112,23 @@ export function useChatMessages(heapId: string | null) {
         throw new Error(error.error || "Failed to load messages");
       }
 
-      const json = (await response.json()) as ApiResponse<ChatMessage[]>;
-      return json.data || [];
+      const json = (await response.json()) as ApiResponse<N8nChatHistory[]>;
+      const histories = json.data || [];
+      
+      // Transform n8n chat history format to ChatMessage format
+      return histories
+        .map((history) => {
+          const message = history.message as N8nMessage;
+          if (!message || typeof message !== "object" || !message.type || !message.content) {
+            return null;
+          }
+          
+          return {
+            role: message.type === "human" ? "user" : "assistant",
+            content: message.content,
+          } as ChatMessage;
+        })
+        .filter((msg): msg is ChatMessage => msg !== null);
     },
     enabled: Boolean(heapId && sessionId),
     staleTime: 30_000, // 30 seconds
@@ -131,14 +159,31 @@ export function useSendChatMessage(heapId: string | null) {
         throw new Error("heapId is required");
       }
 
+      const requestBody: Record<string, unknown> = {
+        chatInput,
+        sessionId,
+        isProject,
+      };
+
+      // Include meta and filter from activeChatSession if available
+      if (activeChatSession?.meta !== undefined) {
+        requestBody.meta = activeChatSession.meta;
+      }
+
+      // Check for filter or filters field (database uses filters, but API accepts filter)
+      const sessionFilter = activeChatSession?.filters;
+      if (sessionFilter !== undefined) {
+        requestBody.filter = sessionFilter;
+      }
+
+      console.log("activeChatSession", activeChatSession);  
+      console.log("requestBody", requestBody);        
+
+
       const response = await fetch(`/api/heaps/${heapId}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chatInput,
-          sessionId,
-          isProject,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {

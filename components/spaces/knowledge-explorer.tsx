@@ -322,7 +322,11 @@ export function KnowledgeExplorer({
   return (
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between items-center">
-        <h3 className="font-semibold text-foreground">Knowledge Explorer</h3>
+        <h3 className="font-semibold text-foreground">
+          {useDialogForPreview
+            ? `Add Knowledge to Project`
+            : `Knowledge Explorer`}
+        </h3>
         {!useDialogForPreview && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

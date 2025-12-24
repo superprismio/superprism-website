@@ -10,7 +10,7 @@ const webhookUrl =
 export async function POST(request: Request, { params }: Params) {
   const { heapId } = await params;
   const body = await request.json().catch(() => ({}));
-  const { chatInput, sessionId, isProject } = body ?? {};
+  const { chatInput, sessionId, isProject, meta, filter } = body ?? {};
 
   if (!chatInput || typeof chatInput !== "string") {
     return NextResponse.json(
@@ -68,31 +68,20 @@ export async function POST(request: Request, { params }: Params) {
     );
   }
 
-  // Store user message
-  const userMessageId = crypto.randomUUID();
-  const { error: userMessageError } = await serviceClient
-    .from("chat_messages")
-    .insert({
-      id: userMessageId,
-      heap_id: heapId,
-      session_id: finalSessionId,
-      role: "user",
-      content: chatInput,
-    });
-
-  if (userMessageError) {
-    return NextResponse.json(
-      { error: userMessageError.message },
-      { status: 400 }
-    );
-  }
-
   // Call n8n webhook
-  const payload = {
+  const payload: Record<string, unknown> = {
     chatInput: chatInput,
     sessionId: finalSessionId,
     heapId: heapId,
   };
+
+  if (meta !== undefined) {
+    payload.meta = meta;
+  }
+
+  if (filter !== undefined) {
+    payload.filters = filter;
+  }
 
   try {
     const webhookResponse = await fetch(webhookUrl, {
@@ -111,23 +100,6 @@ export async function POST(request: Request, { params }: Params) {
 
     const webhookData = await webhookResponse.json();
     const assistantMessage = webhookData.output || "";
-
-    // Store assistant response
-    const assistantMessageId = crypto.randomUUID();
-    const { error: assistantMessageError } = await serviceClient
-      .from("chat_messages")
-      .insert({
-        id: assistantMessageId,
-        heap_id: heapId,
-        session_id: finalSessionId,
-        role: "assistant",
-        content: assistantMessage,
-      });
-
-    if (assistantMessageError) {
-      // Log error but still return the response
-      console.error("Error storing assistant message:", assistantMessageError);
-    }
 
     return NextResponse.json({
       data: {

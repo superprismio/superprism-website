@@ -56,9 +56,9 @@ export function ProjectFileList({
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">{label}</label>
-        <div className="px-3 py-2 text-sm text-muted-foreground">
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-foreground">{label}</label>
+        <div className="px-2 py-1.5 text-xs text-muted-foreground">
           Loading {label.toLowerCase()}...
         </div>
       </div>
@@ -67,9 +67,9 @@ export function ProjectFileList({
 
   if (isError) {
     return (
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-foreground">{label}</label>
-        <div className="px-3 py-2 text-sm text-destructive">
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-foreground">{label}</label>
+        <div className="px-2 py-1.5 text-xs text-destructive">
           Failed to load {label.toLowerCase()}
         </div>
       </div>
@@ -81,19 +81,19 @@ export function ProjectFileList({
   }
 
   return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-foreground">{label}</label>
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-foreground">{label}</label>
       <div className="space-y-1">
         {files.map((file) => (
           <div
             key={file.id}
-            className="px-3 py-2 text-sm text-foreground border border-border rounded-md flex items-center justify-between hover:bg-muted/50"
+            className="px-2 py-1.5 text-xs text-foreground border border-border rounded-md flex items-center justify-between hover:bg-muted/50"
           >
-            <span>{file.file_name || "Untitled"}</span>
+            <span className="truncate">{file.file_name || "Untitled"}</span>
             {onRemoveFile && (
               <button
                 onClick={() => onRemoveFile(file.id)}
-                className="text-muted-foreground hover:text-destructive text-xs"
+                className="text-muted-foreground hover:text-destructive text-xs ml-2 flex-shrink-0"
               >
                 Remove
               </button>
