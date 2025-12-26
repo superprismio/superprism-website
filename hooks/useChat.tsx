@@ -144,6 +144,40 @@ type SendMessageResponse = {
   sessionId: string;
 };
 
+export function useSpaceChatSessions(heapId: string | null) {
+  return useQuery<ChatSession[], Error>({
+    queryKey: ["space-chat-sessions", heapId],
+    queryFn: async () => {
+      if (!heapId) {
+        return [];
+      }
+
+      const response = await fetch(`/api/heaps/${heapId}/chat-sessions`, {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to load chat sessions");
+      }
+
+      const json = (await response.json()) as ApiResponse<ChatSession[]>;
+      const allSessions = json.data || [];
+
+      // Filter out sessions where isProject is true in meta
+      return allSessions.filter((session) => {
+        if (!session.meta || typeof session.meta !== "object" || Array.isArray(session.meta)) {
+          return true; // Include sessions without meta or with invalid meta
+        }
+        const meta = session.meta as Record<string, unknown>;
+        return meta.isProject !== true;
+      });
+    },
+    enabled: Boolean(heapId),
+    staleTime: 30_000, // 30 seconds
+  });
+}
+
 export function useSendChatMessage(heapId: string | null) {
   const { activeChatSession, setActiveChatSession, isProject } = useChat();
   const queryClient = useQueryClient();
@@ -219,6 +253,10 @@ export function useSendChatMessage(heapId: string | null) {
             }
           }
         }
+        // Invalidate space chat sessions query to include the new session
+        await queryClient.invalidateQueries({
+          queryKey: ["space-chat-sessions", heapId],
+        });
       }
 
       // Refetch messages after sending

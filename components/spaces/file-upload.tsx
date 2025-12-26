@@ -4,6 +4,11 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import {
+  UPLOAD_ACCEPT_ATTRIBUTE,
+  isUploadAllowed,
+  UPLOAD_ALLOWED_EXTENSIONS,
+} from "../../lib/attachments";
 
 type FileUploadProps = {
   heapId: string;
@@ -18,9 +23,28 @@ export function FileUpload({ heapId }: FileUploadProps) {
 
   const handleFileSelection = (list: FileList | null) => {
     if (!list || list.length === 0) return;
-    setFiles(Array.from(list));
     setError(null);
     setSuccess(false);
+
+    const validFiles: File[] = [];
+    const invalidFiles: string[] = [];
+
+    Array.from(list).forEach((file) => {
+      if (isUploadAllowed(file.name)) {
+        validFiles.push(file);
+      } else {
+        invalidFiles.push(file.name);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      const allowedTypes = UPLOAD_ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(", ");
+      setError(
+        `Invalid file type(s): ${invalidFiles.join(", ")}. Allowed types: ${allowedTypes}`
+      );
+    }
+
+    setFiles(validFiles);
   };
 
   const handleRemoveFile = (index: number) => {
@@ -78,6 +102,7 @@ export function FileUpload({ heapId }: FileUploadProps) {
       <Input
         type="file"
         multiple
+        accept={UPLOAD_ACCEPT_ATTRIBUTE}
         onChange={(event) => handleFileSelection(event.target.files)}
         disabled={uploading}
       />

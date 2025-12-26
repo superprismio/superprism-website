@@ -6,7 +6,8 @@ import { useChat, useChatMessages, useSendChatMessage } from "@/hooks/useChat";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { TextEditor } from "./text-editor";
-import { FileDown } from "lucide-react";
+import { FileDown, History, X } from "lucide-react";
+import { ChatSessionSelector } from "./chat-session-selector";
 
 type Message = {
   role: "user" | "assistant";
@@ -14,12 +15,15 @@ type Message = {
 };
 
 export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
-  const { activeChatSession, isProject, isPresaved } = useChat();
-  const { data: fetchedMessages, isLoading: isLoadingMessages } = useChatMessages(heapId);
+  const { activeChatSession, isProject, isPresaved, setActiveChatSession } =
+    useChat();
+  const { data: fetchedMessages, isLoading: isLoadingMessages } =
+    useChatMessages(heapId);
   const sendMessageMutation = useSendChatMessage(heapId);
   const [input, setInput] = useState("");
   const [showEditor, setShowEditor] = useState(false);
   const [editorContent, setEditorContent] = useState("");
+  const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
 
   // Convert fetched messages to display format
   const messages = useMemo(() => {
@@ -28,7 +32,6 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
       content: msg.content,
     }));
   }, [fetchedMessages]);
-  
 
   const loading = sendMessageMutation.isPending;
 
@@ -66,6 +69,13 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   const chatDisabled = isPresaved;
   const chatTitle = isProject ? "Chat with Project" : "Chat with Space";
 
+  const hasActiveSession =
+    activeChatSession !== null && activeChatSession.id !== null;
+
+  const handleClearChat = () => {
+    setActiveChatSession(null);
+  };
+
   return (
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
@@ -87,11 +97,35 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
               <Button
                 variant="outline"
                 className="border-[#00ff00] text-[#00ff00] hover:bg-[#00ff00]/10"
-                onClick={() => handlePreFilledPrompt("What's this space about?")}
+                onClick={() =>
+                  handlePreFilledPrompt("What's this space about?")
+                }
                 disabled={loading || chatDisabled}
               >
                 What's this space about?
               </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="border-[#00ff00] text-[#00ff00] hover:bg-[#00ff00]/10 flex-1"
+                  onClick={() => setIsSessionSelectorOpen(true)}
+                  disabled={loading || chatDisabled}
+                >
+                  <History className="mr-2 h-4 w-4" />
+                  Previous Chats
+                </Button>
+                {hasActiveSession && (
+                  <Button
+                    variant="outline"
+                    className="border-[#00ff00] text-[#00ff00] hover:bg-[#00ff00]/10"
+                    onClick={handleClearChat}
+                    disabled={loading || chatDisabled}
+                    title="Clear active chat"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -101,7 +135,9 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
               {chatDisabled ? (
                 <div className="text-sm text-muted-foreground">
                   <div className="mb-2">&gt;_</div>
-                  <p className="text-xs">Please save the project before starting a conversation.</p>
+                  <p className="text-xs">
+                    Please save the project before starting a conversation.
+                  </p>
                 </div>
               ) : isLoadingMessages ? (
                 <div className="text-sm text-muted-foreground">
@@ -112,7 +148,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                 <div className="text-sm text-muted-foreground">
                   <div className="mb-2">&gt;_</div>
                   <p className="text-xs">
-                    {isProject 
+                    {isProject
                       ? "Start a conversation about this project."
                       : "Start a conversation by typing a message or using one of the prompts above."}
                   </p>
@@ -132,7 +168,9 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                           : "bg-muted text-foreground"
                       }`}
                     >
-                      <div className="whitespace-pre-wrap">{message.content}</div>
+                      <div className="whitespace-pre-wrap">
+                        {message.content}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -159,7 +197,11 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                     }
                   }
                 }}
-                placeholder={chatDisabled ? "Save the project to enable chat..." : "Type your message..."}
+                placeholder={
+                  chatDisabled
+                    ? "Save the project to enable chat..."
+                    : "Type your message..."
+                }
                 disabled={loading || chatDisabled}
                 rows={2}
                 className="resize-none"
@@ -174,7 +216,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
           </div>
 
           {/* Summarize button */}
-          {hasAssistantResponse && !chatDisabled && (
+          {/* {hasAssistantResponse && !chatDisabled && (
             <Button
               variant="outline"
               className="border-[#00ff00] text-[#00ff00] hover:bg-[#00ff00]/10 w-full"
@@ -184,7 +226,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
               <FileDown className="mr-2 h-4 w-4" />
               Summarize this conversation as a markdown file for export
             </Button>
-          )}
+          )} */}
         </div>
 
         {/* Text Editor (shown when summarize is clicked) */}
@@ -194,6 +236,13 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
           </div>
         )}
       </div>
+      {!isProject && (
+        <ChatSessionSelector
+          heapId={heapId}
+          open={isSessionSelectorOpen}
+          onOpenChange={setIsSessionSelectorOpen}
+        />
+      )}
     </>
   );
 }
