@@ -18,6 +18,22 @@ export const ATTACHMENT_ACCEPT_ATTRIBUTE = Object.keys(ATTACHMENT_MIME_LOOKUP)
   .map((extension) => `.${extension}`)
   .join(",");
 
+// Allowed file types for upload (subset of ATTACHMENT_MIME_LOOKUP)
+export const UPLOAD_ALLOWED_EXTENSIONS = [
+  "txt",
+  "md",
+  "json",
+  "csv",
+  "pdf",
+] as const;
+
+export type UploadAllowedExtension =
+  (typeof UPLOAD_ALLOWED_EXTENSIONS)[number];
+
+export const UPLOAD_ACCEPT_ATTRIBUTE = UPLOAD_ALLOWED_EXTENSIONS.map(
+  (extension) => `.${extension}`
+).join(",");
+
 export function getAttachmentExtension(
   fileName: string
 ): AttachmentAllowedExtension | null {
@@ -50,4 +66,10 @@ export function isAttachmentMimeTypeAllowed(
   }
 
   return false;
+}
+
+export function isUploadAllowed(fileName: string): boolean {
+  const extension = getAttachmentExtension(fileName);
+  if (!extension) return false;
+  return UPLOAD_ALLOWED_EXTENSIONS.includes(extension as UploadAllowedExtension);
 }

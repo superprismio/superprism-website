@@ -1,8 +1,8 @@
 "use client";
 
-import { ComponentType, ReactNode, useCallback, useState } from "react";
+import { ComponentType, ReactNode, useCallback, useState, useEffect } from "react";
 import { useHeap } from "../../hooks/spaces";
-import { ChatProvider } from "../../hooks/useChat";
+import { ChatProvider, useChat } from "../../hooks/useChat";
 import { SpaceNav } from "./space-nav";
 import { PaneOne } from "./pane-one";
 import { PaneTwo } from "./pane-two";
@@ -67,6 +67,30 @@ const PANE_DEFINITIONS: Record<WorkspacePaneKey, PaneDefinition> = {
 
 const DEFAULT_PRIMARY: WorkspacePaneKey = "spaceFeed";
 const DEFAULT_SECONDARY: WorkspacePaneKey = "spaceChat";
+
+// Component to monitor pane changes and clear active chat session when navigating away from the Projects workspace
+function ProjectPaneMonitor({
+  primaryPane,
+}: {
+  primaryPane: WorkspacePaneKey;
+}) {
+  const { activeChatSession, isProject, setActiveChatSession } = useChat();
+
+  useEffect(() => {
+    // Only keep projects active when in the Projects workspace (spaceProjects primary pane)
+    // Clear project when navigating away from spaceProjects, even if going to knowledgeExplorer
+    const shouldClearProject =
+      isProject &&
+      activeChatSession !== null &&
+      primaryPane !== "spaceProjects";
+
+    if (shouldClearProject) {
+      setActiveChatSession(null);
+    }
+  }, [primaryPane, isProject, activeChatSession, setActiveChatSession]);
+
+  return null;
+}
 
 export function Workspace({
   spaceId,
@@ -137,6 +161,7 @@ export function Workspace({
 
   return (
     <ChatProvider>
+      <ProjectPaneMonitor primaryPane={primaryPane} />
       <div>
         <div
           className={`flex flex-col min-h-[calc(100vh)] md:grid ${layoutColumns}`}
