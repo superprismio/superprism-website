@@ -6,13 +6,13 @@ import { useChat, useChatMessages, useSendChatMessage } from "@/hooks/useChat";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { TextEditor } from "./text-editor";
-import { FileDown, History, X } from "lucide-react";
+import { History, X } from "lucide-react";
 import { ChatSessionSelector } from "./chat-session-selector";
 
-type Message = {
-  role: "user" | "assistant";
-  content: string;
-};
+// type Message = {
+//   role: "user" | "assistant";
+//   content: string;
+// };
 
 export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   const { activeChatSession, isProject, isPresaved, setActiveChatSession } =
@@ -59,12 +59,10 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
     sendMessage(prompt);
   };
 
-  const handleSummarize = () => {
-    // TODO: Implement summarize functionality
-    sendMessage("", true);
-  };
-
-  const hasAssistantResponse = messages.some((m) => m.role === "assistant");
+  // const handleSummarize = () => {
+  //   // TODO: Implement summarize functionality
+  //   sendMessage("", true);
+  // };
 
   const chatDisabled = isPresaved;
   const chatTitle = isProject ? "Chat with Project" : "Chat with Space";

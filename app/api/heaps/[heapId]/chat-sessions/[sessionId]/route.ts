@@ -13,7 +13,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (title !== undefined) updates.title = title;
   if (meta !== undefined) {
     updates.meta = meta;
-    updates.filters =
+    updates.filter =
       meta?.file_id.length > 0
         ? {
             in: { file_id: meta.file_id },

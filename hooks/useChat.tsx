@@ -13,7 +13,7 @@ type PendingProject = {
   title: string;
   meta: { isProject: true; file_id: string[] };
   created_at: null;
-  filters?: Record<string, unknown>;
+  filter?: Record<string, unknown>;
 };
 
 type ActiveChatSession = ChatSession | PendingProject | null;
@@ -114,15 +114,20 @@ export function useChatMessages(heapId: string | null) {
 
       const json = (await response.json()) as ApiResponse<N8nChatHistory[]>;
       const histories = json.data || [];
-      
+
       // Transform n8n chat history format to ChatMessage format
       return histories
         .map((history) => {
           const message = history.message as N8nMessage;
-          if (!message || typeof message !== "object" || !message.type || !message.content) {
+          if (
+            !message ||
+            typeof message !== "object" ||
+            !message.type ||
+            !message.content
+          ) {
             return null;
           }
-          
+
           return {
             role: message.type === "human" ? "user" : "assistant",
             content: message.content,
@@ -166,7 +171,11 @@ export function useSpaceChatSessions(heapId: string | null) {
 
       // Filter out sessions where isProject is true in meta
       return allSessions.filter((session) => {
-        if (!session.meta || typeof session.meta !== "object" || Array.isArray(session.meta)) {
+        if (
+          !session.meta ||
+          typeof session.meta !== "object" ||
+          Array.isArray(session.meta)
+        ) {
           return true; // Include sessions without meta or with invalid meta
         }
         const meta = session.meta as Record<string, unknown>;
@@ -205,14 +214,10 @@ export function useSendChatMessage(heapId: string | null) {
       }
 
       // Check for filter or filters field (database uses filters, but API accepts filter)
-      const sessionFilter = activeChatSession?.filters;
+      const sessionFilter = activeChatSession?.filter;
       if (sessionFilter !== undefined) {
         requestBody.filter = sessionFilter;
       }
-
-      console.log("activeChatSession", activeChatSession);  
-      console.log("requestBody", requestBody);        
-
 
       const response = await fetch(`/api/heaps/${heapId}/chat`, {
         method: "POST",

@@ -90,6 +90,7 @@ export type Database = {
           archived: boolean | null;
           created_at: string | null;
           created_by: string | null;
+          filter: Json | null;
           heap_id: string;
           id: string;
           last_message_at: string | null;
@@ -102,6 +103,7 @@ export type Database = {
           archived?: boolean | null;
           created_at?: string | null;
           created_by?: string | null;
+          filter?: Json | null;
           heap_id: string;
           id: string;
           last_message_at?: string | null;
@@ -114,6 +116,7 @@ export type Database = {
           archived?: boolean | null;
           created_at?: string | null;
           created_by?: string | null;
+          filter?: Json | null;
           heap_id?: string;
           id?: string;
           last_message_at?: string | null;
