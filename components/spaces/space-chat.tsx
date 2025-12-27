@@ -6,7 +6,11 @@ import { useChat, useChatMessages, useSendChatMessage } from "@/hooks/useChat";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { TextEditor } from "./text-editor";
-import { History, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+} from "../ui/dialog";
+import { History, X, Copy, Check, FileEdit } from "lucide-react";
 import { ChatSessionSelector } from "./chat-session-selector";
 
 // type Message = {
@@ -24,6 +28,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   const [showEditor, setShowEditor] = useState(false);
   const [editorContent, setEditorContent] = useState("");
   const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
 
   // Convert fetched messages to display format
   const messages = useMemo(() => {
@@ -74,6 +79,21 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
     setActiveChatSession(null);
   };
 
+  const handleCopyMessage = async (content: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedMessageIndex(index);
+      setTimeout(() => setCopiedMessageIndex(null), 2000);
+    } catch (error) {
+      console.error("Failed to copy message:", error);
+    }
+  };
+
+  const handleAddToEditor = (content: string) => {
+    setEditorContent(content);
+    setShowEditor(true);
+  };
+
   return (
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
@@ -90,7 +110,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                 onClick={() => handlePreFilledPrompt("What's New?")}
                 disabled={loading || chatDisabled}
               >
-                What's New?
+                What&apos;s New?
               </Button>
               <Button
                 variant="outline"
@@ -100,7 +120,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                 }
                 disabled={loading || chatDisabled}
               >
-                What's this space about?
+                What&apos;s this space about?
               </Button>
               <div className="flex gap-2">
                 <Button
@@ -160,12 +180,38 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                     }`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg p-3 text-sm ${
+                      className={`max-w-[80%] rounded-lg p-3 text-sm relative group ${
                         message.role === "user"
                           ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground"
+                          : "bg-muted text-foreground pb-8"
                       }`}
                     >
+                      {message.role === "assistant" && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute bottom-1 right-8 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleAddToEditor(message.content)}
+                            title="Add to text editor"
+                          >
+                            <FileEdit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute bottom-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleCopyMessage(message.content, index)}
+                            title="Copy message"
+                          >
+                            {copiedMessageIndex === index ? (
+                              <Check className="h-3 w-3" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </>
+                      )}
                       <div className="whitespace-pre-wrap">
                         {message.content}
                       </div>
@@ -227,12 +273,6 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
           )} */}
         </div>
 
-        {/* Text Editor (shown when summarize is clicked) */}
-        {showEditor && (
-          <div className="border-t flex-shrink-0" style={{ height: "400px" }}>
-            <TextEditor heapId={heapId} initialMarkdown={editorContent} />
-          </div>
-        )}
       </div>
       {!isProject && (
         <ChatSessionSelector
@@ -241,6 +281,19 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
           onOpenChange={setIsSessionSelectorOpen}
         />
       )}
+      <Dialog open={showEditor} onOpenChange={setShowEditor}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <TextEditor
+            heapId={heapId}
+            initialMarkdown={editorContent}
+            sessionId={
+              activeChatSession && activeChatSession.id !== null
+                ? activeChatSession.id
+                : undefined
+            }
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

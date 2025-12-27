@@ -11,9 +11,10 @@ type TextEditorProps = {
   initialMarkdown?: string;
   fileId?: string;
   initialFileName?: string;
+  sessionId?: string;
 };
 
-export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName }: TextEditorProps) {
+export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, sessionId }: TextEditorProps) {
   const queryClient = useQueryClient();
   const [markdown, setMarkdown] = useState(initialMarkdown || "");
   
@@ -45,6 +46,9 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName }:
     setSuccess(false);
 
     try {
+      // Generate fileId for creates (matches server-side generation)
+      const fileIdToUse = isEditMode ? fileId : crypto.randomUUID();
+
       const response = await fetch(
         `/api/heaps/${heapId}/injest/markdown`,
         {
@@ -53,8 +57,9 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName }:
           body: JSON.stringify({
             markdown,
             file_name: fileName.trim() || undefined,
-            file_id: fileId || undefined,
+            file_id: fileIdToUse || undefined,
             file_op: isEditMode ? "update" : "create",
+            file_folders: sessionId ? ["artifacts"] : undefined,
           }),
         }
       );
@@ -69,6 +74,60 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName }:
       await queryClient.invalidateQueries({
         queryKey: ["space-files", heapId],
       });
+
+      // If sessionId is provided, update the chat session with the file_id
+      if (sessionId && fileIdToUse) {
+        try {
+          // Fetch current session to get existing meta
+          const sessionResponse = await fetch(
+            `/api/heaps/${heapId}/chat-sessions/${sessionId}`
+          );
+          
+          let currentFileIds: string[] = [];
+          let existingMeta: Record<string, unknown> = {};
+          
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
+            const meta = sessionData.data?.meta;
+            if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+              existingMeta = { ...meta };
+              const existingFileIds = meta.file_id;
+              if (Array.isArray(existingFileIds)) {
+                currentFileIds = [...existingFileIds];
+              }
+            }
+          }
+
+          // Add new file_id if not already present
+          if (!currentFileIds.includes(fileIdToUse)) {
+            currentFileIds.push(fileIdToUse);
+          }
+
+          // Update session with new meta, preserving other meta fields
+          const updateResponse = await fetch(
+            `/api/heaps/${heapId}/chat-sessions/${sessionId}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                meta: {
+                  ...existingMeta,
+                  file_id: currentFileIds,
+                },
+              }),
+            }
+          );
+
+          if (!updateResponse.ok) {
+            console.error("Failed to update chat session with file_id");
+            // Don't throw - file was saved successfully, session update is secondary
+          }
+        } catch (sessionError) {
+          console.error("Error updating chat session:", sessionError);
+          // Don't throw - file was saved successfully, session update is secondary
+        }
+      }
+
       setSuccess(true);
       if (!isEditMode) {
         setMarkdown("");
