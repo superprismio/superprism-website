@@ -43,7 +43,7 @@ export async function POST(request: Request, { params }: Params) {
 
   const serviceClient = await createServiceRoleClient();
 
-  const filters =
+  const filter =
     meta?.file_id.length > 0
       ? {
           in: { file_id: meta.file_id },
@@ -58,7 +58,7 @@ export async function POST(request: Request, { params }: Params) {
       title,
       created_by: user.id,
       meta: meta ?? { isProject: true, file_id: [] },
-      filters,
+      filter,
     })
     .select("*")
     .single();

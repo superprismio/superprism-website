@@ -4,6 +4,32 @@ import { requireHeapMember } from "@/lib/auth-helpers";
 
 type Params = { params: Promise<{ heapId: string; sessionId: string }> };
 
+export async function GET(_request: Request, { params }: Params) {
+  const { heapId, sessionId } = await params;
+  const supabase = await createClient();
+
+  // Verify user is authenticated and is a heap member
+  const authResult = await requireHeapMember(
+    supabase,
+    heapId,
+    "You must be a member of this heap to view sessions"
+  );
+  if (!authResult.success) {
+    return authResult.response;
+  }
+
+  const { data, error } = await supabase
+    .from("chat_sessions")
+    .select("*")
+    .eq("id", sessionId)
+    .eq("heap_id", heapId)
+    .single();
+
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json({ data });
+}
+
 export async function PATCH(request: Request, { params }: Params) {
   const { heapId, sessionId } = await params;
   const body = await request.json().catch(() => ({}));
@@ -13,7 +39,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (title !== undefined) updates.title = title;
   if (meta !== undefined) {
     updates.meta = meta;
-    updates.filters =
+    updates.filter =
       meta?.file_id.length > 0
         ? {
             in: { file_id: meta.file_id },

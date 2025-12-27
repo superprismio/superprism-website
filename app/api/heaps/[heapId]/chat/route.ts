@@ -68,6 +68,9 @@ export async function POST(request: Request, { params }: Params) {
     );
   }
 
+  console.log("meta", meta);
+  console.log("filter", filter);
+
   // Call n8n webhook
   const payload: Record<string, unknown> = {
     chatInput: chatInput,
@@ -75,13 +78,18 @@ export async function POST(request: Request, { params }: Params) {
     heapId: heapId,
   };
 
-  if (meta !== undefined) {
-    payload.meta = meta;
-  }
+  // TODO: can activate this if/when we allow the user to toggle
+  // filter filed limits rag to selected files
+  // meta field loads the file content into context
+  // if (meta !== undefined) {
+  //   payload.meta = meta;
+  // }
 
   if (filter !== undefined) {
-    payload.filters = filter;
+    payload.filter = filter;
   }
+
+  console.log("chat payload", payload);
 
   try {
     const webhookResponse = await fetch(webhookUrl, {
