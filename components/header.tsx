@@ -1,15 +1,15 @@
 import Image from "next/image";
 // import Link from "next/link";
 // import { AuthButton } from "./auth/auth-button";
-import headerBg from "../public/images/SP_bg-prism.png";
+import headerBg from "../public/images/superprism-0.png";
 import mobileLogo from "../public/images/SP_logo.png";
 
 export function Header() {
   return (
-    <nav className="w-full flex justify-center h-24">
+    <nav className="w-full flex justify-center items-start h-24">
       <Image
         alt="Superprism bg"
-        className="absolute inset-x-0 w-full -z-10 overflow-visible object-cover min-h-[600px]"
+        className="absolute lg:pl-60 inset-x-0 w-full object-left -z-10 object-cover overflow-visible min-h-[600px]"
         priority
         src={headerBg}
       />

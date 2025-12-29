@@ -5,6 +5,8 @@ import Image from "next/image";
 import spacesImg from "../public/images/sp_graphic-spaces.png";
 import projectsImg from "../public/images/sp_graphic-projects.png";
 import extendImg from "../public/images/sp_graphic-extend.png";
+import sectionBreak from "../public/images/prism_overlay.png"
+import sectionBreak2 from "../public/images/prism_landscape.png"
 import { EarlyAccessForm } from "@/components/early-access-form";
 
 export default function Home() {
@@ -15,7 +17,7 @@ export default function Home() {
         <Hero />
       </div>
       <div className="flex-1 w-full flex flex-col items-center max-w-4xl px-4 lg:px-0">
-        <h2 className="text-xl lg:text-2xl my-8 text-center">How it Works</h2>
+        <h2 className="text-4xl lg:text-6xl my-8 text-center">How it Works</h2>
         <div className="flex flex-col lg:flex-row w-full mb-8 lg:mb-16 gap-4 lg:gap-0">
           <div className="flex flex-col w-full lg:w-1/2">
             <Image
@@ -103,8 +105,20 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-4xl px-4 lg:px-0">
-        <h3 className="text-xl lg:text-2xl my-8 text-center">
+      <div className="w-full h-auto relative mb-[120px] lg:mb-[360px]">
+        <div className="w-full h-auto absolute z-0">
+        <Image alt="section break"
+              width={1200}
+              height={400}
+              priority
+              src={sectionBreak}
+              className="w-full h-auto transform -scale-y-100"/>
+        </div>
+      </div>
+
+      <div className="max-w-4xl px-8 lg:px-0 relative z-1">
+        
+        <h3 className="text-3xl lg:text-6xl my-8 text-center">
           Key Capabilities
         </h3>
         <div className="flex flex-col lg:flex-row w-full mb-8 flex-wrap gap-6 lg:gap-0">
@@ -237,9 +251,21 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-col max-w-4xl mt-8 lg:mt-16 px-4 lg:px-0">
+      <div className="w-full h-auto relative mb-[120px] lg:mb-[320px]">
+        <div className="w-full h-auto absolute z-0">
+        <Image alt="section break"
+              width={1200}
+              height={400}
+              priority
+              src={sectionBreak2}
+              className="w-full h-auto"/>
+        </div>
+      </div>
+
+
+      <div className="flex flex-col max-w-4xl px-8 lg:px-0 relative z-1">
         <div className="flex flex-row w-full">
-          <h4 className="text-xl lg:text-2xl mb-8 text-center w-full">
+          <h4 className="text-3xl lg:text-6xl mb-8 text-center w-full">
             Technical Foundation
           </h4>
         </div>

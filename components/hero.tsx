@@ -9,8 +9,8 @@ export async function Hero() {
   // const getStartedHref = isAuthenticated ? "/dashboard" : "/auth/login";
 
   return (
-    <div className="flex flex-col gap-6 lg:gap-12 w-full max-w-4xl px-4 lg:px-0 py-20 lg:py-40 xl:py-60">
-      <p className="text-2xl lg:text-4xl max-w-xl text-muted-foreground">
+    <div className="flex flex-col gap-6 lg:gap-12 w-full max-w-full px-8 lg:px-20 py-20 lg:py-40 xl:py-60">
+      <p className="text-3xl lg:text-6xl max-w-xl text-muted-foreground">
         A collaborative workspace that is local first and AI-native.
       </p>
       <p className="text-base lg:text-xl max-w-xl">
