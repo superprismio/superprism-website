@@ -95,7 +95,7 @@ export default function Home() {
             <h3 className="text-xl lg:text-3xl mb-4">Share and Extend</h3>
             <p className="text-md lg:text-lg">
               <strong>
-              Invite collaborators and connect to external tools. 
+              Invite collaborators and connect to external tools and workflows. 
               </strong>
             </p>
             <p className="text-sm lg:text-base mt-4 text-muted-foreground">
