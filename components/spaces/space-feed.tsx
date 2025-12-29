@@ -1,31 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import type { Activity } from "./types";
-
+import { useSpaceActivities } from "@/hooks/useSpaceActivities";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 export function SpaceFeed({ heapId }: WorkspacePaneComponentProps) {
-  const [items, setItems] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/heaps/${heapId}/activities`);
-        const json = await res.json();
-        if (!mounted) return;
-        if (res.ok) setItems(json.data || []);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [heapId]);
+  const { activities, isLoading, pagination, nextPage, prevPage } =
+    useSpaceActivities(heapId);
 
   return (
     <>
@@ -34,27 +22,71 @@ export function SpaceFeed({ heapId }: WorkspacePaneComponentProps) {
         <div className="text-foreground">Filter</div>
       </header>
       <div className="space-y-6 px-3 py-4">
-        {loading && (
+        {isLoading && (
           <div className="text-sm text-muted-foreground">Loading...</div>
         )}
-        {!loading && items.length === 0 && (
+        {!isLoading && activities.length === 0 && (
           <div className="text-sm text-muted-foreground">No activity yet</div>
         )}
-        {!loading &&
-          items.map((a) => (
+        {!isLoading &&
+          activities.map((a) => (
             <div key={a.id} className="text-sm">
-              <div className="text-sm">{a.activity_type}</div>
+              <div className="text-sm">
+                {a.created_at
+                  ? format(new Date(a.created_at), "MMM d, yyyy 'at' h:mm a")
+                  : ""}{" "}
+                - {a.activity_type}
+              </div>
               <div className="text-base text-muted-foreground"> {a.title} </div>
               {a.subtitle && (
                 <div className="text-muted-foreground">{a.subtitle}</div>
               )}
-              <div className="text-xs text-muted-foreground">
-                {a.created_at
-                  ? format(new Date(a.created_at), "MMM d, yyyy 'at' h:mm a")
-                  : ""}
-              </div>
+              <div className="text-xs text-muted-foreground"></div>
             </div>
           ))}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="pt-4">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      prevPage();
+                    }}
+                    className={
+                      !pagination.hasPrev
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                    label="Newer"
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <div className="text-sm text-muted-foreground px-4">
+                    {pagination.page} of {pagination.totalPages}
+                  </div>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      nextPage();
+                    }}
+                    className={
+                      !pagination.hasNext
+                        ? "pointer-events-none opacity-50"
+                        : "cursor-pointer"
+                    }
+                    label="Older"
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
     </>
   );
