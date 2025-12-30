@@ -5,8 +5,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
-import { createClient } from "@/lib/supabase/client";
-import type { Member } from "./types";
+import { useUpdateMember } from "@/hooks/useMembers";
 
 type MemberDetailsProps = {
   heapId: string;
@@ -23,9 +22,9 @@ export function MemberDetails({
   initialMemberBio,
   onUpdate,
 }: MemberDetailsProps) {
+  const updateMember = useUpdateMember();
   const [displayName, setDisplayName] = useState(initialDisplayName || "");
   const [memberBio, setMemberBio] = useState(initialMemberBio || "");
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -37,31 +36,16 @@ export function MemberDetails({
   async function handleSave() {
     if (!heapId || !membershipId) return;
 
-    setSaving(true);
     setError(null);
     setSuccess(false);
 
     try {
-      const res = await fetch(
-        `/api/heaps/${heapId}/members/${membershipId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            display_name: displayName.trim() || null,
-            member_bio: memberBio.trim() || null,
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        const json = await res.json().catch(() => null);
-        const message =
-          (json && typeof json === "object" && "error" in json
-            ? String(json.error)
-            : null) ?? "Failed to update member details";
-        throw new Error(message);
-      }
+      await updateMember.mutateAsync({
+        heapId,
+        membershipId,
+        displayName: displayName.trim() || null,
+        memberBio: memberBio.trim() || null,
+      });
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
@@ -70,10 +54,10 @@ export function MemberDetails({
       setError(
         error instanceof Error ? error.message : "Failed to update member details"
       );
-    } finally {
-      setSaving(false);
     }
   }
+
+  const saving = updateMember.isPending;
 
   const hasChanges =
     displayName !== (initialDisplayName || "") ||

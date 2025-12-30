@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { X, ChevronRight, Eye, EyeOff, Trash2 } from "lucide-react";
 import { FileRow } from "./types";
 import { createClient } from "@/lib/supabase/client";
+import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 
 type FilePreviewProps = {
   file: FileRow | null;
@@ -31,6 +32,7 @@ type FilePreviewProps = {
 
 export function FilePreview({ file, onClose, heapId, onEditFile, onToggleVisibility, onDeleteFile, useDialog = false }: FilePreviewProps) {
   console.log("file", file);
+  const { fetchRawFileContent } = useSpaceFiles(heapId);
   const [rawContent, setRawContent] = useState<string | null>(null);
   const [isRawDialogOpen, setIsRawDialogOpen] = useState(false);
   const [isLoadingRaw, setIsLoadingRaw] = useState(false);
@@ -65,14 +67,8 @@ export function FilePreview({ file, onClose, heapId, onEditFile, onToggleVisibil
     setIsRawDialogOpen(true);
 
     try {
-      const response = await fetch(`/api/heaps/${heapId}/files/${file.id}/raw`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch raw file content");
-      }
-
-      const json = (await response.json()) as { data?: { content?: string } };
-      setRawContent(json.data?.content ?? null);
+      const content = await fetchRawFileContent(file.id);
+      setRawContent(content);
     } catch (error) {
       console.error("Error fetching raw file:", error);
       setRawContent("Error loading file content");
@@ -110,14 +106,7 @@ export function FilePreview({ file, onClose, heapId, onEditFile, onToggleVisibil
     setIsLoadingRaw(true);
 
     try {
-      const response = await fetch(`/api/heaps/${heapId}/files/${file.id}/raw`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch raw file content");
-      }
-
-      const json = (await response.json()) as { data?: { content?: string } };
-      const rawContent = json.data?.content ?? "";
+      const rawContent = await fetchRawFileContent(file.id);
       const content = stripFrontMatter(rawContent);
       
       onEditFile(file, content);

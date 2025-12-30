@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { GraphData, GraphNode, GraphLink } from "@/lib/graph/types";
+import type { GraphData, GraphNode, GraphLink } from "@/lib/space-graph";
 import { FileRow } from "@/components/spaces/types";
 
 export function useGraphData(files: FileRow[]): GraphData {
