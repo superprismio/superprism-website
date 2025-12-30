@@ -361,10 +361,14 @@ export function KnowledgeExplorer({
             />
           </div>
         </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={40} minSize={10}>
-          {renderSecondaryContent()}
-        </ResizablePanel>
+        {!useDialogForPreview && (
+          <>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={40} minSize={10}>
+            {renderSecondaryContent()}
+            </ResizablePanel>
+          </>
+        )}
       </ResizablePanelGroup>
     </>
   );

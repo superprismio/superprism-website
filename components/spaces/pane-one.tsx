@@ -9,5 +9,5 @@ type PaneOneProps = {
 };
 
 export function PaneOne({ children }: PaneOneProps) {
-  return <section className="flex min-h-[320px] flex-col">{children}</section>;
+  return <section className="flex h-full min-h-[320px] flex-col">{children}</section>;
 }

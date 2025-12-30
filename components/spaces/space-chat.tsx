@@ -5,6 +5,7 @@ import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import { useChat, useChatMessages, useSendChatMessage } from "@/hooks/useChat";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import { ScrollArea } from "../ui/scroll-area";
 import { TextEditor } from "./text-editor";
 import {
   Dialog,
@@ -173,88 +174,92 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
           )}
 
           {/* Chat window */}
-          <div className="flex-1 border rounded-lg p-4 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-              {chatDisabled ? (
-                <div className="text-sm text-muted-foreground">
-                  <div className="mb-2">&gt;_</div>
-                  <p className="text-xs">
-                    {isPresaved
-                      ? "Please save the project before starting a conversation."
-                      : isProject && !isProjectOwner
-                        ? "You can only chat with projects you created. Clone this project to create your own version and chat with it."
-                        : "Chat is disabled."}
-                  </p>
-                </div>
-              ) : isLoadingMessages ? (
-                <div className="text-sm text-muted-foreground">
-                  <div className="mb-2">&gt;_</div>
-                  <p className="text-xs">Loading messages...</p>
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  <div className="mb-2">&gt;_</div>
-                  <p className="text-xs">
-                    {isProject
-                      ? "Start a conversation about this project."
-                      : "Start a conversation by typing a message or using one of the prompts above."}
-                  </p>
-                </div>
-              ) : (
-                messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
+          <div className="flex-1 rounded-lg p-4 flex flex-col min-h-0">
+            <div className="flex-1 min-h-0 mb-4 overflow-hidden">
+              <ScrollArea className="h-full w-full">
+                <div className="space-y-3 pr-4">
+                {chatDisabled ? (
+                  <div className="text-sm text-muted-foreground">
+                    <div className="mb-2">&gt;_</div>
+                    <p className="text-xs">
+                      {isPresaved
+                        ? "Please save the project before starting a conversation."
+                        : isProject && !isProjectOwner
+                          ? "You can only chat with projects you created. Clone this project to create your own version and chat with it."
+                          : "Chat is disabled."}
+                    </p>
+                  </div>
+                ) : isLoadingMessages ? (
+                  <div className="text-sm text-muted-foreground">
+                    <div className="mb-2">&gt;_</div>
+                    <p className="text-xs">Loading messages...</p>
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">
+                    <div className="mb-2">&gt;_</div>
+                    <p className="text-xs">
+                      {isProject
+                        ? "Start a conversation about this project."
+                        : "Start a conversation by typing a message or using one of the prompts above."}
+                    </p>
+                  </div>
+                ) : (
+                  messages.map((message, index) => (
                     <div
-                      className={`max-w-[80%] rounded-lg p-3 text-sm relative group ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-foreground pb-8"
+                      key={index}
+                      className={`flex ${
+                        message.role === "user" ? "justify-end" : "justify-start"
                       }`}
                     >
-                      {message.role === "assistant" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute bottom-1 right-8 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleAddToEditor(message.content)}
-                            title="Add to text editor"
-                          >
-                            <FileEdit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute bottom-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={() => handleCopyMessage(message.content, index)}
-                            title="Copy message"
-                          >
-                            {copiedMessageIndex === index ? (
-                              <Check className="h-3 w-3" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </>
-                      )}
-                      <div className="whitespace-pre-wrap">
-                        {message.content}
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 text-sm relative group ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground pb-8"
+                        }`}
+                      >
+                        {message.role === "assistant" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute bottom-1 right-8 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleAddToEditor(message.content)}
+                              title="Add to text editor"
+                            >
+                              <FileEdit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute bottom-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleCopyMessage(message.content, index)}
+                              title="Copy message"
+                            >
+                              {copiedMessageIndex === index ? (
+                                <Check className="h-3 w-3" />
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </>
+                        )}
+                        <div className="whitespace-pre-wrap">
+                          {message.content}
+                        </div>
                       </div>
                     </div>
+                  ))
+                )}
+                {loading && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
+                      Thinking...
+                    </div>
                   </div>
-                ))
-              )}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
-                    Thinking...
-                  </div>
+                )}
                 </div>
-              )}
+              </ScrollArea>
             </div>
 
             {/* Chat input */}

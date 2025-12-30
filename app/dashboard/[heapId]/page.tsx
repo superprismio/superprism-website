@@ -16,7 +16,7 @@ export default async function DashboardSpace({ params }: Params) {
   const { heapId } = await params;
 
   return (
-    <div className="flex-1 w-full flex flex-col">
+    <div className="h-screen w-full flex flex-col overflow-hidden">
       <SpaceRoot heapId={heapId} />
     </div>
   );

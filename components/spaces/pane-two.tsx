@@ -8,5 +8,5 @@ type PaneTwoProps = {
 };
 
 export function PaneTwo({ children }: PaneTwoProps) {
-  return <aside className="flex min-h-[320px] flex-col">{children}</aside>;
+  return <aside className="flex h-full min-h-[320px] flex-col">{children}</aside>;
 }
