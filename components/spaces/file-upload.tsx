@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import {
@@ -9,13 +8,14 @@ import {
   isUploadAllowed,
   UPLOAD_ALLOWED_EXTENSIONS,
 } from "../../lib/attachments";
+import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 
 type FileUploadProps = {
   heapId: string;
 };
 
 export function FileUpload({ heapId }: FileUploadProps) {
-  const queryClient = useQueryClient();
+  const { uploadFile } = useSpaceFiles(heapId);
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,29 +58,7 @@ export function FileUpload({ heapId }: FileUploadProps) {
     setSuccess(false);
 
     try {
-      await Promise.all(
-        files.map(async (file) => {
-          const formData = new FormData();
-          formData.set("file", file);
-          const response = await fetch(
-            `/api/heaps/${heapId}/injest/upload`,
-            {
-              method: "POST",
-              body: formData,
-            }
-          );
-
-          if (!response.ok) {
-            const json = await response
-              .json()
-              .catch(() => ({ error: "Upload failed" }));
-            throw new Error(json.error || "Upload failed");
-          }
-        })
-      );
-      await queryClient.invalidateQueries({
-        queryKey: ["space-files", heapId],
-      });
+      await Promise.all(files.map((file) => uploadFile(file)));
       setSuccess(true);
       setFiles([]);
     } catch (err) {

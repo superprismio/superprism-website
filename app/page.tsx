@@ -1,14 +1,13 @@
-// import { Cta } from "@/components/cta";
-import { Header } from "@/components/header";
-import { Hero } from "@/components/hero";
+import { Header } from "@/components/shared/header";
+import { Hero } from "@/components/shared/hero";
 import Image from "next/image";
 import spacesImg from "../public/images/sp_graphic-spaces.png";
 import projectsImg from "../public/images/sp_graphic-projects.png";
 import extendImg from "../public/images/sp_graphic-extend.png";
-import sectionBreak from "../public/images/prism_overlay.png"
-import sectionBreak2 from "../public/images/prism_landscape.png"
-import sectionBreak3 from "../public/images/chroma_orb.png"
-import { EarlyAccessForm } from "@/components/early-access-form";
+import sectionBreak from "../public/images/prism_overlay.png";
+import sectionBreak2 from "../public/images/prism_landscape.png";
+import sectionBreak3 from "../public/images/chroma_orb.png";
+import { EarlyAccessForm } from "@/components/shared/early-access-form";
 
 export default function Home() {
   return (
@@ -35,9 +34,7 @@ export default function Home() {
               Build Spaces of Knowledge
             </h3>
             <p className="text-sm lg:text-lg">
-              <strong>
-              Create dedicated spaces for different contexts.
-              </strong>
+              <strong>Create dedicated spaces for different contexts.</strong>
             </p>
             <p className="text-sm lg:text-base mt-4 text-muted-foreground">
               Upload documents, connect data sources, or ingest content from the
@@ -68,14 +65,16 @@ export default function Home() {
             </h3>
             <p className="text-md lg:text-lg">
               <strong>
-              Launch projects that use your space&apos;s knowledge as
-              foundation.
+                Launch projects that use your space&apos;s knowledge as
+                foundation.
               </strong>
             </p>
-            <p className="text-sm lg:text-base mt-4 text-muted-foreground">Chat with your knowledge base, generate reports,
-              create summaries, build documentation. Projects can pull in
-              additional context without polluting your core space—they&apos;re
-              experimental branches where only what you choose to keep persists.</p>
+            <p className="text-sm lg:text-base mt-4 text-muted-foreground">
+              Chat with your knowledge base, generate reports, create summaries,
+              build documentation. Projects can pull in additional context
+              without polluting your core space—they&apos;re experimental
+              branches where only what you choose to keep persists.
+            </p>
             <p className="text-sm lg:text-base mt-4">
               <i>Generate what you need. Keep what matters.</i>
             </p>
@@ -96,19 +95,20 @@ export default function Home() {
             <h3 className="text-xl lg:text-3xl mb-4">Share and Extend</h3>
             <p className="text-md lg:text-lg">
               <strong>
-              Invite collaborators and connect to external tools and workflows. 
+                Invite collaborators and connect to external tools and
+                workflows.
               </strong>
             </p>
             <p className="text-sm lg:text-base mt-4 text-muted-foreground">
-              Generate your own Model Context Protocol (MCP) server to connect your organized
-              knowledge to other AI-ready tools. Export selective knowledge as
-              wikis, summarized docs or public documentation. Your knowledge
-              base becomes infrastructure for your entire workflow.
+              Generate your own Model Context Protocol (MCP) server to connect
+              your organized knowledge to other AI-ready tools. Export selective
+              knowledge as wikis, summarized docs or public documentation. Your
+              knowledge base becomes infrastructure for your entire workflow.
             </p>
             <p className="text-sm lg:text-base mt-4">
               <i>
-                Private by default. Collaborative when you choose. Connect to your
-                existing tools.
+                Private by default. Collaborative when you choose. Connect to
+                your existing tools.
               </i>
             </p>
           </div>
@@ -117,17 +117,18 @@ export default function Home() {
 
       <div className="w-full h-auto relative lg:-mt-40 mb-[180px] lg:mb-[360px]">
         <div className="w-full h-auto absolute z-0">
-        <Image alt="section break"
-              width={1200}
-              height={400}
-              priority
-              src={sectionBreak}
-              className="w-full h-auto transform -scale-y-100"/>
+          <Image
+            alt="section break"
+            width={1200}
+            height={400}
+            priority
+            src={sectionBreak}
+            className="w-full h-auto transform -scale-y-100"
+          />
         </div>
       </div>
 
       <div className="max-w-4xl px-8 lg:px-0 relative z-1">
-        
         <h3 className="text-3xl lg:text-6xl my-8 text-center">
           Key Capabilities
         </h3>
@@ -263,15 +264,16 @@ export default function Home() {
 
       <div className="w-full h-auto relative mb-[120px] lg:mb-[320px]">
         <div className="w-full h-auto absolute z-0">
-        <Image alt="section break"
-              width={1200}
-              height={400}
-              priority
-              src={sectionBreak2}
-              className="w-full h-auto"/>
+          <Image
+            alt="section break"
+            width={1200}
+            height={400}
+            priority
+            src={sectionBreak2}
+            className="w-full h-auto"
+          />
         </div>
       </div>
-
 
       <div className="flex flex-col max-w-4xl px-8 lg:px-0 relative z-1">
         <div className="flex flex-row w-full">
@@ -318,7 +320,7 @@ export default function Home() {
             </p>
             <p className="text-sm lg:text-base">
               Aligning with emerging standards like ERC-8004 (autonomous worlds
-              state sync), AP2's agent-to-protocol graph, and X402 wallet
+              state sync), AP2&apos;s agent-to-protocol graph, and X402 wallet
               channels. Your spaces can plug into onchain workflows as these
               coordination rails mature—no custom glue code needed.
             </p>
@@ -328,12 +330,14 @@ export default function Home() {
 
       <div className="w-full h-auto relative mb-[180px] lg:mb-[360px]">
         <div className="w-full h-auto absolute -z-10 mx-auto">
-        <Image alt="section break"
-              width={1200}
-              height={400}
-              priority
-              src={sectionBreak3}
-              className="w-full h-auto transform -scale-y-100"/>
+          <Image
+            alt="section break"
+            width={1200}
+            height={400}
+            priority
+            src={sectionBreak3}
+            className="w-full h-auto transform -scale-y-100"
+          />
         </div>
       </div>
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -54,8 +53,7 @@ export function KnowledgeExplorer({
   heapId,
   useDialogForPreview = false,
 }: KnowledgeExplorerProps) {
-  const queryClient = useQueryClient();
-  const { deleteFile } = useSpaceFiles(heapId);
+  const { deleteFile, updateFileVisibility } = useSpaceFiles(heapId);
   const { setActiveChatSession } = useChat();
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
@@ -205,31 +203,13 @@ export function KnowledgeExplorer({
   const handleToggleVisibility = useCallback(
     async (fileId: string, visibility: "public" | "private") => {
       try {
-        const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ visibility }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error ?? "Failed to update file visibility"
-          );
-        }
-
-        // Invalidate and refetch files
-        await queryClient.invalidateQueries({
-          queryKey: ["space-files", heapId],
-        });
+        await updateFileVisibility(fileId, visibility);
       } catch (error) {
         console.error("Failed to toggle file visibility:", error);
         throw error;
       }
     },
-    [heapId, queryClient]
+    [updateFileVisibility]
   );
 
   const handleDeleteFile = useCallback(

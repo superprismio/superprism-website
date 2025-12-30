@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { Tables } from "@/lib/types/supabase";
 import { Space } from "./types";
+import { useCreateSpace } from "@/hooks/useSpaces";
 
 export function CreateSpaceDialog({
   onCreated,
@@ -28,58 +28,16 @@ export function CreateSpaceDialog({
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newTagsCsv, setNewTagsCsv] = useState("");
-  const [creating, setCreating] = useState(false);
+  const createSpace = useCreateSpace();
 
   async function handleCreateHeap() {
     if (!newName.trim()) return;
-    setCreating(true);
     try {
-      const createRes = await fetch("/api/heaps", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: newName.trim(),
-          description: newDescription || null,
-        }),
+      const created = await createSpace.mutateAsync({
+        name: newName.trim(),
+        description: newDescription || null,
+        tags: newTagsCsv,
       });
-      const createJson = await createRes.json();
-      if (!createRes.ok)
-        throw new Error(createJson.error || "Failed to create space");
-      const createdData = createJson.data;
-      const created: Space = {
-        id:
-          typeof createdData === "object" && createdData !== null
-            ? String(createdData.id)
-            : String(createdData),
-        name:
-          typeof createdData === "object" && createdData !== null
-            ? createdData.name ?? newName.trim()
-            : newName.trim(),
-        description:
-          typeof createdData === "object" && createdData !== null
-            ? createdData.description ?? null
-            : newDescription || null,
-      };
-
-      const tagList = newTagsCsv
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (tagList.length) {
-        await Promise.all(
-          tagList.map(async (label) => {
-            const slug = label
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/(^-|-$)/g, "");
-            await fetch(`/api/heaps/${created.id}/tags`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ label, slug, is_active: true }),
-            });
-          })
-        );
-      }
       setOpen(false);
       setNewName("");
       setNewDescription("");
@@ -88,8 +46,6 @@ export function CreateSpaceDialog({
       onCreated?.(created);
     } catch (e) {
       // no-op minimal error handling
-    } finally {
-      setCreating(false);
     }
   }
 
@@ -134,9 +90,9 @@ export function CreateSpaceDialog({
           </Button>
           <Button
             onClick={handleCreateHeap}
-            disabled={creating || !newName.trim()}
+            disabled={createSpace.isPending || !newName.trim()}
           >
-            {creating ? "Creating..." : "Create"}
+            {createSpace.isPending ? "Creating..." : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>

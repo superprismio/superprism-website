@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
-import type { GraphData } from "@/lib/graph/types";
-import { getNodeSize, getNodeColor, drag } from "@/lib/graph/utils";
+import type { GraphData } from "@/lib/space-graph";
+import { getNodeSize, getNodeColor, drag } from "@/lib/space-graph";
 
 interface GraphCanvasProps {
   data: GraphData;
@@ -89,7 +89,11 @@ export function GraphCanvas({
     // Pin selected node by fixing its position
     if (selectedNodeId) {
       const selectedNode = data.nodes.find((n) => n.id === selectedNodeId);
-      if (selectedNode && selectedNode.x !== undefined && selectedNode.y !== undefined) {
+      if (
+        selectedNode &&
+        selectedNode.x !== undefined &&
+        selectedNode.y !== undefined
+      ) {
         // Only pin if not already pinned (avoid overriding user drag)
         if (selectedNode.fx === null && selectedNode.fy === null) {
           selectedNode.fx = selectedNode.x;
@@ -115,8 +119,9 @@ export function GraphCanvas({
       return connected;
     };
 
-    const connectedNodeIds =
-      selectedNodeId ? getConnectedNodeIds(selectedNodeId) : new Set<string>();
+    const connectedNodeIds = selectedNodeId
+      ? getConnectedNodeIds(selectedNodeId)
+      : new Set<string>();
 
     // Pin selected node by fixing its position when first selected
     // We'll set fx/fy in the click handler instead to avoid resetting on every render
@@ -139,34 +144,28 @@ export function GraphCanvas({
     const link = svg
       .append("g")
       .attr("class", "links")
-      .selectAll<SVGLineElement, typeof links[0]>("line")
+      .selectAll<SVGLineElement, (typeof links)[0]>("line")
       .data(links)
       .join("line")
       .attr("stroke", (d: any) => {
-        const sourceId =
-          typeof d.source === "object" ? d.source.id : d.source;
-        const targetId =
-          typeof d.target === "object" ? d.target.id : d.target;
+        const sourceId = typeof d.source === "object" ? d.source.id : d.source;
+        const targetId = typeof d.target === "object" ? d.target.id : d.target;
         const isHighlighted =
           selectedNodeId &&
           (sourceId === selectedNodeId || targetId === selectedNodeId);
         return isHighlighted ? "#3b82f6" : "#999";
       })
       .attr("stroke-opacity", (d: any) => {
-        const sourceId =
-          typeof d.source === "object" ? d.source.id : d.source;
-        const targetId =
-          typeof d.target === "object" ? d.target.id : d.target;
+        const sourceId = typeof d.source === "object" ? d.source.id : d.source;
+        const targetId = typeof d.target === "object" ? d.target.id : d.target;
         const isHighlighted =
           selectedNodeId &&
           (sourceId === selectedNodeId || targetId === selectedNodeId);
         return isHighlighted ? 1 : 0.6;
       })
       .attr("stroke-width", (d: any) => {
-        const sourceId =
-          typeof d.source === "object" ? d.source.id : d.source;
-        const targetId =
-          typeof d.target === "object" ? d.target.id : d.target;
+        const sourceId = typeof d.source === "object" ? d.source.id : d.source;
+        const targetId = typeof d.target === "object" ? d.target.id : d.target;
         const isHighlighted =
           selectedNodeId &&
           (sourceId === selectedNodeId || targetId === selectedNodeId);
@@ -177,7 +176,7 @@ export function GraphCanvas({
     const node = svg
       .append("g")
       .attr("class", "nodes")
-      .selectAll<SVGCircleElement, typeof data.nodes[0]>("circle")
+      .selectAll<SVGCircleElement, (typeof data.nodes)[0]>("circle")
       .data(data.nodes)
       .join("circle")
       .attr("r", (d) => getNodeSize(d))
@@ -230,7 +229,7 @@ export function GraphCanvas({
     const labels = svg
       .append("g")
       .attr("class", "labels")
-      .selectAll<SVGTextElement, typeof data.nodes[0]>("text")
+      .selectAll<SVGTextElement, (typeof data.nodes)[0]>("text")
       .data(data.nodes)
       .join("text")
       .text((d) => d.label)

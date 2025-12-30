@@ -11,7 +11,6 @@ import {
   FileSpreadsheet,
 } from "lucide-react";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
-import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -462,8 +461,8 @@ export function FileExplorer({
     isError,
     error,
     refetch,
+    updateFileFolders,
   } = useSpaceFiles(heapId);
-  const queryClient = useQueryClient();
   const [openParent, setOpenParent] = useState<string | null>(null);
   const [activePath, setActivePath] = useState<string | null>(null);
   const [mode, setMode] = useState<"explore" | "search">("explore");
@@ -481,31 +480,6 @@ export function FileExplorer({
     };
     void getCurrentUser();
   }, []);
-
-  const handleMoveToFolder = async (fileId: string, folders: string[]) => {
-    try {
-      const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ folders }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? "Failed to move file");
-      }
-
-      // Invalidate and refetch files
-      await queryClient.invalidateQueries({
-        queryKey: ["space-files", heapId],
-      });
-    } catch (error) {
-      console.error("Failed to move file:", error);
-      throw error;
-    }
-  };
 
   const isStaging = activePath === "staging";
 
@@ -666,7 +640,7 @@ export function FileExplorer({
                         onPreview={onPreviewFile}
                         isStaging={isStaging}
                         onMoveToFolder={
-                          isStaging ? handleMoveToFolder : undefined
+                          isStaging ? updateFileFolders : undefined
                         }
                         currentUserId={currentUserId}
                         heapId={heapId}

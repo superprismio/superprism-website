@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import { useSpaceFiles } from "@/hooks/useSpaceFiles";
+import { useProject, useProjectUpdate } from "@/hooks/useProjects";
 
 type TextEditorProps = {
   heapId: string;
@@ -15,7 +16,9 @@ type TextEditorProps = {
 };
 
 export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, sessionId }: TextEditorProps) {
-  const queryClient = useQueryClient();
+  const { saveMarkdown } = useSpaceFiles(heapId);
+  const { data: sessionData } = useProject(heapId, sessionId || null);
+  const updateProject = useProjectUpdate();
   const [markdown, setMarkdown] = useState(initialMarkdown || "");
   
   useEffect(() => {
@@ -49,51 +52,30 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, s
       // Generate fileId for creates (matches server-side generation)
       const fileIdToUse = isEditMode ? fileId : crypto.randomUUID();
 
-      const response = await fetch(
-        `/api/heaps/${heapId}/injest/markdown`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            markdown,
-            file_name: fileName.trim() || undefined,
-            file_id: fileIdToUse || undefined,
-            file_op: isEditMode ? "update" : "create",
-            file_folders: sessionId ? ["artifacts"] : undefined,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const json = await response
-          .json()
-          .catch(() => ({ error: "Failed to save markdown" }));
-        throw new Error(json.error || "Failed to save markdown");
-      }
-
-      await queryClient.invalidateQueries({
-        queryKey: ["space-files", heapId],
+      await saveMarkdown({
+        markdown,
+        fileName: fileName.trim() || undefined,
+        fileId: fileIdToUse || undefined,
+        fileOp: isEditMode ? "update" : "create",
+        fileFolders: sessionId ? ["artifacts"] : undefined,
       });
 
       // If sessionId is provided, update the chat session with the file_id
       if (sessionId && fileIdToUse) {
         try {
-          // Fetch current session to get existing meta
-          const sessionResponse = await fetch(
-            `/api/heaps/${heapId}/chat-sessions/${sessionId}`
-          );
-          
           let currentFileIds: string[] = [];
           let existingMeta: Record<string, unknown> = {};
           
-          if (sessionResponse.ok) {
-            const sessionData = await sessionResponse.json();
-            const meta = sessionData.data?.meta;
+          // Use session data from hook if available
+          if (sessionData) {
+            const meta = sessionData.meta;
             if (meta && typeof meta === "object" && !Array.isArray(meta)) {
               existingMeta = { ...meta };
               const existingFileIds = meta.file_id;
               if (Array.isArray(existingFileIds)) {
-                currentFileIds = [...existingFileIds];
+                // Filter and convert to string array, handling Json type
+                currentFileIds = existingFileIds
+                  .filter((id): id is string => typeof id === "string");
               }
             }
           }
@@ -104,24 +86,14 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, s
           }
 
           // Update session with new meta, preserving other meta fields
-          const updateResponse = await fetch(
-            `/api/heaps/${heapId}/chat-sessions/${sessionId}`,
-            {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                meta: {
-                  ...existingMeta,
-                  file_id: currentFileIds,
-                },
-              }),
-            }
-          );
-
-          if (!updateResponse.ok) {
-            console.error("Failed to update chat session with file_id");
-            // Don't throw - file was saved successfully, session update is secondary
-          }
+          await updateProject.mutateAsync({
+            heapId,
+            sessionId,
+            meta: {
+              ...existingMeta,
+              file_id: currentFileIds,
+            },
+          });
         } catch (sessionError) {
           console.error("Error updating chat session:", sessionError);
           // Don't throw - file was saved successfully, session update is secondary

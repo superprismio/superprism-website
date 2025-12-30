@@ -10,6 +10,14 @@ export type FolderNode = {
   children?: FolderNode[];
 };
 
+export type SaveMarkdownParams = {
+  markdown: string;
+  fileName?: string;
+  fileId?: string;
+  fileOp?: "create" | "update";
+  fileFolders?: string[];
+};
+
 export type UseSpaceFilesResult = {
   folders: FolderNode[];
   filesByFolder: Record<string, FileRow[]>;
@@ -20,6 +28,11 @@ export type UseSpaceFilesResult = {
   error: Error | null;
   refetch: UseQueryResult<FileRow[], Error>["refetch"];
   deleteFile: (fileId: string) => Promise<void>;
+  updateFileFolders: (fileId: string, folders: string[]) => Promise<void>;
+  updateFileVisibility: (fileId: string, visibility: "public" | "private") => Promise<void>;
+  fetchRawFileContent: (fileId: string) => Promise<string>;
+  uploadFile: (file: File) => Promise<void>;
+  saveMarkdown: (params: SaveMarkdownParams) => Promise<void>;
 };
 
 const SPACE_FOLDERS: FolderNode[] = [
@@ -173,6 +186,34 @@ function normalizeFiles(input: unknown): FileRow[] {
   return input.filter((item): item is FileRow => Boolean(item && item.id));
 }
 
+export function useBatchFiles(heapId: string | null, fileIds: string[]) {
+  return useQuery<FileRow[], Error>({
+    queryKey: ["project-files", heapId, fileIds],
+    queryFn: async () => {
+      if (!heapId || fileIds.length === 0) {
+        return [];
+      }
+
+      const idsParam = fileIds.join(",");
+      const response = await fetch(
+        `/api/heaps/${heapId}/files/batch?ids=${encodeURIComponent(idsParam)}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Unable to load files");
+      }
+
+      const json = (await response.json()) as { data?: unknown };
+      return normalizeFiles(json?.data);
+    },
+    enabled: Boolean(heapId) && fileIds.length > 0,
+    staleTime: 30_000,
+  });
+}
+
 export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
   const queryClient = useQueryClient();
 
@@ -225,6 +266,118 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     },
   });
 
+  const updateFoldersMutation = useMutation({
+    mutationFn: async ({ fileId, folders }: { fileId: string; folders: string[] }) => {
+      if (!heapId) {
+        throw new Error("Heap ID is required");
+      }
+
+      const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ folders }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Failed to move file");
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch files after successful update
+      void queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    },
+  });
+
+  const updateVisibilityMutation = useMutation({
+    mutationFn: async ({ fileId, visibility }: { fileId: string; visibility: "public" | "private" }) => {
+      if (!heapId) {
+        throw new Error("Heap ID is required");
+      }
+
+      const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ visibility }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Failed to update file visibility");
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch files after successful update
+      void queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    },
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!heapId) {
+        throw new Error("Heap ID is required");
+      }
+
+      const formData = new FormData();
+      formData.set("file", file);
+
+      const response = await fetch(`/api/heaps/${heapId}/injest/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({ error: "Upload failed" }));
+        throw new Error(json.error || "Upload failed");
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch files after successful upload
+      void queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    },
+  });
+
+  const saveMarkdownMutation = useMutation({
+    mutationFn: async (params: SaveMarkdownParams) => {
+      if (!heapId) {
+        throw new Error("Heap ID is required");
+      }
+
+      const response = await fetch(`/api/heaps/${heapId}/injest/markdown`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          markdown: params.markdown,
+          file_name: params.fileName?.trim() || undefined,
+          file_id: params.fileId || undefined,
+          file_op: params.fileOp || "create",
+          file_folders: params.fileFolders || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({ error: "Failed to save markdown" }));
+        throw new Error(json.error || "Failed to save markdown");
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch files after successful save
+      void queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    },
+  });
+
   const filesByFolder = useMemo(
     () => groupFilesByFolder(query.data ?? []),
     [query.data]
@@ -245,6 +398,21 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     return Array.from(seen).sort((a, b) => a.localeCompare(b));
   }, [query.data]);
 
+  const fetchRawFileContent = async (fileId: string): Promise<string> => {
+    if (!heapId) {
+      throw new Error("Heap ID is required");
+    }
+
+    const response = await fetch(`/api/heaps/${heapId}/files/${fileId}/raw`);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch raw file content");
+    }
+
+    const json = (await response.json()) as { data?: { content?: string } };
+    return json.data?.content ?? "";
+  };
+
   return {
     folders: SPACE_FOLDERS,
     filesByFolder,
@@ -256,6 +424,19 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     refetch: query.refetch,
     deleteFile: async (fileId: string) => {
       await deleteMutation.mutateAsync(fileId);
+    },
+    updateFileFolders: async (fileId: string, folders: string[]) => {
+      await updateFoldersMutation.mutateAsync({ fileId, folders });
+    },
+    updateFileVisibility: async (fileId: string, visibility: "public" | "private") => {
+      await updateVisibilityMutation.mutateAsync({ fileId, visibility });
+    },
+    fetchRawFileContent,
+    uploadFile: async (file: File) => {
+      await uploadMutation.mutateAsync(file);
+    },
+    saveMarkdown: async (params: SaveMarkdownParams) => {
+      await saveMarkdownMutation.mutateAsync(params);
     },
   };
 }

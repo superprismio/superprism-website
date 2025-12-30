@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
+import { N8N_ENDPOINTS } from "@/lib/constants";
 
-const UPLOAD_ENDPOINT =
-  "https://n8n-workflows-production-d083.up.railway.app/webhook/ingest-pipeline";
+const webhookUrl = N8N_ENDPOINTS.ingest;
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +67,7 @@ export async function POST(request: Request, { params }: Params) {
     formData.set("file_op", "delete");
     formData.set("file_tags", JSON.stringify([]));
 
-    const upstreamResponse = await fetch(UPLOAD_ENDPOINT, {
+    const upstreamResponse = await fetch(webhookUrl, {
       method: "POST",
       body: formData,
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import { ComponentType, ReactNode, useCallback, useState, useEffect } from "react";
-import { useHeap } from "../../hooks/spaces";
+import { useHeap } from "../../hooks/useSpaces";
 import { ChatProvider, useChat } from "../../hooks/useChat";
 import { SpaceNav } from "./space-nav";
 import { PaneOne } from "./pane-one";

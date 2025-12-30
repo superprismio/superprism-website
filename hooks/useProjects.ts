@@ -130,6 +130,38 @@ export function useProjectUpdate() {
   });
 }
 
+export function useProject(heapId: string | null, sessionId: string | null) {
+  return useQuery<ChatSession, Error>({
+    queryKey: ["chat-session", heapId, sessionId],
+    queryFn: async () => {
+      if (!heapId || !sessionId) {
+        throw new Error("Heap ID and Session ID are required");
+      }
+
+      const response = await fetch(
+        `/api/heaps/${heapId}/chat-sessions/${sessionId}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to load chat session");
+      }
+
+      const json = (await response.json()) as ApiResponse<ChatSession>;
+      if (!json.data) {
+        throw new Error("Invalid response");
+      }
+
+      return json.data;
+    },
+    enabled: Boolean(heapId) && Boolean(sessionId),
+    staleTime: 30_000,
+  });
+}
+
 export function useCreateProject() {
   const queryClient = useQueryClient();
 

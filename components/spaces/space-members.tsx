@@ -1,8 +1,7 @@
 "use client";
 
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
-import { useEffect, useState } from "react";
-import type { Member } from "./types";
+import { useState } from "react";
 import { Button } from "../ui/button";
 import { PlusIcon, CopyIcon } from "lucide-react";
 import {
@@ -24,30 +23,11 @@ import {
   SelectValue,
 } from "../ui/select";
 import { useHeapInvites, useCreateInvite, type HeapInvite } from "@/hooks/useInvites";
+import { useSpaceMembers } from "@/hooks/useMembers";
 
 export function SpaceMembers({ heapId }: WorkspacePaneComponentProps) {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { data: members = [], isLoading: loading } = useSpaceMembers(heapId);
   const { data: invites, isLoading: invitesLoading } = useHeapInvites(heapId);
-  const createInvite = useCreateInvite();
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/heaps/${heapId}/members`);
-        const json = await res.json();
-        if (!mounted) return;
-        if (res.ok) setMembers(json.data || []);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;  
-    };
-  }, [heapId]);
 
   // Filter open invites (not expired and not used)
   const openInvites = invites?.filter(

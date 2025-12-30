@@ -1,8 +1,6 @@
 import Image from "next/image";
 // import Link from "next/link";
 // import { AuthButton } from "./auth/auth-button";
-import headerBg from "../public/images/superprism-0.png";
-import mobileLogo from "../public/images/SP_logo.png";
 
 export function Header() {
   return (
@@ -11,7 +9,9 @@ export function Header() {
         alt="Superprism bg"
         className="absolute lg:pl-60 inset-x-0 w-full object-left -z-10 object-cover overflow-visible min-h-[600px]"
         priority
-        src={headerBg}
+        src="/images/superprism-0.png"
+        width={1920}
+        height={600}
       />
       <div className="grid place-items-center w-full max-h-8 p-4">
         <Image
@@ -19,7 +19,9 @@ export function Header() {
           priority
           sizes="271px"
           className="size-//full object-cover"
-          src={mobileLogo}
+          src="/images/SP_logo.png"
+          width={271}
+          height={271}
         />
       </div>
       {/* <div className="w-2/3 flex items-center justify-end text-sm pr-20">
