@@ -15,30 +15,36 @@ type TextEditorProps = {
   sessionId?: string;
 };
 
-export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, sessionId }: TextEditorProps) {
+export function TextEditor({
+  heapId,
+  initialMarkdown,
+  fileId,
+  initialFileName,
+  sessionId,
+}: TextEditorProps) {
   const { saveMarkdown } = useSpaceFiles(heapId);
   const { data: sessionData } = useProject(heapId, sessionId || null);
   const updateProject = useProjectUpdate();
   const [markdown, setMarkdown] = useState(initialMarkdown || "");
-  
+
   useEffect(() => {
     if (initialMarkdown !== undefined) {
       setMarkdown(initialMarkdown);
     }
   }, [initialMarkdown]);
-  
+
   const [fileName, setFileName] = useState(initialFileName || "");
-  
+
   useEffect(() => {
     if (initialFileName !== undefined) {
       setFileName(initialFileName);
     }
   }, [initialFileName]);
-  
+
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  
+
   const isEditMode = Boolean(fileId);
 
   const handleSave = async () => {
@@ -65,7 +71,7 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, s
         try {
           let currentFileIds: string[] = [];
           let existingMeta: Record<string, unknown> = {};
-          
+
           // Use session data from hook if available
           if (sessionData) {
             const meta = sessionData.meta;
@@ -74,8 +80,9 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, s
               const existingFileIds = meta.file_id;
               if (Array.isArray(existingFileIds)) {
                 // Filter and convert to string array, handling Json type
-                currentFileIds = existingFileIds
-                  .filter((id): id is string => typeof id === "string");
+                currentFileIds = existingFileIds.filter(
+                  (id): id is string => typeof id === "string"
+                );
               }
             }
           }
@@ -117,7 +124,9 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, s
       <div>
         <h4 className="text-lg font-semibold text-foreground">Text Editor</h4>
         <p className="text-sm text-muted-foreground">
-          {isEditMode ? "Edit markdown file." : "Draft markdown and ingest it into this heap."}
+          {isEditMode
+            ? "Edit markdown file."
+            : "Draft markdown and ingest it into this heap."}
         </p>
       </div>
 
@@ -155,7 +164,7 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, s
         </div>
       )}
 
-      <div className="mt-auto flex gap-2">
+      <div className="mt-5 flex gap-2">
         <Button
           onClick={handleSave}
           disabled={saving || !markdown.trim()}
@@ -179,4 +188,3 @@ export function TextEditor({ heapId, initialMarkdown, fileId, initialFileName, s
     </div>
   );
 }
-

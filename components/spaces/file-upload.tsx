@@ -38,9 +38,13 @@ export function FileUpload({ heapId }: FileUploadProps) {
     });
 
     if (invalidFiles.length > 0) {
-      const allowedTypes = UPLOAD_ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(", ");
+      const allowedTypes = UPLOAD_ALLOWED_EXTENSIONS.map(
+        (ext) => `.${ext}`
+      ).join(", ");
       setError(
-        `Invalid file type(s): ${invalidFiles.join(", ")}. Allowed types: ${allowedTypes}`
+        `Invalid file type(s): ${invalidFiles.join(
+          ", "
+        )}. Allowed types: ${allowedTypes}`
       );
     }
 
@@ -124,7 +128,7 @@ export function FileUpload({ heapId }: FileUploadProps) {
         </div>
       )}
 
-      <div className="mt-auto flex gap-2">
+      <div className="mt-5 flex gap-2">
         <Button
           onClick={handleUpload}
           disabled={uploading || files.length === 0}
@@ -147,4 +151,3 @@ export function FileUpload({ heapId }: FileUploadProps) {
     </div>
   );
 }
-

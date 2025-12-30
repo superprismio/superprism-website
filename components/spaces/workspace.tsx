@@ -25,6 +25,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "../ui/dialog";
 
 type WorkspaceProps = {
@@ -217,6 +218,9 @@ export function Workspace({
                   onOpenChange={setIsSecondaryDialogOpen}
                 >
                   <DialogContent className="max-w-full h-[90vh] flex flex-col p-0">
+                    <DialogTitle className="sr-only">
+                      {secondaryDefinition?.label}
+                    </DialogTitle>
                     <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                       <SecondaryComponent
                         onOpenPaneTwo={handleOpenSecondary}
