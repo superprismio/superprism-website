@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import { useChat, useChatMessages, useSendChatMessage } from "@/hooks/useChat";
 import { Button } from "../ui/button";
@@ -12,6 +12,8 @@ import {
 } from "../ui/dialog";
 import { History, X, Copy, Check, FileEdit } from "lucide-react";
 import { ChatSessionSelector } from "./chat-session-selector";
+import { isProjectCreatorClient } from "@/lib/auth-helpers";
+import { createClient } from "@/lib/supabase/client";
 
 // type Message = {
 //   role: "user" | "assistant";
@@ -29,6 +31,19 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   const [editorContent, setEditorContent] = useState("");
   const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Get current user ID
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id ?? null);
+    };
+    void getCurrentUser();
+  }, []);
 
   // Convert fetched messages to display format
   const messages = useMemo(() => {
@@ -69,7 +84,17 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   //   sendMessage("", true);
   // };
 
-  const chatDisabled = isPresaved;
+  // Check if user is the project creator (only for saved projects)
+  const isProjectOwner = useMemo(() => {
+    if (!isProject || !activeChatSession || activeChatSession.id === null) {
+      return true; // Allow chat for non-projects or pending projects
+    }
+    const projectCreatedBy = (activeChatSession as { created_by?: string | null })
+      .created_by;
+    return isProjectCreatorClient(currentUserId, projectCreatedBy);
+  }, [isProject, activeChatSession, currentUserId]);
+
+  const chatDisabled = isPresaved || (isProject && !isProjectOwner);
   const chatTitle = isProject ? "Chat with Project" : "Chat with Space";
 
   const hasActiveSession =
@@ -154,7 +179,11 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                 <div className="text-sm text-muted-foreground">
                   <div className="mb-2">&gt;_</div>
                   <p className="text-xs">
-                    Please save the project before starting a conversation.
+                    {isPresaved
+                      ? "Please save the project before starting a conversation."
+                      : isProject && !isProjectOwner
+                        ? "You can only chat with projects you created. Clone this project to create your own version and chat with it."
+                        : "Chat is disabled."}
                   </p>
                 </div>
               ) : isLoadingMessages ? (

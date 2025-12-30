@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
-import { requireHeapMember } from "@/lib/auth-helpers";
+import { requireHeapMember, requireHeapOwner } from "@/lib/auth-helpers";
 
 type Params = { params: Promise<{ heapId: string }> };
 
@@ -40,8 +40,8 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const supabase = await createClient();
 
-  // Verify user is authenticated and is a heap member
-  const authResult = await requireHeapMember(
+  // Verify user is authenticated and is a heap owner
+  const authResult = await requireHeapOwner(
     supabase,
     heapId,
     "You must be a member of this heap to add tags"

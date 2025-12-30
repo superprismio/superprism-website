@@ -16,6 +16,7 @@ import { X, ChevronRight, Eye, EyeOff, Trash2 } from "lucide-react";
 import { FileRow } from "./types";
 import { createClient } from "@/lib/supabase/client";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
+import { isFileCreatorClient } from "@/lib/auth-helpers";
 
 type FilePreviewProps = {
   file: FileRow | null;
@@ -119,8 +120,8 @@ export function FilePreview({ file, onClose, heapId, onEditFile, onToggleVisibil
 
   const isMarkdownFile = file?.file_name?.toLowerCase().endsWith(".md") ?? false;
   const canEdit = file && currentUserId && file.uploader_id === currentUserId && isMarkdownFile;
-  const canToggleVisibility = file && currentUserId && file.uploader_id === currentUserId && onToggleVisibility;
-  const canDelete = file && currentUserId && file.uploader_id === currentUserId && onDeleteFile;
+  const canToggleVisibility = file && isFileCreatorClient(currentUserId, file.uploader_id) && onToggleVisibility;
+  const canDelete = file && isFileCreatorClient(currentUserId, file.uploader_id) && onDeleteFile;
 
   const handleToggleVisibility = async () => {
     if (!file || !onToggleVisibility) return;
