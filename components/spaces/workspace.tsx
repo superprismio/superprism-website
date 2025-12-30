@@ -22,6 +22,11 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "../ui/resizable";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "../ui/dialog";
 
 type WorkspaceProps = {
   spaceId: string | null;
@@ -105,6 +110,7 @@ export function Workspace({
     DEFAULT_SECONDARY
   );
   const [isMobile, setIsMobile] = useState(false);
+  const [isSecondaryDialogOpen, setIsSecondaryDialogOpen] = useState(false);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -187,36 +193,75 @@ export function Workspace({
             onSelect={handleSelectPrimary}
           />
           {SecondaryComponent ? (
-            <ResizablePanelGroup
-              direction={isMobile ? "vertical" : "horizontal"}
-              className="flex h-full min-h-[320px] flex-col"
-            >
-              <ResizablePanel
-                defaultSize={60}
-                minSize={10}
-                className="md:min-w-[280px]"
-              >
-                <PaneOne title={primaryDefinition.label}>
-                  <PrimaryComponent
-                    onOpenPaneTwo={handleOpenSecondary}
-                    heapId={spaceId}
-                  />
-                </PaneOne>
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel
-                defaultSize={40}
-                minSize={10}
-                className="md:min-w-[240px]"
-              >
-                <PaneTwo title={secondaryDefinition?.label}>
+            isMobile ? (
+              <>
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <PaneOne title={primaryDefinition.label}>
+                    <PrimaryComponent
+                      onOpenPaneTwo={handleOpenSecondary}
+                      heapId={spaceId}
+                    />
+                  </PaneOne>
+                </div>
+                <PaneTwo
+                  title={secondaryDefinition?.label}
+                  isMobile={true}
+                  onExpand={() => setIsSecondaryDialogOpen(true)}
+                >
                   <SecondaryComponent
                     onOpenPaneTwo={handleOpenSecondary}
                     heapId={spaceId}
                   />
                 </PaneTwo>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+                <Dialog
+                  open={isSecondaryDialogOpen}
+                  onOpenChange={setIsSecondaryDialogOpen}
+                >
+                  <DialogContent className="max-w-full h-[90vh] flex flex-col p-0">
+                    <DialogTitle className="sr-only">
+                      {secondaryDefinition?.label}
+                    </DialogTitle>
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                      <SecondaryComponent
+                        onOpenPaneTwo={handleOpenSecondary}
+                        heapId={spaceId}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
+            ) : (
+              <ResizablePanelGroup
+                direction="horizontal"
+                className="flex h-full min-h-[320px] flex-col"
+              >
+                <ResizablePanel
+                  defaultSize={60}
+                  minSize={10}
+                  className="md:min-w-[280px]"
+                >
+                  <PaneOne title={primaryDefinition.label}>
+                    <PrimaryComponent
+                      onOpenPaneTwo={handleOpenSecondary}
+                      heapId={spaceId}
+                    />
+                  </PaneOne>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel
+                  defaultSize={40}
+                  minSize={10}
+                  className="md:min-w-[240px]"
+                >
+                  <PaneTwo title={secondaryDefinition?.label}>
+                    <SecondaryComponent
+                      onOpenPaneTwo={handleOpenSecondary}
+                      heapId={spaceId}
+                    />
+                  </PaneTwo>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            )
           ) : (
             <>
               <PaneOne title={primaryDefinition.label}>
