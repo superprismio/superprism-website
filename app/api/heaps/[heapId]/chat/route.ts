@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 import { requireHeapMember } from "@/lib/auth-helpers";
+import { N8N_ENDPOINTS } from "@/lib/constants";
 
 type Params = { params: Promise<{ heapId: string }> };
 
-const webhookUrl =
-  "https://n8n-workflows-production-d083.up.railway.app/webhook/chat";
+const webhookUrl = N8N_ENDPOINTS.chat;
 
 export async function POST(request: Request, { params }: Params) {
   const { heapId } = await params;
