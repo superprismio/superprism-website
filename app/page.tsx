@@ -7,6 +7,7 @@ import projectsImg from "../public/images/sp_graphic-projects.png";
 import extendImg from "../public/images/sp_graphic-extend.png";
 import sectionBreak from "../public/images/prism_overlay.png"
 import sectionBreak2 from "../public/images/prism_landscape.png"
+import sectionBreak3 from "../public/images/chroma_orb.png"
 import { EarlyAccessForm } from "@/components/early-access-form";
 
 export default function Home() {
@@ -325,7 +326,18 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-col max-w-4xl my-8 lg:my-16 px-4 lg:px-0">
+      <div className="w-full h-auto relative mb-[180px] lg:mb-[360px]">
+        <div className="w-full h-auto absolute -z-10 mx-auto">
+        <Image alt="section break"
+              width={1200}
+              height={400}
+              priority
+              src={sectionBreak3}
+              className="w-full h-auto transform -scale-y-100"/>
+        </div>
+      </div>
+
+      <div className="flex flex-col max-w-xl my-8 lg:my-16 px-4 lg:px-0">
         <h4 className="text-2xl lg:text-4xl mb-4 text-center">
           Start refracting knowledge soon.
         </h4>
