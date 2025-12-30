@@ -5,17 +5,20 @@ import Image from "next/image";
 import spacesImg from "../public/images/sp_graphic-spaces.png";
 import projectsImg from "../public/images/sp_graphic-projects.png";
 import extendImg from "../public/images/sp_graphic-extend.png";
+import sectionBreak from "../public/images/prism_overlay.png"
+import sectionBreak2 from "../public/images/prism_landscape.png"
+import sectionBreak3 from "../public/images/chroma_orb.png"
 import { EarlyAccessForm } from "@/components/early-access-form";
 
 export default function Home() {
   return (
     <div className="flex-1 w-full flex flex-col items-center">
       <Header />
-      <div className="flex-1 w-full flex flex-col items-center">
+      <div className="flex-1 w-full flex flex-col items-center mt-60 lg:mt-40">
         <Hero />
       </div>
       <div className="flex-1 w-full flex flex-col items-center max-w-4xl px-4 lg:px-0">
-        <h2 className="text-xl lg:text-2xl my-8 text-center">How it Works</h2>
+        <h2 className="text-4xl lg:text-6xl my-8 text-center">How it Works</h2>
         <div className="flex flex-col lg:flex-row w-full mb-8 lg:mb-16 gap-4 lg:gap-0">
           <div className="flex flex-col w-full lg:w-1/2">
             <Image
@@ -27,22 +30,24 @@ export default function Home() {
               className="w-full h-auto"
             />
           </div>
-          <div className="flex flex-col w-full lg:w-1/2 lg:pl-8">
-            <h3 className="text-lg lg:text-xl mb-4">
-              1. Build Spaces of Knowledge
+          <div className="flex flex-col w-full lg:w-1/2 lg:pl-8 justify-center">
+            <h3 className="text-xl lg:text-3xl mb-4">
+              Build Spaces of Knowledge
             </h3>
-            <p className="text-sm lg:text-base">
-              Create dedicated spaces for different domains—one for a research
-              project, another for product specs, another for community docs.
-              Each space is a focused knowledge base with its own context.
+            <p className="text-sm lg:text-lg">
+              <strong>
+              Create dedicated spaces for different contexts.
+              </strong>
+            </p>
+            <p className="text-sm lg:text-base mt-4 text-muted-foreground">
               Upload documents, connect data sources, or ingest content from the
               web. Superprism organizes it automatically based on rules you set.
             </p>
-            <p className="text-sm lg:text-base">
-              <strong>
+            <p className="text-sm lg:text-base mt-4">
+              <i>
                 Your knowledge stays clean and up to date. No context bleed
                 between unrelated work.
-              </strong>
+              </i>
             </p>
           </div>
         </div>
@@ -57,19 +62,22 @@ export default function Home() {
               className="w-full h-auto"
             />
           </div>
-          <div className="flex flex-col w-full lg:w-1/2 lg:pl-8">
-            <h3 className="text-lg lg:text-xl mb-4">
-              2. Run Projects Within Spaces
+          <div className="flex flex-col w-full lg:w-1/2 lg:pl-8 justify-center">
+            <h3 className="text-xl lg:text-3xl mb-4">
+              Run Projects Within Spaces
             </h3>
-            <p className="text-sm lg:text-base">
+            <p className="text-md lg:text-lg">
+              <strong>
               Launch projects that use your space&apos;s knowledge as
-              foundation. Chat with your knowledge base, generate reports,
+              foundation.
+              </strong>
+            </p>
+            <p className="text-sm lg:text-base mt-4 text-muted-foreground">Chat with your knowledge base, generate reports,
               create summaries, build documentation. Projects can pull in
               additional context without polluting your core space—they&apos;re
-              experimental branches where only what you choose to keep persists.
-            </p>
-            <p className="text-sm lg:text-base">
-              <strong>Generate what you need. Keep what matters.</strong>
+              experimental branches where only what you choose to keep persists.</p>
+            <p className="text-sm lg:text-base mt-4">
+              <i>Generate what you need. Keep what matters.</i>
             </p>
           </div>
         </div>
@@ -84,27 +92,43 @@ export default function Home() {
               className="w-full h-auto"
             />
           </div>
-          <div className="flex flex-col w-full lg:w-1/2 lg:pl-8">
-            <h3 className="text-lg lg:text-xl mb-4">3. Share and Extend</h3>
-            <p className="text-sm lg:text-base">
-              Invite collaborators to spaces or projects. Generate your own
-              Model Context Protocol (MCP) server to connect your organized
+          <div className="flex flex-col w-full lg:w-1/2 lg:pl-8 justify-center">
+            <h3 className="text-xl lg:text-3xl mb-4">Share and Extend</h3>
+            <p className="text-md lg:text-lg">
+              <strong>
+              Invite collaborators and connect to external tools and workflows. 
+              </strong>
+            </p>
+            <p className="text-sm lg:text-base mt-4 text-muted-foreground">
+              Generate your own Model Context Protocol (MCP) server to connect your organized
               knowledge to other AI-ready tools. Export selective knowledge as
               wikis, summarized docs or public documentation. Your knowledge
               base becomes infrastructure for your entire workflow.
             </p>
-            <p className="text-sm lg:text-base">
-              <strong>
-                Local by default. Collaborative when you choose. Connect to your
+            <p className="text-sm lg:text-base mt-4">
+              <i>
+                Private by default. Collaborative when you choose. Connect to your
                 existing tools.
-              </strong>
+              </i>
             </p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl px-4 lg:px-0">
-        <h3 className="text-xl lg:text-2xl my-8 text-center">
+      <div className="w-full h-auto relative lg:-mt-40 mb-[180px] lg:mb-[360px]">
+        <div className="w-full h-auto absolute z-0">
+        <Image alt="section break"
+              width={1200}
+              height={400}
+              priority
+              src={sectionBreak}
+              className="w-full h-auto transform -scale-y-100"/>
+        </div>
+      </div>
+
+      <div className="max-w-4xl px-8 lg:px-0 relative z-1">
+        
+        <h3 className="text-3xl lg:text-6xl my-8 text-center">
           Key Capabilities
         </h3>
         <div className="flex flex-col lg:flex-row w-full mb-8 flex-wrap gap-6 lg:gap-0">
@@ -237,9 +261,21 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-col max-w-4xl mt-8 lg:mt-16 px-4 lg:px-0">
+      <div className="w-full h-auto relative mb-[120px] lg:mb-[320px]">
+        <div className="w-full h-auto absolute z-0">
+        <Image alt="section break"
+              width={1200}
+              height={400}
+              priority
+              src={sectionBreak2}
+              className="w-full h-auto"/>
+        </div>
+      </div>
+
+
+      <div className="flex flex-col max-w-4xl px-8 lg:px-0 relative z-1">
         <div className="flex flex-row w-full">
-          <h4 className="text-xl lg:text-2xl mb-8 text-center w-full">
+          <h4 className="text-3xl lg:text-6xl mb-8 text-center w-full">
             Technical Foundation
           </h4>
         </div>
@@ -290,7 +326,18 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-col max-w-4xl my-8 lg:my-16 px-4 lg:px-0">
+      <div className="w-full h-auto relative mb-[180px] lg:mb-[360px]">
+        <div className="w-full h-auto absolute -z-10 mx-auto">
+        <Image alt="section break"
+              width={1200}
+              height={400}
+              priority
+              src={sectionBreak3}
+              className="w-full h-auto transform -scale-y-100"/>
+        </div>
+      </div>
+
+      <div className="flex flex-col max-w-xl my-8 lg:my-16 px-4 lg:px-0">
         <h4 className="text-2xl lg:text-4xl mb-4 text-center">
           Start refracting knowledge soon.
         </h4>
