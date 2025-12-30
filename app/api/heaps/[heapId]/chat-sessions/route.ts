@@ -21,7 +21,7 @@ export async function GET(_request: Request, { params }: Params) {
 export async function POST(request: Request, { params }: Params) {
   const { heapId } = await params;
   const body = await request.json().catch(() => ({}));
-  const { title, meta } = body ?? {};
+  const { title, meta, filter } = body ?? {};
 
   if (!title || typeof title !== "string") {
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
@@ -43,12 +43,14 @@ export async function POST(request: Request, { params }: Params) {
 
   const serviceClient = await createServiceRoleClient();
 
-  const filter =
-    meta?.file_id.length > 0
-      ? {
-          in: { file_id: meta.file_id },
-        }
-      : null;
+  const finalFilter =
+    filter !== undefined
+      ? filter
+      : meta?.file_id && Array.isArray(meta.file_id) && meta.file_id.length > 0
+        ? {
+            in: { file_id: meta.file_id },
+          }
+        : null;
 
   const { data, error } = await serviceClient
     .from("chat_sessions")
@@ -58,7 +60,7 @@ export async function POST(request: Request, { params }: Params) {
       title,
       created_by: user.id,
       meta: meta ?? { isProject: true, file_id: [] },
-      filter,
+      filter: finalFilter,
     })
     .select("*")
     .single();

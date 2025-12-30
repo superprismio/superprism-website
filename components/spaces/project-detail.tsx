@@ -244,6 +244,33 @@ export function ProjectDetail({
     }
   };
 
+  const handleClone = async () => {
+    if (!project || isPending) return;
+
+    try {
+      const clonedTitle = `${project.title || "Untitled Project"} - Copy`;
+      const clonedMeta = project.meta
+        ? (JSON.parse(JSON.stringify(project.meta)) as Record<string, unknown>)
+        : { isProject: true, file_id: [] };
+      const clonedFilter = (project as ChatSession).filter
+        ? JSON.parse(JSON.stringify((project as ChatSession).filter))
+        : undefined;
+
+      const clonedProject = await createProject.mutateAsync({
+        heapId,
+        title: clonedTitle,
+        meta: clonedMeta,
+        filter: clonedFilter,
+      });
+
+      if (onProjectCreated) {
+        onProjectCreated(clonedProject);
+      }
+    } catch (error) {
+      console.error("Failed to clone project:", error);
+    }
+  };
+
   return (
     <>
       <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
@@ -280,6 +307,17 @@ export function ProjectDetail({
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {onClose && (
           <div className="flex justify-end mb-1 gap-2">
+            {isRealProject && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleClone}
+                disabled={createProject.isPending}
+              >
+                {createProject.isPending ? "Cloning..." : "Clone Project"}
+              </Button>
+            )}
             {canEdit && !isPending && (
               <Button
                 type="button"

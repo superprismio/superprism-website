@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { requireHeapMember } from "@/lib/auth-helpers";
+import { requireHeapOwner } from "@/lib/auth-helpers";
 
 type Params = { params: Promise<{ heapId: string; membershipId: string }> };
 
@@ -24,7 +24,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const supabase = await createClient();
 
   // Verify user is authenticated and is a heap member
-  const authResult = await requireHeapMember(
+  const authResult = await requireHeapOwner(
     supabase,
     heapId,
     "You must be a member of this heap to update membership"

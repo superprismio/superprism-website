@@ -168,9 +168,15 @@ export function useCreateProject() {
   return useMutation<
     ChatSession,
     Error,
-    { heapId: string; title: string; fileIds?: string[] }
+    {
+      heapId: string;
+      title: string;
+      fileIds?: string[];
+      meta?: Record<string, unknown>;
+      filter?: unknown;
+    }
   >({
-    mutationFn: async ({ heapId, title, fileIds = [] }) => {
+    mutationFn: async ({ heapId, title, fileIds = [], meta, filter }) => {
       const response = await fetch(`/api/heaps/${heapId}/chat-sessions`, {
         method: "POST",
         headers: {
@@ -178,10 +184,11 @@ export function useCreateProject() {
         },
         body: JSON.stringify({
           title,
-          meta: {
+          meta: meta ?? {
             isProject: true,
             file_id: fileIds,
           },
+          filter,
         }),
       });
 

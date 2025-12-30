@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { FileRow } from "./types";
 import { createClient } from "@/lib/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type FileExplorerProps = {
   heapId: string;
@@ -193,8 +194,9 @@ function FolderList({
   className,
 }: FolderListProps) {
   return (
-    <nav className={cn("space-y-0", className)}>
-      <ul>
+    <ScrollArea className={cn("flex-1", className)}>
+      <nav className="space-y-0">
+        <ul>
         {folders.map((folder) => {
           const parentOpen = openParent === folder.path;
           const hasChildren = folder.children && folder.children.length > 0;
@@ -337,7 +339,8 @@ function FolderList({
           );
         })}
       </ul>
-    </nav>
+      </nav>
+    </ScrollArea>
   );
 }
 
@@ -359,7 +362,8 @@ function FileSearch({
   className,
 }: FileSearchProps) {
   return (
-    <aside className={cn("p-4 space-y-4 overflow-y-auto", className)}>
+    <ScrollArea className={cn("flex-1", className)}>
+      <aside className="p-4 space-y-4">
       <div className="space-y-2">
         <label className="text-xs font-medium text-muted-foreground">
           Search
@@ -406,7 +410,8 @@ function FileSearch({
           </button>
         ) : null}
       </div>
-    </aside>
+      </aside>
+    </ScrollArea>
   );
 }
 
@@ -592,7 +597,7 @@ export function FileExplorer({
                     setOpenParent(topLevelParent);
                   }
                 }}
-                className="flex-1 overflow-y-auto"
+                className="flex-1"
               />
             ) : (
               <FileSearch
@@ -630,30 +635,28 @@ export function FileExplorer({
             {!isLoading && !isError ? (
               mode === "explore" ? (
                 activeFolder ? (
-                  <>
-                    <div className="flex-1 min-h-0 overflow-y-auto">
-                      <FileList
-                        files={activeFolder.files}
-                        emptyMessage="Ingestion before digestion"
-                        selectedFileId={selectedFileId}
-                        onAddToChat={onAddFileToChat}
-                        onPreview={onPreviewFile}
-                        isStaging={isStaging}
-                        onMoveToFolder={
-                          isStaging ? updateFileFolders : undefined
-                        }
-                        currentUserId={currentUserId}
-                        heapId={heapId}
-                      />
-                    </div>
-                  </>
+                  <ScrollArea className="flex-1 min-h-0">
+                    <FileList
+                      files={activeFolder.files}
+                      emptyMessage="Ingestion before digestion"
+                      selectedFileId={selectedFileId}
+                      onAddToChat={onAddFileToChat}
+                      onPreview={onPreviewFile}
+                      isStaging={isStaging}
+                      onMoveToFolder={
+                        isStaging ? updateFileFolders : undefined
+                      }
+                      currentUserId={currentUserId}
+                      heapId={heapId}
+                    />
+                  </ScrollArea>
                 ) : (
                   <div className="text-sm text-muted-foreground p-10">
                     Select a folder to view its files.
                   </div>
                 )
               ) : (
-                <div className="flex-1 min-h-0 overflow-y-auto">
+                <ScrollArea className="flex-1 min-h-0">
                   <FileList
                     files={filteredFiles}
                     emptyMessage={
@@ -667,7 +670,7 @@ export function FileExplorer({
                     currentUserId={currentUserId}
                     heapId={heapId}
                   />
-                </div>
+                </ScrollArea>
               )
             ) : null}
           </section>

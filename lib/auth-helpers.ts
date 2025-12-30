@@ -151,15 +151,16 @@ export async function requireHeapOwner(
     return authResult;
   }
 
-  // Check if user has owner role in this heap
-  const { data: membership, error: memberError } = await supabase
-    .from("memberships")
-    .select("role")
-    .eq("heap_id", heapId)
-    .eq("user_id", authResult.user.id)
-    .maybeSingle();
+  // Then check if user is a heap admin (owner or admin)
+  const { data: isAdmin, error: adminError } = await supabase.rpc(
+    "is_heap_admin",
+    {
+      p_heap_id: heapId,
+      p_user_id: authResult.user.id,
+    }
+  );
 
-  if (memberError || !membership || membership.role !== "owner") {
+  if (adminError || !isAdmin) {
     return {
       success: false,
       response: NextResponse.json(
@@ -167,70 +168,6 @@ export async function requireHeapOwner(
           error:
             errorMessage ||
             "You must be an owner of this heap to perform this action",
-        },
-        { status: 403 }
-      ),
-    };
-  }
-
-  return authResult;
-}
-
-/**
- * Verifies that a user is authenticated AND is an admin (or owner) of the specified heap.
- * Returns the user object if authorized, or an error response if not.
- *
- * @param supabase - The Supabase client instance
- * @param heapId - The heap ID to check admin status for
- * @param errorMessage - Optional custom error message (default: "You must be an admin of this heap")
- * @returns Either { success: true, user, supabase } or { success: false, response }
- *
- * @example
- * ```typescript
- * const supabase = await createClient();
- * const { heapId } = await params;
- *
- * const authResult = await requireHeapAdmin(supabase, heapId);
- *
- * if (!authResult.success) {
- *   return authResult.response;
- * }
- *
- * const { user } = authResult;
- * // User is authenticated and is a heap admin, continue with route logic
- * ```
- */
-export async function requireHeapAdmin(
-  supabase: SupabaseClient,
-  heapId: string,
-  errorMessage?: string
-): Promise<AuthResult> {
-  // First check authentication
-  const authResult = await requireAuth(supabase);
-  if (!authResult.success) {
-    return authResult;
-  }
-
-  // Check if user has admin or owner role in this heap
-  const { data: membership, error: memberError } = await supabase
-    .from("memberships")
-    .select("role")
-    .eq("heap_id", heapId)
-    .eq("user_id", authResult.user.id)
-    .maybeSingle();
-
-  if (
-    memberError ||
-    !membership ||
-    (membership.role !== "admin" && membership.role !== "owner")
-  ) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        {
-          error:
-            errorMessage ||
-            "You must be an admin of this heap to perform this action",
         },
         { status: 403 }
       ),

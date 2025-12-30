@@ -57,8 +57,8 @@ export function SpaceRoot({ heapId }: SpaceRootProps) {
   const errorMessage = error?.message ?? null;
 
   return (
-    <div className="flex flex-col w-full">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-3 py-4">
+    <div className="flex flex-col w-full h-full">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-3 py-4 flex-shrink-0">
         <div className="flex items-center gap-3 min-w-[220px]">
           <Select
             value={activeSpaceId ?? ""}
@@ -107,18 +107,20 @@ export function SpaceRoot({ heapId }: SpaceRootProps) {
           {errorMessage}
         </div>
       ) : (
-        <Workspace
-          spaceId={activeSpaceId}
-          isLoadingList={isLoading}
-          emptyStateAction={
-            <CreateSpaceDialog
-              onCreated={(space) => {
-                handleCreatedSpace(space);
-              }}
-              trigger={<Button>Create a space</Button>}
-            />
-          }
-        />
+        <div className="flex-1 min-h-0">
+          <Workspace
+            spaceId={activeSpaceId}
+            isLoadingList={isLoading}
+            emptyStateAction={
+              <CreateSpaceDialog
+                onCreated={(space) => {
+                  handleCreatedSpace(space);
+                }}
+                trigger={<Button>Create a space</Button>}
+              />
+            }
+          />
+        </div>
       )}
     </div>
   );

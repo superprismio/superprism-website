@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
-import { requireHeapMember } from "@/lib/auth-helpers";
+import { requireHeapMember, isProjectCreator } from "@/lib/auth-helpers";
 
 type Params = { params: Promise<{ heapId: string; sessionId: string }> };
 
@@ -57,11 +57,12 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const supabase = await createClient();
 
-  // Verify user is authenticated and is a heap member
-  const authResult = await requireHeapMember(
+  // Verify user is authenticated and is the project creator
+  const authResult = await isProjectCreator(
     supabase,
     heapId,
-    "You must be a member of this heap to update projects"
+    sessionId,
+    "You must be the project creator to update this project"
   );
   if (!authResult.success) {
     return authResult.response;

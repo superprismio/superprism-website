@@ -162,9 +162,9 @@ export function Workspace({
   return (
     <ChatProvider>
       <ProjectPaneMonitor primaryPane={primaryPane} />
-      <div>
+      <div className="h-full">
         <div
-          className={`flex flex-col min-h-[calc(100vh)] md:grid ${layoutColumns}`}
+          className={`flex flex-col h-full md:grid ${layoutColumns}`}
           role="region"
           aria-label="Workspace layout"
         >
@@ -176,7 +176,7 @@ export function Workspace({
           {SecondaryComponent ? (
             <ResizablePanelGroup
               direction="horizontal"
-              className="flex min-h-[320px] flex-col"
+              className="flex h-full min-h-[320px] flex-col"
             >
               <ResizablePanel
                 defaultSize={60}

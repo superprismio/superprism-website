@@ -124,39 +124,6 @@ export async function DELETE(
 }
 ```
 
-### `requireHeapAdmin`
-
-Verifies that a user is authenticated AND has the "admin" or "owner" role in the specified heap.
-
-**Location:** `lib/auth-helpers.ts`
-
-**Parameters:**
-- `supabase` - The Supabase client instance
-- `heapId` - The heap ID to check admin status for
-- `errorMessage` - Optional custom error message (default: "You must be an admin of this heap")
-
-**Usage:**
-```typescript
-import { requireHeapAdmin } from "@/lib/auth-helpers";
-import { createClient } from "@/lib/supabase/server";
-
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ heapId: string; membershipId: string }> }
-) {
-  const { heapId } = await params;
-  const supabase = await createClient();
-
-  const authResult = await requireHeapAdmin(supabase, heapId);
-
-  if (!authResult.success) {
-    return authResult.response; // Returns 403 Forbidden
-  }
-
-  const { user } = authResult;
-  // User is authenticated and is a heap admin or owner
-}
-```
 
 ### `isFileCreator`
 
