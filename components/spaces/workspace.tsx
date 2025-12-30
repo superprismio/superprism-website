@@ -104,6 +104,19 @@ export function Workspace({
   const [secondaryPane, setSecondaryPane] = useState<WorkspacePaneKey | null>(
     DEFAULT_SECONDARY
   );
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   const handleSelectPrimary = useCallback((pane: WorkspacePaneKey) => {
     setPrimaryPane(pane);
@@ -175,13 +188,13 @@ export function Workspace({
           />
           {SecondaryComponent ? (
             <ResizablePanelGroup
-              direction="horizontal"
+              direction={isMobile ? "vertical" : "horizontal"}
               className="flex h-full min-h-[320px] flex-col"
             >
               <ResizablePanel
                 defaultSize={60}
                 minSize={10}
-                className="min-w-[280px]"
+                className="md:min-w-[280px]"
               >
                 <PaneOne title={primaryDefinition.label}>
                   <PrimaryComponent
@@ -194,7 +207,7 @@ export function Workspace({
               <ResizablePanel
                 defaultSize={40}
                 minSize={10}
-                className="min-w-[240px]"
+                className="md:min-w-[240px]"
               >
                 <PaneTwo title={secondaryDefinition?.label}>
                   <SecondaryComponent
