@@ -9,6 +9,8 @@ import { ProjectFileList } from "@/components/spaces/project-file-list";
 import { createClient } from "@/lib/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { isOwnerOrProjectCreator } from "@/lib/auth-helpers";
+import { useSpaceMembers } from "@/hooks/useMembers";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { generateShareUrl } from "@/lib/share-link";
+import { ShareButton } from "./share-button";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -54,6 +58,7 @@ export function ProjectDetail({
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const updateProject = useProjectUpdate();
   const createProject = useCreateProject();
+  const { data: members = [] } = useSpaceMembers(heapId);
 
   const isPending = project !== null && project.id === null;
   const isRealProject = project !== null && project.id !== null;
@@ -73,12 +78,19 @@ export function ProjectDetail({
     void getCurrentUser();
   }, []);
 
-  // Check if current user can edit (must be the creator)
+  // Check if current user is heap owner/admin
+  const isHeapOwner = useMemo(() => {
+    if (!currentUserId) return false;
+    const currentUserMembership = members.find((m) => m.user_id === currentUserId);
+    return currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
+  }, [members, currentUserId]);
+
+  // Check if current user can edit (must be owner or creator)
   const canEdit = useMemo(() => {
     if (isPending) return true; // Can always edit pending projects
     if (!isRealProject || !currentUserId || !projectCreatorId) return false;
-    return currentUserId === projectCreatorId;
-  }, [isPending, isRealProject, currentUserId, projectCreatorId]);
+    return isOwnerOrProjectCreator(currentUserId, projectCreatorId, isHeapOwner);
+  }, [isPending, isRealProject, currentUserId, projectCreatorId, isHeapOwner]);
 
   // Fetch creator profile
   const { data: creatorProfile } = useQuery<UserProfile | null, Error>({
@@ -272,7 +284,10 @@ export function ProjectDetail({
   };
 
   return (
-    <>
+    <div
+      className="holographic-shimmer h-full"
+      id={`project-detail-${project.id ?? 'pending'}`}
+    >
       <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -308,15 +323,24 @@ export function ProjectDetail({
         {onClose && (
           <div className="flex justify-end mb-1 gap-2">
             {isRealProject && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={handleClone}
-                disabled={createProject.isPending}
-              >
-                {createProject.isPending ? "Cloning..." : "Clone Project"}
-              </Button>
+              <>
+                <ShareButton
+                  url={generateShareUrl(heapId, {
+                    section: "projects",
+                    projectId: project.id,
+                  })}
+                  size="sm"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleClone}
+                  disabled={createProject.isPending}
+                >
+                  {createProject.isPending ? "Cloning..." : "Clone Project"}
+                </Button>
+              </>
             )}
             {canEdit && !isPending && (
               <Button
@@ -442,6 +466,6 @@ export function ProjectDetail({
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

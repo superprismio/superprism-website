@@ -6,6 +6,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { useProject, useProjectUpdate } from "@/hooks/useProjects";
+import { X } from "lucide-react";
 
 type TextEditorProps = {
   heapId: string;
@@ -13,6 +14,7 @@ type TextEditorProps = {
   fileId?: string;
   initialFileName?: string;
   sessionId?: string;
+  onClose?: () => void;
 };
 
 export function TextEditor({
@@ -21,6 +23,7 @@ export function TextEditor({
   fileId,
   initialFileName,
   sessionId,
+  onClose,
 }: TextEditorProps) {
   const { saveMarkdown } = useSpaceFiles(heapId);
   const { data: sessionData } = useProject(heapId, sessionId || null);
@@ -120,70 +123,81 @@ export function TextEditor({
   };
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div>
-        <h4 className="text-lg font-semibold text-foreground">Text Editor</h4>
-        <p className="text-sm text-muted-foreground">
-          {isEditMode
-            ? "Edit markdown file."
-            : "Draft markdown and ingest it into this heap."}
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Input
-          placeholder="Optional file name (defaults to markdown-*.md)"
-          value={fileName}
-          onChange={(event) => {
-            setFileName(event.target.value);
-            setSuccess(false);
-          }}
-          disabled={saving}
-        />
-        <Textarea
-          rows={12}
-          placeholder="# Notes"
-          value={markdown}
-          onChange={(event) => {
-            setMarkdown(event.target.value);
-            setSuccess(false);
-          }}
-          disabled={saving}
-        />
-      </div>
-
-      {error && (
-        <div className="rounded border border-destructive/50 bg-destructive/10 p-2 text-sm text-destructive">
-          {error}
+    <div className="holographic-shimmer h-full">
+      <div className="flex h-full flex-col gap-4 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-lg font-semibold text-foreground">
+              Text Editor
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              {isEditMode
+                ? "Edit markdown file."
+                : "Draft markdown and ingest it into this heap."}
+            </p>
+          </div>
+          {!sessionId && (
+            <Button type="button" size="sm" variant="ghost" onClick={onClose}>
+              <X />
+            </Button>
+          )}
         </div>
-      )}
 
-      {success && (
-        <div className="rounded border border-green-500/50 bg-green-500/10 p-2 text-sm text-green-600">
-          {isEditMode ? "File updated." : "Markdown saved."}
+        <div className="space-y-2">
+          <Input
+            placeholder="Optional file name (defaults to markdown-*.md)"
+            value={fileName}
+            onChange={(event) => {
+              setFileName(event.target.value);
+              setSuccess(false);
+            }}
+            disabled={saving}
+          />
+          <Textarea
+            rows={12}
+            placeholder="# Notes"
+            value={markdown}
+            onChange={(event) => {
+              setMarkdown(event.target.value);
+              setSuccess(false);
+            }}
+            disabled={saving}
+          />
         </div>
-      )}
 
-      <div className="mt-5 flex gap-2">
-        <Button
-          onClick={handleSave}
-          disabled={saving || !markdown.trim()}
-          className="flex-1"
-        >
-          {saving ? "Saving..." : "Save"}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setMarkdown("");
-            setFileName("");
-            setError(null);
-            setSuccess(false);
-          }}
-          disabled={saving}
-        >
-          Clear
-        </Button>
+        {error && (
+          <div className="rounded border border-destructive/50 bg-destructive/10 p-2 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="rounded border border-green-500/50 bg-green-500/10 p-2 text-sm text-green-600">
+            {isEditMode ? "File updated." : "Markdown saved."}
+          </div>
+        )}
+
+        <div className="mt-5 flex gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={saving || !markdown.trim()}
+            className="flex-1"
+          >
+            {saving ? "Saving..." : "Save"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setMarkdown("");
+              setFileName("");
+              setError(null);
+              setSuccess(false);
+            }}
+            disabled={saving}
+          >
+            Clear
+          </Button>
+        </div>
       </div>
     </div>
   );

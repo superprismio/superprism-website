@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -24,6 +24,10 @@ import { ProjectDetail } from "./project-detail";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { useChat } from "@/hooks/useChat";
 import type { Database } from "@/lib/types/supabase";
+import { ScrollArea } from "../ui/scroll-area";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { generateShareUrl } from "@/lib/share-link";
+import { ShareButton } from "./share-button";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -52,11 +56,55 @@ type KnowledgeExplorerProps = WorkspacePaneComponentProps & {
 export function KnowledgeExplorer({
   heapId,
   useDialogForPreview = false,
+  fileId,
 }: KnowledgeExplorerProps) {
-  const { deleteFile, updateFileVisibility } = useSpaceFiles(heapId);
+  const { deleteFile, updateFileVisibility, files } = useSpaceFiles(heapId);
   const { setActiveChatSession } = useChat();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
+
+  // Find and set preview file when fileId is provided in URL
+  useEffect(() => {
+    if (fileId && files.length > 0) {
+      const file = files.find((f) => f.id === fileId);
+      if (file) {
+        // Only update if the preview file is different from the URL file
+        if (previewFile?.id !== fileId) {
+          setPreviewFile(file);
+          if (!useDialogForPreview) {
+            setSecondaryView("preview");
+          }
+        }
+      }
+    } else if (!fileId && previewFile) {
+      // Clear preview if fileId is removed from URL
+      setPreviewFile(null);
+      if (!useDialogForPreview) {
+        setSecondaryView("graph");
+      }
+    }
+  }, [fileId, files, useDialogForPreview]);
+
+  // Update URL when file preview changes
+  const updateUrlWithFile = useCallback(
+    (file: FileRow | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      if (file) {
+        params.set("fileId", file.id);
+        // Ensure section is set to knowledge
+        params.set("section", "knowledge");
+      } else {
+        params.delete("fileId");
+      }
+
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
   const [pendingProject, setPendingProject] = useState<PendingProject | null>(
     null
   );
@@ -78,6 +126,7 @@ export function KnowledgeExplorer({
     if (!useDialogForPreview) {
       setSecondaryView("preview");
     }
+    updateUrlWithFile(file);
   };
 
   const handleSelectView = (view: SecondaryView) => {
@@ -223,25 +272,36 @@ export function KnowledgeExplorer({
     const content = (() => {
       switch (secondaryView) {
         case "graph":
-          return <KnowledgeGraph heapId={heapId} />;
+          return (
+            <ScrollArea className="flex-1 min-h-0 h-full">
+              <KnowledgeGraph heapId={heapId} />;
+            </ScrollArea>
+          );
         case "preview":
           if (!useDialogForPreview) {
             return (
-              <FilePreview
-                file={previewFile}
-                onClose={showGraph}
-                heapId={heapId}
-                onEditFile={handleEditFile}
-                onToggleVisibility={handleToggleVisibility}
-                onDeleteFile={handleDeleteFile}
-                useDialog={useDialogForPreview}
-              />
+              <ScrollArea className="flex-1 min-h-0 h-full">
+          <FilePreview
+            key={previewFile?.id}
+            file={previewFile}
+            onClose={() => {
+              showGraph();
+              updateUrlWithFile(null);
+            }}
+            heapId={heapId}
+            onEditFile={handleEditFile}
+            onToggleVisibility={handleToggleVisibility}
+            onDeleteFile={handleDeleteFile}
+            useDialog={useDialogForPreview}
+          />
+              </ScrollArea>
             );
           }
           return <KnowledgeGraph heapId={heapId} />;
         case "project":
           return pendingProject || createdProject ? (
             <ProjectDetail
+              key={createdProject?.id ?? pendingProject?.id ?? "pending"}
               heapId={heapId}
               project={createdProject || pendingProject}
               onUpdatePendingProject={handleUpdatePendingProject}
@@ -254,14 +314,18 @@ export function KnowledgeExplorer({
         case "text-editor":
           return (
             <TextEditor
+              key="text-editor"
               heapId={heapId}
               initialMarkdown={editorContent}
               fileId={editorFileId}
               initialFileName={editorFileName}
+              onClose={showGraph}
             />
           );
         case "upload":
-          return <FileUpload heapId={heapId} />;
+          return (
+            <FileUpload key="upload" heapId={heapId} onClose={showGraph} />
+          );
         case "scrape-web":
           return <PlaceholderPane title="Scrape Web" />;
         case "import-drive":
@@ -281,10 +345,12 @@ export function KnowledgeExplorer({
         <>
           {content}
           <FilePreview
+            key={previewFile?.id}
             file={previewFile}
             onClose={() => {
               setPreviewFile(null);
               showGraph();
+              updateUrlWithFile(null);
             }}
             heapId={heapId}
             onEditFile={handleEditFile}
@@ -308,10 +374,17 @@ export function KnowledgeExplorer({
             : `Knowledge Explorer`}
         </h3>
         {!useDialogForPreview && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">Add Knowledge</Button>
-            </DropdownMenuTrigger>
+          <div className="flex items-center gap-2">
+            <ShareButton
+              url={generateShareUrl(heapId, {
+                section: "knowledge",
+                fileId: previewFile?.id ?? fileId ?? null,
+              })}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">Add Knowledge</Button>
+              </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-background">
               <DropdownMenuItem
                 onSelect={() => handleSelectView("text-editor")}
@@ -347,25 +420,28 @@ export function KnowledgeExplorer({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         )}
       </header>
 
-      <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
-        <ResizablePanel defaultSize={60} minSize={10}>
-          <div className="h-full overflow-y-auto">
-            <FileExplorer
-              heapId={heapId}
-              onPreviewFile={showPreview}
-              selectedFileId={previewFile?.id ?? null}
-              onAddFileToChat={handleAddFileToProject}
-            />
-          </div>
+      <ResizablePanelGroup direction="vertical" className="flex flex-1 min-h-0">
+        <ResizablePanel
+          defaultSize={60}
+          minSize={10}
+          className="flex flex-col min-h-0 overflow-hidden"
+        >
+          <FileExplorer
+            heapId={heapId}
+            onPreviewFile={showPreview}
+            selectedFileId={previewFile?.id ?? null}
+            onAddFileToChat={handleAddFileToProject}
+          />
         </ResizablePanel>
         {!useDialogForPreview && (
           <>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={40} minSize={10}>
-            {renderSecondaryContent()}
+              {renderSecondaryContent()}
             </ResizablePanel>
           </>
         )}

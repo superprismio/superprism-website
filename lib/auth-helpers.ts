@@ -381,3 +381,65 @@ export function isProjectCreatorClient(
   }
   return userId === projectCreatedBy;
 }
+
+/**
+ * Checks if a user is either a heap owner/admin OR the file creator (client-side).
+ * This combines heap ownership checks with file creator checks.
+ *
+ * @param userId - The current user's ID
+ * @param fileUploaderId - The uploader_id from the file record
+ * @param isHeapOwner - Whether the user is a heap owner or admin (can be determined from membership data)
+ * @returns true if the user is a heap owner/admin or the file creator, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const { data: members } = useSpaceMembers(heapId);
+ * const currentUserMembership = members.find(m => m.user_id === userId);
+ * const isHeapOwner = currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
+ *
+ * if (isOwnerOrFileCreator(userId, file.uploader_id, isHeapOwner)) {
+ *   // Show edit/delete buttons
+ * }
+ * ```
+ */
+export function isOwnerOrFileCreator(
+  userId: string | null | undefined,
+  fileUploaderId: string | null | undefined,
+  isHeapOwner: boolean
+): boolean {
+  if (isHeapOwner) {
+    return true;
+  }
+  return isFileCreatorClient(userId, fileUploaderId);
+}
+
+/**
+ * Checks if a user is either a heap owner/admin OR the project creator (client-side).
+ * This combines heap ownership checks with project creator checks.
+ *
+ * @param userId - The current user's ID
+ * @param projectCreatedBy - The created_by from the chat_session record
+ * @param isHeapOwner - Whether the user is a heap owner or admin (can be determined from membership data)
+ * @returns true if the user is a heap owner/admin or the project creator, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const { data: members } = useSpaceMembers(heapId);
+ * const currentUserMembership = members.find(m => m.user_id === userId);
+ * const isHeapOwner = currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
+ *
+ * if (isOwnerOrProjectCreator(userId, project.created_by, isHeapOwner)) {
+ *   // Show project settings/delete buttons
+ * }
+ * ```
+ */
+export function isOwnerOrProjectCreator(
+  userId: string | null | undefined,
+  projectCreatedBy: string | null | undefined,
+  isHeapOwner: boolean
+): boolean {
+  if (isHeapOwner) {
+    return true;
+  }
+  return isProjectCreatorClient(userId, projectCreatedBy);
+}

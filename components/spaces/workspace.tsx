@@ -1,6 +1,7 @@
 "use client";
 
 import { ComponentType, ReactNode, useCallback, useState, useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useHeap } from "../../hooks/useSpaces";
 import { ChatProvider, useChat } from "../../hooks/useChat";
 import { SpaceNav } from "./space-nav";
@@ -73,6 +74,20 @@ const PANE_DEFINITIONS: Record<WorkspacePaneKey, PaneDefinition> = {
 const DEFAULT_PRIMARY: WorkspacePaneKey = "spaceFeed";
 const DEFAULT_SECONDARY: WorkspacePaneKey = "spaceChat";
 
+// URL param mapping: section param -> WorkspacePaneKey
+const SECTION_TO_PANE: Record<string, WorkspacePaneKey> = {
+  settings: "spaceSettings",
+  projects: "spaceProjects",
+  knowledge: "knowledgeExplorer",
+};
+
+// Reverse mapping: WorkspacePaneKey -> section param
+const PANE_TO_SECTION: Partial<Record<WorkspacePaneKey, string>> = {
+  spaceSettings: "settings",
+  spaceProjects: "projects",
+  knowledgeExplorer: "knowledge",
+};
+
 // Component to monitor pane changes and clear active chat session when navigating away from the Projects workspace
 function ProjectPaneMonitor({
   primaryPane,
@@ -103,6 +118,9 @@ export function Workspace({
   emptyStateAction,
 }: WorkspaceProps) {
   const { data: space, isPending, isError, error } = useHeap(spaceId);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [primaryPane, setPrimaryPane] =
     useState<WorkspacePaneKey>(DEFAULT_PRIMARY);
@@ -111,6 +129,61 @@ export function Workspace({
   );
   const [isMobile, setIsMobile] = useState(false);
   const [isSecondaryDialogOpen, setIsSecondaryDialogOpen] = useState(false);
+
+  // Read URL params on mount and when they change
+  useEffect(() => {
+    const section = searchParams.get("section");
+
+    // Map section param to pane
+    if (section && SECTION_TO_PANE[section]) {
+      const newPane = SECTION_TO_PANE[section];
+      // Only update if different to avoid unnecessary re-renders
+      if (newPane !== primaryPane) {
+        setPrimaryPane(newPane);
+      }
+    }
+
+    // Note: projectId and fileId are passed to components below
+    // They will be handled by SpaceProjects and KnowledgeExplorer respectively
+  }, [searchParams, primaryPane]);
+
+  // Update URL when primary pane changes
+  const updateUrlParams = useCallback(
+    (pane: WorkspacePaneKey, projectId?: string | null, fileId?: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      // Update section param
+      const section = PANE_TO_SECTION[pane];
+      if (section) {
+        params.set("section", section);
+      } else {
+        // Remove section if it's not a mappable pane
+        params.delete("section");
+      }
+
+      // Update projectId param
+      if (projectId) {
+        params.set("projectId", projectId);
+      } else {
+        params.delete("projectId");
+      }
+
+      // Update fileId param
+      if (fileId) {
+        params.set("fileId", fileId);
+      } else {
+        params.delete("fileId");
+      }
+
+      // Only update URL if params actually changed
+      const newParamsString = params.toString();
+      const currentParamsString = searchParams.toString();
+      if (newParamsString !== currentParamsString) {
+        router.replace(`${pathname}?${newParamsString}`, { scroll: false });
+      }
+    },
+    [searchParams, router, pathname]
+  );
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -124,9 +197,14 @@ export function Workspace({
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
-  const handleSelectPrimary = useCallback((pane: WorkspacePaneKey) => {
-    setPrimaryPane(pane);
-  }, []);
+  const handleSelectPrimary = useCallback(
+    (pane: WorkspacePaneKey) => {
+      setPrimaryPane(pane);
+      // Clear projectId and fileId when switching primary panes
+      updateUrlParams(pane, null, null);
+    },
+    [updateUrlParams]
+  );
 
   const handleOpenSecondary = useCallback((pane: WorkspacePaneKey) => {
     setSecondaryPane(pane);
@@ -136,6 +214,10 @@ export function Workspace({
   const SecondaryComponent = secondaryPane
     ? PANE_DEFINITIONS[secondaryPane].component
     : null;
+
+  // Extract URL params for passing to components
+  const urlProjectId = searchParams.get("projectId");
+  const urlFileId = searchParams.get("fileId");
 
   const layoutColumns = SecondaryComponent
     ? "md:grid-cols-[72px,minmax(0,1fr)]"
@@ -200,6 +282,8 @@ export function Workspace({
                     <PrimaryComponent
                       onOpenPaneTwo={handleOpenSecondary}
                       heapId={spaceId}
+                      projectId={urlProjectId}
+                      fileId={urlFileId}
                     />
                   </PaneOne>
                 </div>
@@ -211,6 +295,8 @@ export function Workspace({
                   <SecondaryComponent
                     onOpenPaneTwo={handleOpenSecondary}
                     heapId={spaceId}
+                    projectId={urlProjectId}
+                    fileId={urlFileId}
                   />
                 </PaneTwo>
                 <Dialog
@@ -244,6 +330,8 @@ export function Workspace({
                     <PrimaryComponent
                       onOpenPaneTwo={handleOpenSecondary}
                       heapId={spaceId}
+                      projectId={urlProjectId}
+                      fileId={urlFileId}
                     />
                   </PaneOne>
                 </ResizablePanel>
@@ -268,6 +356,8 @@ export function Workspace({
                 <PrimaryComponent
                   onOpenPaneTwo={handleOpenSecondary}
                   heapId={spaceId}
+                  projectId={urlProjectId}
+                  fileId={urlFileId}
                 />
               </PaneOne>
               <PaneTwo title={secondaryDefinition?.label} />

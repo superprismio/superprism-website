@@ -35,6 +35,8 @@ import { createClient } from "@/lib/supabase/client";
 import { MemberDetails } from "./member-details";
 import { useHeap, useUpdateSpace, useSpaceTags, useCreateTag } from "@/hooks/useSpaces";
 import { useSpaceMembers } from "@/hooks/useMembers";
+import { generateShareUrl } from "@/lib/share-link";
+import { ShareButton } from "./share-button";
 
 export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
   const { data: space, isLoading: spaceLoading, error: spaceError } = useHeap(heapId);
@@ -151,7 +153,14 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
         <div className="h-full overflow-y-auto">
           <div className="space-y-4">
             <div className="px-3 py-4">
-              <div className="mb-4 font-semibold text-foreground">Settings</div>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="font-semibold text-foreground">Settings</div>
+                <ShareButton
+                  url={generateShareUrl(heapId, {
+                    section: "settings",
+                  })}
+                />
+              </div>
               <div className="space-y-3">
                 {spaceError && (
                   <div className="text-sm text-destructive">
