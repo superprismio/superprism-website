@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import { useChat, useChatMessages, useSendChatMessage } from "@/hooks/useChat";
 import { Button } from "../ui/button";
@@ -13,8 +13,9 @@ import {
 } from "../ui/dialog";
 import { History, X, Copy, Check, FileEdit } from "lucide-react";
 import { ChatSessionSelector } from "./chat-session-selector";
-import { isProjectCreatorClient } from "@/lib/auth-helpers";
+import { isOwnerOrProjectCreator } from "@/lib/auth-helpers";
 import { createClient } from "@/lib/supabase/client";
+import { useSpaceMembers } from "@/hooks/useMembers";
 
 // type Message = {
 //   role: "user" | "assistant";
@@ -27,12 +28,14 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   const { data: fetchedMessages, isLoading: isLoadingMessages } =
     useChatMessages(heapId);
   const sendMessageMutation = useSendChatMessage(heapId);
+  const { data: members = [] } = useSpaceMembers(heapId);
   const [input, setInput] = useState("");
   const [showEditor, setShowEditor] = useState(false);
   const [editorContent, setEditorContent] = useState("");
   const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get current user ID
   useEffect(() => {
@@ -46,6 +49,13 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
     void getCurrentUser();
   }, []);
 
+  // Check if current user is heap owner/admin
+  const isHeapOwner = useMemo(() => {
+    if (!currentUserId) return false;
+    const currentUserMembership = members.find((m) => m.user_id === currentUserId);
+    return currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
+  }, [members, currentUserId]);
+
   // Convert fetched messages to display format
   const messages = useMemo(() => {
     return (fetchedMessages || []).map((msg) => ({
@@ -55,6 +65,13 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   }, [fetchedMessages]);
 
   const loading = sendMessageMutation.isPending;
+
+  // Auto-scroll to bottom when messages change or loading state changes
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoadingMessages, loading]);
 
   const sendMessage = async (messageText: string, summarize = false) => {
     if (!messageText.trim() && !summarize) return;
@@ -85,15 +102,15 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   //   sendMessage("", true);
   // };
 
-  // Check if user is the project creator (only for saved projects)
+  // Check if user is the project owner or heap owner (only for saved projects)
   const isProjectOwner = useMemo(() => {
     if (!isProject || !activeChatSession || activeChatSession.id === null) {
       return true; // Allow chat for non-projects or pending projects
     }
     const projectCreatedBy = (activeChatSession as { created_by?: string | null })
       .created_by;
-    return isProjectCreatorClient(currentUserId, projectCreatedBy);
-  }, [isProject, activeChatSession, currentUserId]);
+    return isOwnerOrProjectCreator(currentUserId, projectCreatedBy, isHeapOwner);
+  }, [isProject, activeChatSession, currentUserId, isHeapOwner]);
 
   const chatDisabled = isPresaved || (isProject && !isProjectOwner);
   const chatTitle = isProject ? "Chat with Project" : "Chat with Space";
@@ -258,6 +275,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                     </div>
                   </div>
                 )}
+                <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
             </div>

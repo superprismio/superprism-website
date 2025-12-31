@@ -7,6 +7,7 @@ import type { Database } from "@/lib/types/supabase";
 import { cn } from "@/lib/utils";
 import { Folder, FolderOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "../ui/scroll-area";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -299,13 +300,15 @@ export function ProjectList({
               onChange={(nextMode) => setMode(nextMode)}
             />
             {mode === "explore" ? (
-              <FolderList
-                activeFolder={activeFolder}
-                onSelectFolder={setActiveFolder}
-                yourProjectsCount={projectFolders.yourProjects.length}
-                spaceProjectsCount={projectFolders.spaceProjects.length}
-                className="flex-1 overflow-y-auto"
-              />
+              <ScrollArea className="flex-1 min-h-0 h-full">
+                <FolderList
+                  activeFolder={activeFolder}
+                  onSelectFolder={setActiveFolder}
+                  yourProjectsCount={projectFolders.yourProjects.length}
+                  spaceProjectsCount={projectFolders.spaceProjects.length}
+                  className="flex-1 overflow-y-auto"
+                />
+              </ScrollArea>
             ) : (
               <ProjectSearch
                 search={search}
@@ -317,32 +320,32 @@ export function ProjectList({
           <section className="flex-1 min-h-[220px] space-y-4 overflow-hidden flex flex-col">
             {mode === "explore" ? (
               activeFolder ? (
-                <div className="flex-1 min-h-0 overflow-y-auto">
-                  <ProjectListContent
-                    projects={activeProjects}
-                    selectedProjectId={selectedProjectId}
-                    onSelectProject={onSelectProject}
-                    emptyMessage="No projects in this folder."
-                  />
-                </div>
+                  <ScrollArea className="flex-1 min-h-0 h-full">
+                    <ProjectListContent
+                      projects={activeProjects}
+                      selectedProjectId={selectedProjectId}
+                      onSelectProject={onSelectProject}
+                      emptyMessage="No projects in this folder."
+                    />
+                  </ScrollArea>
               ) : (
                 <div className="text-sm text-muted-foreground p-10">
                   Select a folder to view its projects.
                 </div>
               )
             ) : (
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <ProjectListContent
-                  projects={activeProjects}
-                  selectedProjectId={selectedProjectId}
-                  onSelectProject={onSelectProject}
-                  emptyMessage={
-                    search
-                      ? "No projects match your search."
-                      : "Start by searching for a project."
-                  }
-                />
-              </div>
+                <ScrollArea className="flex-1 min-h-0 h-full">
+                  <ProjectListContent
+                    projects={activeProjects}
+                    selectedProjectId={selectedProjectId}
+                    onSelectProject={onSelectProject}
+                    emptyMessage={
+                      search
+                        ? "No projects match your search."
+                        : "Start by searching for a project."
+                    }
+                  />
+                </ScrollArea>
             )}
           </section>
         </div>

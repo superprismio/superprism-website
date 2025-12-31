@@ -10,7 +10,7 @@ import {
   FileImage,
   FileSpreadsheet,
 } from "lucide-react";
-import { useSpaceFiles } from "@/hooks/useSpaceFiles";
+import { useSpaceFiles, type FolderNode } from "@/hooks/useSpaceFiles";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,6 +82,21 @@ function getFileIcon(storagePath: string | null | undefined) {
   }
 
   return File;
+}
+
+function getTotalFileCount(
+  folder: FolderNode,
+  filesByFolder: Record<string, FileRow[]>
+): number {
+  let count = filesByFolder[folder.path]?.length ?? 0;
+
+  if (folder.children) {
+    for (const child of folder.children) {
+      count += getTotalFileCount(child, filesByFolder);
+    }
+  }
+
+  return count;
 }
 
 function FileList({
@@ -197,49 +212,25 @@ function FolderList({
     <ScrollArea className={cn("flex-1", className)}>
       <nav className="space-y-0">
         <ul>
-        {folders.map((folder) => {
-          const parentOpen = openParent === folder.path;
-          const hasChildren = folder.children && folder.children.length > 0;
-          const isStaging = !hasChildren;
-          const isActive = isStaging && activePath === folder.path;
+          {folders.map((folder) => {
+            const parentOpen = openParent === folder.path;
+            const hasChildren = folder.children && folder.children.length > 0;
+            const isStaging = !hasChildren;
+            const isActive = isStaging && activePath === folder.path;
 
-          return (
-            <li key={folder.path}>
-              {isStaging ? (
-                <button
-                  type="button"
-                  onClick={() => onSelectFolder(folder.path)}
-                  className={cn(
-                    "w-full text-left px-4 py-3 text-sm font-medium flex items-center justify-between hover:bg-muted transition",
-                    isActive && "font-medium"
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    {isActive ? (
-                      <FolderOpen
-                        className="h-4 w-4 text-primary"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <Folder className="h-4 w-4" aria-hidden="true" />
-                    )}
-                    <span>{folder.name}</span>
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {filesByFolder[folder.path]?.length ?? 0}
-                  </span>
-                </button>
-              ) : (
-                <>
+            return (
+              <li key={folder.path}>
+                {isStaging ? (
                   <button
                     type="button"
-                    onClick={() => onToggleParent(folder.path)}
+                    onClick={() => onSelectFolder(folder.path)}
                     className={cn(
-                      "w-full text-left px-4 py-3 text-sm font-medium flex items-center justify-between hover:bg-muted transition"
+                      "w-full text-left px-4 py-3 text-sm font-medium flex items-center justify-between hover:bg-muted transition",
+                      isActive && "font-medium"
                     )}
                   >
                     <span className="flex items-center gap-2">
-                      {parentOpen ? (
+                      {isActive ? (
                         <FolderOpen
                           className="h-4 w-4 text-primary"
                           aria-hidden="true"
@@ -249,96 +240,127 @@ function FolderList({
                       )}
                       <span>{folder.name}</span>
                     </span>
+                    <span className="text-xs text-muted-foreground">
+                      {getTotalFileCount(folder, filesByFolder)}
+                    </span>
                   </button>
-                  {parentOpen && folder.children?.length ? (
-                    <ul className="bg-background">
-                      {folder.children.map((child) => {
-                        const hasGrandchildren =
-                          child.children && child.children.length > 0;
-                        const childPath = child.path;
-                        const isChildActive = activePath === childPath;
-                        const childFileCount =
-                          filesByFolder[childPath]?.length ?? 0;
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onToggleParent(folder.path)}
+                      className={cn(
+                        "w-full text-left px-4 py-3 text-sm font-medium flex items-center justify-between hover:bg-muted transition"
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        {parentOpen ? (
+                          <FolderOpen
+                            className="h-4 w-4 text-primary"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <Folder className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        <span>{folder.name}</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {getTotalFileCount(folder, filesByFolder)}
+                      </span>
+                    </button>
+                    {parentOpen && folder.children?.length ? (
+                      <ul className="bg-background">
+                        {folder.children.map((child) => {
+                          const hasGrandchildren =
+                            child.children && child.children.length > 0;
+                          const childPath = child.path;
+                          const isChildActive = activePath === childPath;
+                          const childFileCount = getTotalFileCount(
+                            child,
+                            filesByFolder
+                          );
 
-                        return (
-                          <li key={child.path}>
-                            <button
-                              type="button"
-                              onClick={() => onSelectFolder(childPath)}
-                              className={cn(
-                                "w-full text-left px-6 py-2 text-sm flex items-center justify-between hover:bg-muted",
-                                isChildActive && "font-medium"
-                              )}
-                            >
-                              <div className="flex items-center gap-2">
-                                {isChildActive ? (
-                                  <FolderOpen
-                                    className="h-4 w-4 text-primary"
-                                    aria-hidden="true"
-                                  />
-                                ) : (
-                                  <Folder
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                  />
+                          return (
+                            <li key={child.path}>
+                              <button
+                                type="button"
+                                onClick={() => onSelectFolder(childPath)}
+                                className={cn(
+                                  "w-full text-left px-6 py-2 text-sm flex items-center justify-between hover:bg-muted",
+                                  isChildActive && "font-medium"
                                 )}
-                                <span>{child.name}</span>
-                              </div>
-                              <span className="text-xs text-muted-foreground">
-                                {childFileCount}
-                              </span>
-                            </button>
-                            {hasGrandchildren && child.children ? (
-                              <ul className="bg-background">
-                                {child.children.map((grandchild) => {
-                                  const path = grandchild.path;
-                                  const isActive = activePath === path;
-                                  const fileCount =
-                                    filesByFolder[path]?.length ?? 0;
-                                  return (
-                                    <li key={path}>
-                                      <button
-                                        type="button"
-                                        onClick={() => onSelectFolder(path)}
-                                        className={cn(
-                                          "w-full text-left px-8 py-2 text-sm flex items-center justify-between hover:bg-muted",
-                                          isActive && "font-medium"
-                                        )}
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          {isActive ? (
-                                            <FolderOpen
-                                              className="h-4 w-4 text-primary"
-                                              aria-hidden="true"
-                                            />
-                                          ) : (
-                                            <Folder
-                                              className="h-4 w-4"
-                                              aria-hidden="true"
-                                            />
+                              >
+                                <div className="flex items-center gap-2">
+                                  {isChildActive ? (
+                                    <FolderOpen
+                                      className="h-4 w-4 text-primary"
+                                      aria-hidden="true"
+                                    />
+                                  ) : (
+                                    <Folder
+                                      className="h-4 w-4"
+                                      aria-hidden="true"
+                                    />
+                                  )}
+                                  <span>{child.name}</span>
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {childFileCount}
+                                </span>
+                              </button>
+                              {hasGrandchildren && child.children ? (
+                                <ul className="bg-background">
+                                  {child.children.map((grandchild) => {
+                                    const path = grandchild.path;
+                                    const isActive = activePath === path;
+                                    const fileCount = getTotalFileCount(
+                                      grandchild,
+                                      filesByFolder
+                                    );
+                                    return (
+                                      <li key={path}>
+                                        <button
+                                          type="button"
+                                          onClick={() => onSelectFolder(path)}
+                                          className={cn(
+                                            "w-full text-left px-8 py-2 text-sm flex items-center justify-between hover:bg-muted",
+                                            isActive && "font-medium"
                                           )}
-                                          <span>{grandchild.name}</span>
-                                        </div>
-                                        <span className="text-xs text-muted-foreground">
-                                          {fileCount}
-                                        </span>
-                                      </button>
-                                    </li>
-                                  );
-                                })}
-                              </ul>
-                            ) : null}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : null}
-                </>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            {isActive ? (
+                                              <FolderOpen
+                                                className="h-4 w-4 text-primary"
+                                                aria-hidden="true"
+                                              />
+                                            ) : (
+                                              <Folder
+                                                className="h-4 w-4"
+                                                aria-hidden="true"
+                                              />
+                                            )}
+                                            <span>{grandchild.name}</span>
+                                          </div>
+                                          <span className="text-xs text-muted-foreground">
+                                            {fileCount}
+                                          </span>
+                                        </button>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              ) : null}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
+                  </>
+                )}
+              </li>
+            );
+          })}
+        </ul>
       </nav>
     </ScrollArea>
   );
@@ -364,52 +386,52 @@ function FileSearch({
   return (
     <ScrollArea className={cn("flex-1", className)}>
       <aside className="p-4 space-y-4">
-      <div className="space-y-2">
-        <label className="text-xs font-medium text-muted-foreground">
-          Search
-        </label>
-        <Input
-          value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search files"
-        />
-      </div>
-      <div className="space-y-2">
-        <div className="text-xs font-medium text-muted-foreground">Tags</div>
-        {tags.length === 0 ? (
-          <div className="text-xs text-muted-foreground">No tags yet.</div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => {
-              const isActive = activeTag === tag;
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => onToggleTag(isActive ? null : tag)}
-                  className={cn(
-                    "text-xs px-2 py-1 rounded border",
-                    isActive
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  {tag}
-                </button>
-              );
-            })}
-          </div>
-        )}
-        {activeTag ? (
-          <button
-            type="button"
-            onClick={() => onToggleTag(null)}
-            className="text-xs text-primary hover:underline"
-          >
-            Clear tag filter
-          </button>
-        ) : null}
-      </div>
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">
+            Search
+          </label>
+          <Input
+            value={search}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="Search files"
+          />
+        </div>
+        <div className="space-y-2">
+          <div className="text-xs font-medium text-muted-foreground">Tags</div>
+          {tags.length === 0 ? (
+            <div className="text-xs text-muted-foreground">No tags yet.</div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => {
+                const isActive = activeTag === tag;
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => onToggleTag(isActive ? null : tag)}
+                    className={cn(
+                      "text-xs px-2 py-1 rounded border",
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "text-muted-foreground hover:bg-muted"
+                    )}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {activeTag ? (
+            <button
+              type="button"
+              onClick={() => onToggleTag(null)}
+              className="text-xs text-primary hover:underline"
+            >
+              Clear tag filter
+            </button>
+          ) : null}
+        </div>
       </aside>
     </ScrollArea>
   );
@@ -581,24 +603,26 @@ export function FileExplorer({
               onChange={(nextMode) => setMode(nextMode)}
             />
             {mode === "explore" ? (
-              <FolderList
-                folders={folders}
-                filesByFolder={filesByFolder}
-                openParent={openParent}
-                activePath={activePath}
-                onToggleParent={(path) =>
-                  setOpenParent((prev) => (prev === path ? null : path))
-                }
-                onSelectFolder={(path) => {
-                  setActivePath(path);
-                  // Ensure parent folder is opened
-                  const topLevelParent = path.split("/")[0];
-                  if (topLevelParent) {
-                    setOpenParent(topLevelParent);
+              <ScrollArea className="flex-1 min-h-0 h-full">
+                <FolderList
+                  folders={folders}
+                  filesByFolder={filesByFolder}
+                  openParent={openParent}
+                  activePath={activePath}
+                  onToggleParent={(path) =>
+                    setOpenParent((prev) => (prev === path ? null : path))
                   }
-                }}
-                className="flex-1"
-              />
+                  onSelectFolder={(path) => {
+                    setActivePath(path);
+                    // Ensure parent folder is opened
+                    const topLevelParent = path.split("/")[0];
+                    if (topLevelParent) {
+                      setOpenParent(topLevelParent);
+                    }
+                  }}
+                  className="flex-1"
+                />
+              </ScrollArea>
             ) : (
               <FileSearch
                 search={search}
@@ -635,7 +659,7 @@ export function FileExplorer({
             {!isLoading && !isError ? (
               mode === "explore" ? (
                 activeFolder ? (
-                  <ScrollArea className="flex-1 min-h-0">
+                  <ScrollArea className="flex-1 min-h-0 h-full">
                     <FileList
                       files={activeFolder.files}
                       emptyMessage="Ingestion before digestion"
@@ -643,9 +667,7 @@ export function FileExplorer({
                       onAddToChat={onAddFileToChat}
                       onPreview={onPreviewFile}
                       isStaging={isStaging}
-                      onMoveToFolder={
-                        isStaging ? updateFileFolders : undefined
-                      }
+                      onMoveToFolder={isStaging ? updateFileFolders : undefined}
                       currentUserId={currentUserId}
                       heapId={heapId}
                     />
@@ -656,7 +678,7 @@ export function FileExplorer({
                   </div>
                 )
               ) : (
-                <ScrollArea className="flex-1 min-h-0">
+                <ScrollArea className="flex-1 min-h-0 h-full">
                   <FileList
                     files={filteredFiles}
                     emptyMessage={

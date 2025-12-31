@@ -168,3 +168,44 @@
     font-family: var(--font-sans);
   }
 }
+
+@layer components {
+  .holographic-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .holographic-shimmer::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      0deg,
+      transparent,
+      transparent 30%,
+      var(--primary)
+    );
+    opacity: 0;
+    transform: rotate(-45deg);
+    animation: holographic-sweep 0.5s ease-out forwards;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  @keyframes holographic-sweep {
+    0% {
+      opacity: 0;
+      transform: rotate(-45deg) translateY(-100%);
+    }
+    50% {
+      opacity: 0.3;
+    }
+    100% {
+      opacity: 0;
+      transform: rotate(-45deg) translateY(100%);
+    }
+  }
+}
