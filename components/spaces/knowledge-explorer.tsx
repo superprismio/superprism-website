@@ -83,26 +83,23 @@ export function KnowledgeExplorer({
   }, [ingest, fileId, secondaryView]);
 
   // Find and set preview file when fileId is provided in URL
+  // Skip this when in dialog mode (useDialogForPreview) since dialog previews shouldn't sync with URL
   useEffect(() => {
+    if (useDialogForPreview) return;
+    
     if (fileId && files.length > 0) {
       const file = files.find((f) => f.id === fileId);
       if (file) {
         // Only update if the preview file is different from the URL file
         if (previewFile?.id !== fileId) {
           setPreviewFile(file);
-          if (!useDialogForPreview) {
-            setSecondaryView("preview");
-          }
         }
       }
     } else if (!fileId && previewFile) {
       // Clear preview if fileId is removed from URL
       setPreviewFile(null);
-      if (!useDialogForPreview) {
-        setSecondaryView("graph");
-      }
     }
-  }, [fileId, files, useDialogForPreview]);
+  }, [fileId, files, previewFile, useDialogForPreview]);
 
   // Update URL when file preview changes
   const updateUrlWithFile = useCallback(
@@ -171,15 +168,17 @@ export function KnowledgeExplorer({
 
   const showPreview = (file: FileRow) => {
     setPreviewFile(file);
+    // Only update URL when not in dialog mode
     if (!useDialogForPreview) {
-      setSecondaryView("preview");
+      updateUrlWithFile(file);
     }
-    updateUrlWithFile(file);
   };
 
   const handleSelectView = (view: SecondaryView) => {
+    // Clear preview when switching to a different view
     if (view !== "preview") {
       setPreviewFile(null);
+      updateUrlWithFile(null);
     }
     if (view === "text-editor" && !editorFileId) {
       // Clear editor state when opening from menu (not from edit)
@@ -324,113 +323,69 @@ export function KnowledgeExplorer({
   );
 
   const renderSecondaryContent = () => {
-    const content = (() => {
-      switch (secondaryView) {
-        case "graph":
-          return (
-            <ScrollArea className="flex-1 min-h-0 h-full">
-              <KnowledgeGraph heapId={heapId} />;
-            </ScrollArea>
-          );
-        case "preview":
-          if (!useDialogForPreview) {
-            return (
-              <ScrollArea className="flex-1 min-h-0 h-full">
-          <FilePreview
-            key={previewFile?.id}
-            file={previewFile}
-            onClose={() => {
-              showGraph();
-              updateUrlWithFile(null);
-            }}
+    switch (secondaryView) {
+      case "graph":
+        return (
+          <ScrollArea className="flex-1 min-h-0 h-full">
+            <KnowledgeGraph heapId={heapId} />;
+          </ScrollArea>
+        );
+      case "project":
+        return pendingProject || createdProject ? (
+          <ProjectDetail
+            key={createdProject?.id ?? pendingProject?.id ?? "pending"}
             heapId={heapId}
-            onEditFile={handleEditFile}
-            onToggleVisibility={handleToggleVisibility}
-            onDeleteFile={handleDeleteFile}
-            useDialog={useDialogForPreview}
+            project={createdProject || pendingProject}
+            onUpdatePendingProject={handleUpdatePendingProject}
+            onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
+            onProjectCreated={handleProjectCreated}
+            onProjectUpdated={handleProjectUpdated}
+            onClose={handleCloseProject}
           />
-              </ScrollArea>
-            );
-          }
-          return <KnowledgeGraph heapId={heapId} />;
-        case "project":
-          return pendingProject || createdProject ? (
-            <ProjectDetail
-              key={createdProject?.id ?? pendingProject?.id ?? "pending"}
-              heapId={heapId}
-              project={createdProject || pendingProject}
-              onUpdatePendingProject={handleUpdatePendingProject}
-              onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
-              onProjectCreated={handleProjectCreated}
-              onProjectUpdated={handleProjectUpdated}
-              onClose={handleCloseProject}
-            />
-          ) : null;
-        case "text-editor":
-          return (
-            <TextEditor
-              key="text-editor"
-              heapId={heapId}
-              initialMarkdown={editorContent}
-              fileId={editorFileId}
-              initialFileName={editorFileName}
-              onClose={() => {
-                setSecondaryView("graph");
-                // Clear ingest param when closing text editor
-                updateUrlWithIngest("graph");
-              }}
-            />
-          );
-        case "upload":
-          return (
-            <FileUpload
-              key="upload"
-              heapId={heapId}
-              onClose={() => {
-                setSecondaryView("graph");
-                // Clear ingest param when closing upload
-                updateUrlWithIngest("graph");
-              }}
-            />
-          );
-        case "scrape-web":
-          return <PlaceholderPane title="Scrape Web" />;
-        case "import-drive":
-          return <PlaceholderPane title="Import from Drive" />;
-        case "ingest-api":
-          return <PlaceholderPane title="Ingest from API" />;
-        case "ingest-mcp":
-          return <PlaceholderPane title="Ingest from MCP" />;
-        default:
-          return null;
-      }
-    })();
-
-    // When in dialog mode and previewFile is set, render the dialog
-    if (useDialogForPreview && previewFile) {
-      return (
-        <>
-          {content}
-          <FilePreview
-            key={previewFile?.id}
-            file={previewFile}
-            onClose={() => {
-              setPreviewFile(null);
-              showGraph();
-              updateUrlWithFile(null);
-            }}
+        ) : null;
+      case "text-editor":
+        return (
+          <TextEditor
+            key="text-editor"
             heapId={heapId}
-            onEditFile={handleEditFile}
-            onToggleVisibility={handleToggleVisibility}
-            onDeleteFile={handleDeleteFile}
-            useDialog={useDialogForPreview}
+            initialMarkdown={editorContent}
+            fileId={editorFileId}
+            initialFileName={editorFileName}
+            onClose={() => {
+              setSecondaryView("graph");
+              // Clear ingest param when closing text editor
+              updateUrlWithIngest("graph");
+            }}
           />
-        </>
-      );
+        );
+      case "upload":
+        return (
+          <FileUpload
+            key="upload"
+            heapId={heapId}
+            onClose={() => {
+              setSecondaryView("graph");
+              // Clear ingest param when closing upload
+              updateUrlWithIngest("graph");
+            }}
+          />
+        );
+      case "scrape-web":
+        return <PlaceholderPane title="Scrape Web" />;
+      case "import-drive":
+        return <PlaceholderPane title="Import from Drive" />;
+      case "ingest-api":
+        return <PlaceholderPane title="Ingest from API" />;
+      case "ingest-mcp":
+        return <PlaceholderPane title="Ingest from MCP" />;
+      default:
+        return null;
     }
-
-    return content;
   };
+
+  console.log("useDialogForPreview", useDialogForPreview);
+  console.log("previewFile", previewFile);
+
 
   return (
     <>
@@ -501,14 +456,34 @@ export function KnowledgeExplorer({
         <ResizablePanel
           defaultSize={60}
           minSize={10}
-          className="flex flex-col min-h-0 overflow-hidden"
+          className="flex flex-col min-h-0 overflow-hidden relative"
         >
           <FileExplorer
             heapId={heapId}
             onPreviewFile={showPreview}
             selectedFileId={previewFile?.id ?? null}
             onAddFileToChat={handleAddFileToProject}
+            useDialogForPreview={useDialogForPreview}
           />
+          {previewFile && !useDialogForPreview && (
+            <div className="absolute inset-0 bg-background z-10 flex flex-col">
+              <ScrollArea className="flex-1 min-h-0 h-full">
+                <FilePreview
+                  key={previewFile.id}
+                  file={previewFile}
+                  onClose={() => {
+                    setPreviewFile(null);
+                    updateUrlWithFile(null);
+                  }}
+                  heapId={heapId}
+                  onEditFile={handleEditFile}
+                  onToggleVisibility={handleToggleVisibility}
+                  onDeleteFile={handleDeleteFile}
+                  useDialog={useDialogForPreview}
+                />
+              </ScrollArea>
+            </div>
+          )}
         </ResizablePanel>
         {!useDialogForPreview && (
           <>
@@ -519,6 +494,21 @@ export function KnowledgeExplorer({
           </>
         )}
       </ResizablePanelGroup>
+      {useDialogForPreview && previewFile && (
+        <FilePreview
+          key={previewFile.id}
+          file={previewFile}
+          onClose={() => {
+            setPreviewFile(null);
+            // Don't update URL in dialog mode
+          }}
+          heapId={heapId}
+          onEditFile={handleEditFile}
+          onToggleVisibility={handleToggleVisibility}
+          onDeleteFile={handleDeleteFile}
+          useDialog={useDialogForPreview}
+        />
+      )}
     </>
   );
 }

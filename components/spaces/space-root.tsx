@@ -14,9 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CreateSpaceDialog } from "./create-space-dialog";
+import { BetaWarning } from "../shared/beta-warning";
 import { Workspace } from "./workspace";
 import { Space } from "./types";
 import { useUserHeaps, USER_HEAPS_QUERY_KEY } from "../../hooks/useSpaces";
+import { isSuperprismioBrother } from "@/lib/auth-helpers";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 type SpaceRootProps = {
   heapId?: string;
@@ -27,9 +30,13 @@ export function SpaceRoot({ heapId }: SpaceRootProps) {
   const params = useParams();
   const queryClient = useQueryClient();
   const { data: spaces = [], isPending, error } = useUserHeaps();
-  
+  const { data: currentUser } = useCurrentUser();
+
   // Get heapId from props (server) or params (client navigation)
-  const activeSpaceId = heapId ?? (params?.heapId as string | undefined) ?? null;
+  const activeSpaceId =
+    heapId ?? (params?.heapId as string | undefined) ?? null;
+
+  const isSuperprismio = isSuperprismioBrother(currentUser?.id);
 
   const handleCreatedSpace = useCallback(
     (space: Space) => {
@@ -85,21 +92,26 @@ export function SpaceRoot({ heapId }: SpaceRootProps) {
             </SelectContent>
           </Select>
         </div>
-        <CreateSpaceDialog
-          onCreated={(space) => {
-            handleCreatedSpace(space);
-          }}
-          trigger={
-            <Button
-              size="sm"
-              className="flex items-center gap-2 text-primary"
-              variant="ghost"
-            >
-              <Plus className="h-4 w-4" />
-              <Pyramid className="h-4 w-4" />
-            </Button>
-          }
-        />
+        <div className="flex items-center gap-2">
+          <BetaWarning />
+          {isSuperprismio && (
+            <CreateSpaceDialog
+              onCreated={(space) => {
+                handleCreatedSpace(space);
+              }}
+              trigger={
+                <Button
+                  size="sm"
+                  className="flex items-center gap-2 text-primary"
+                  variant="ghost"
+                >
+                  <Plus className="h-4 w-4" />
+                  <Pyramid className="h-4 w-4" />
+                </Button>
+              }
+            />
+          )}
+        </div>
       </div>
 
       {errorMessage ? (

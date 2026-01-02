@@ -161,6 +161,11 @@ export function Workspace({
         params.delete("section");
       }
 
+      // Clear ingest param when navigating away from knowledge section
+      if (pane !== "knowledgeExplorer") {
+        params.delete("ingest");
+      }
+
       // Update projectId param
       if (projectId) {
         params.set("projectId", projectId);

@@ -327,6 +327,41 @@ export async function isProjectCreator(
 // ============================================================================
 
 /**
+ * List of Superprismio Brothers user UUIDs.
+ * These users have special privileges for creating spaces.
+ */
+export const SUPERPRISMIO_BROTHERS = [
+  "55d9b2e3-9bfd-480d-9ecb-c0c82578bd44",
+  "0e308bde-378c-43aa-a0ec-25b4e777c971",
+  "74f87a05-8d30-44b6-900d-8e31cbb740a4",
+] as const;
+
+/**
+ * Checks if a user is a Superprismio Brother (client-side).
+ * This is a simple ID check against the SUPERPRISMIO_BROTHERS list.
+ *
+ * @param userId - The current user's ID
+ * @returns true if the user is a Superprismio Brother, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const { data: { user } } = await supabase.auth.getUser();
+ *
+ * if (isSuperprismioBrother(user?.id)) {
+ *   // Show privileged UI elements
+ * }
+ * ```
+ */
+export function isSuperprismioBrother(
+  userId: string | null | undefined
+): boolean {
+  if (!userId) {
+    return false;
+  }
+  return SUPERPRISMIO_BROTHERS.includes(userId as typeof SUPERPRISMIO_BROTHERS[number]);
+}
+
+/**
  * Checks if a user is the creator of a file (client-side).
  * This is a simple ID comparison and does not query the database.
  *
