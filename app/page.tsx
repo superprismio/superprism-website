@@ -8,16 +8,23 @@ import extendImg from "../public/images/sp_graphic-extend.png";
 import sectionBreak from "../public/images/prism_overlay.png"
 import sectionBreak2 from "../public/images/prism_landscape.png"
 import sectionBreak3 from "../public/images/chroma_orb.png"
+import headerBg from "../public/images/superprism-0.png";
 import { EarlyAccessForm } from "@/components/early-access-form";
 
 export default function Home() {
   return (
-    <div className="flex-1 w-full flex flex-col items-center">
+    <div className="flex-1 w-full flex flex-col items-center relative">
+      <Image
+        alt="Superprism bg"
+        className="absolute lg:pl-60 inset-x-0 w-full object-left -z-10 object-cover overflow-visible min-h-[600px] top-0"
+        priority
+        src={headerBg}
+      />
       <Header />
-      <div className="flex-1 w-full flex flex-col items-center mt-60 lg:mt-40">
+      <div className="flex-1 w-full flex flex-col items-center mt-60 lg:mt-40 relative z-0">
         <Hero />
       </div>
-      <div className="flex-1 w-full flex flex-col items-center max-w-4xl px-4 lg:px-0">
+      <div id="how-it-works" className="flex-1 w-full flex flex-col items-center max-w-4xl px-4 lg:px-0 scroll-mt-24">
         <h2 className="text-4xl lg:text-6xl my-8 text-center">How it Works</h2>
         <div className="flex flex-col lg:flex-row w-full mb-8 lg:mb-16 gap-4 lg:gap-0">
           <div className="flex flex-col w-full lg:w-1/2">
@@ -126,7 +133,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-4xl px-8 lg:px-0 relative z-1">
+      <div id="capabilities" className="max-w-4xl px-8 lg:px-0 relative z-1 scroll-mt-24">
         
         <h3 className="text-3xl lg:text-6xl my-8 text-center">
           Key Capabilities
@@ -206,7 +213,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-col max-w-4xl mt-8 lg:mt-16 px-4 lg:px-0">
+      <div id="principles" className="flex flex-col max-w-4xl mt-8 lg:mt-16 px-4 lg:px-0 scroll-mt-24">
         <div className="flex flex-row w-full">
           <h4 className="text-xl lg:text-2xl mb-8 text-center w-full">
             Design Principles
@@ -273,7 +280,7 @@ export default function Home() {
       </div>
 
 
-      <div className="flex flex-col max-w-4xl px-8 lg:px-0 relative z-1">
+      <div id="foundation" className="flex flex-col max-w-4xl px-8 lg:px-0 relative z-1 scroll-mt-24">
         <div className="flex flex-row w-full">
           <h4 className="text-3xl lg:text-6xl mb-8 text-center w-full">
             Technical Foundation
@@ -337,7 +344,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-col max-w-xl my-8 lg:my-16 px-4 lg:px-0">
+      <div id="get-started" className="flex flex-col max-w-xl my-8 lg:my-16 px-4 lg:px-0 scroll-mt-24">
         <h4 className="text-2xl lg:text-4xl mb-4 text-center">
           Start refracting knowledge soon.
         </h4>
