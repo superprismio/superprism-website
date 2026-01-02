@@ -215,59 +215,43 @@ export function SpaceProjects({
       </header>
       <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
         <ResizablePanel defaultSize={60} minSize={20}>
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={50} minSize={30}>
-              <ProjectList
+          {selectedProject ? (
+            <ScrollArea className="flex-1 min-h-0 h-full">
+              <ProjectDetail
+                key={selectedProject.id}
                 heapId={heapId}
-                selectedProjectId={
-                  selectedProject && selectedProject.id !== null
-                    ? selectedProject.id
-                    : null
+                project={selectedProject}
+                onUpdatePendingProject={handleUpdatePendingProject}
+                onUpdatePendingProjectTitle={
+                  handleUpdatePendingProjectTitle
                 }
-                onSelectProject={(project) => {
-                  // Only set if it's a real project (not pending)
-                  if (project && project.id !== null) {
-                    setSelectedProject(project);
-                    setActiveChatSession(project);
-                    updateUrlWithProject(project);
-                  }
+                onProjectCreated={(project) => {
+                  setSelectedProject(project);
+                  setActiveChatSession(project);
+                  updateUrlWithProject(project);
                 }}
+                onProjectUpdated={(project) => {
+                  setSelectedProject(project);
+                  setActiveChatSession(project);
+                  updateUrlWithProject(project);
+                }}
+                onClose={handleCloseProject}
               />
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={50} minSize={30}>
-              <div className="h-full overflow-hidden border-l">
-                {selectedProject ? (
-                  <ScrollArea className="flex-1 min-h-0 h-full">
-                    <ProjectDetail
-                      key={selectedProject.id}
-                      heapId={heapId}
-                      project={selectedProject}
-                      onUpdatePendingProject={handleUpdatePendingProject}
-                      onUpdatePendingProjectTitle={
-                        handleUpdatePendingProjectTitle
-                      }
-                      onProjectCreated={(project) => {
-                        setSelectedProject(project);
-                        setActiveChatSession(project);
-                        updateUrlWithProject(project);
-                      }}
-                      onProjectUpdated={(project) => {
-                        setSelectedProject(project);
-                        setActiveChatSession(project);
-                        updateUrlWithProject(project);
-                      }}
-                      onClose={handleCloseProject}
-                    />
-                  </ScrollArea>
-                ) : (
-                  <div className="p-4 text-sm text-muted-foreground h-full flex items-center justify-center">
-                    Select a project to view details
-                  </div>
-                )}
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+            </ScrollArea>
+          ) : (
+            <ProjectList
+              heapId={heapId}
+              selectedProjectId={null}
+              onSelectProject={(project) => {
+                // Only set if it's a real project (not pending)
+                if (project && project.id !== null) {
+                  setSelectedProject(project);
+                  setActiveChatSession(project);
+                  updateUrlWithProject(project);
+                }
+              }}
+            />
+          )}
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50} minSize={20}>

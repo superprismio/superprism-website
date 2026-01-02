@@ -4,15 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Folder,
   FolderOpen,
-  MessageCirclePlus,
   File,
   FileText,
   FileImage,
   FileSpreadsheet,
+  SquareMenu,
 } from "lucide-react";
 import { useSpaceFiles, type FolderNode } from "@/hooks/useSpaceFiles";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { FileRow } from "./types";
 import { createClient } from "@/lib/supabase/client";
@@ -30,6 +35,7 @@ type FileExplorerProps = {
   onPreviewFile?: (file: FileRow) => void;
   onAddFileToChat?: (file: FileRow) => void;
   selectedFileId?: string | null;
+  useDialogForPreview?: boolean;
 };
 
 type FolderSelection = {
@@ -48,6 +54,7 @@ type FileListProps = {
   onMoveToFolder?: (fileId: string, folders: string[]) => Promise<void>;
   currentUserId?: string | null;
   heapId: string;
+  useDialogForPreview?: boolean;
 };
 
 const LOCAL_FOLDER_OPTIONS = [
@@ -99,6 +106,19 @@ function getTotalFileCount(
   return count;
 }
 
+function formatDate(dateString: string | null): string {
+  if (!dateString) return "—";
+  try {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+}
+
 function FileList({
   files,
   emptyMessage,
@@ -107,6 +127,7 @@ function FileList({
   onPreview,
   isStaging = false,
   onMoveToFolder,
+  useDialogForPreview = false,
 }: FileListProps) {
   const [movingFileId, setMovingFileId] = useState<string | null>(null);
 
@@ -132,21 +153,28 @@ function FileList({
         const FileIcon = getFileIcon(
           (file as FileRow & { storage_path?: string | null }).storage_path
         );
+        const isSelected = selectedFileId === file.id;
         return (
           <li key={file.id} className="p-1">
             <div className="flex items-center justify-between gap-2">
-              <button
+              <div
                 className={cn(
-                  "flex gap-2 items-center text-md font-medium hover:bg-muted transition px-2 py-1 rounded w-full",
-                  selectedFileId === file.id && "bg-muted"
+                  "flex-1 text-left text-md font-medium px-2 py-1 rounded flex gap-2 items-center",
+                  isSelected && "bg-muted"
                 )}
-                onClick={() => onPreview?.(file)}
               >
-                <FileIcon className="h-4 w-4 shrink-0" />
-                {file.file_name ?? "Untitled file"}
-              </button>
+                <FileIcon className="h-6 w-6 shrink-0" />
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="truncate">
+                    {file.file_name ?? "Untitled file"}
+                  </span>
+                  <span className="text-xs text-muted-foreground font-normal">
+                    {formatDate(file.uploaded_at)}
+                  </span>
+                </div>
+              </div>
               <div className="flex gap-2 shrink-0">
-                {isStaging ? (
+                {isStaging && (
                   <Select
                     value=""
                     onValueChange={(value) => {
@@ -170,16 +198,29 @@ function FileList({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => onAddToChat?.(file)}
-                  >
-                    <MessageCirclePlus />
-                  </Button>
                 )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 hover:bg-muted rounded transition"
+                      aria-label="File menu"
+                    >
+                      <SquareMenu className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onPreview?.(file)}>
+                      Open
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAddToChat?.(file)}>
+                      Add to Project
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>Remove</DropdownMenuItem>
+                    <DropdownMenuItem disabled>View Raw</DropdownMenuItem>
+                    <DropdownMenuItem disabled>Edit Raw</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </li>
@@ -478,6 +519,7 @@ export function FileExplorer({
   onPreviewFile,
   onAddFileToChat,
   selectedFileId,
+  useDialogForPreview = false,
 }: FileExplorerProps) {
   const {
     folders,
@@ -496,6 +538,9 @@ export function FileExplorer({
   const [search, setSearch] = useState("");
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<
+    "name-asc" | "name-desc" | "date-asc" | "date-desc"
+  >("name-asc");
 
   useEffect(() => {
     const getCurrentUser = async () => {
@@ -590,8 +635,27 @@ export function FileExplorer({
       });
     }
 
-    return result;
-  }, [files, search, activeTagFilter]);
+    // Apply sorting
+    const sorted = [...result].sort((a, b) => {
+      if (sortBy === "name-asc" || sortBy === "name-desc") {
+        const nameA = (a.file_name || "Untitled file").toLowerCase();
+        const nameB = (b.file_name || "Untitled file").toLowerCase();
+        const comparison = nameA.localeCompare(nameB);
+        return sortBy === "name-asc" ? comparison : -comparison;
+      } else {
+        // Date sorting
+        const dateA = a.uploaded_at
+          ? new Date(a.uploaded_at).getTime()
+          : 0;
+        const dateB = b.uploaded_at
+          ? new Date(b.uploaded_at).getTime()
+          : 0;
+        return sortBy === "date-asc" ? dateA - dateB : dateB - dateA;
+      }
+    });
+
+    return sorted;
+  }, [files, search, activeTagFilter, sortBy]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -657,11 +721,48 @@ export function FileExplorer({
               </div>
             ) : null}
             {!isLoading && !isError ? (
-              mode === "explore" ? (
-                activeFolder ? (
-                  <ScrollArea className="flex-1 min-h-0 h-full">
+              <>
+                <div className="px-3 py-2 border-b flex items-center justify-between">
+                  <span className="text-sm font-medium">Files</span>
+                  <Select
+                    value={sortBy}
+                    onValueChange={(value) => setSortBy(value as typeof sortBy)}
+                  >
+                    <SelectTrigger className="w-[180px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                      <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                      <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                      <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {mode === "explore" ? (
+                  activeFolder ? (
+                    <ScrollArea className="flex-1 min-h-0 h-full">
                     <FileList
-                      files={activeFolder.files}
+                      files={(() => {
+                        // Apply sorting to active folder files
+                        const sorted = [...activeFolder.files].sort((a, b) => {
+                          if (sortBy === "name-asc" || sortBy === "name-desc") {
+                            const nameA = (a.file_name || "Untitled file").toLowerCase();
+                            const nameB = (b.file_name || "Untitled file").toLowerCase();
+                            const comparison = nameA.localeCompare(nameB);
+                            return sortBy === "name-asc" ? comparison : -comparison;
+                          } else {
+                            const dateA = a.uploaded_at
+                              ? new Date(a.uploaded_at).getTime()
+                              : 0;
+                            const dateB = b.uploaded_at
+                              ? new Date(b.uploaded_at).getTime()
+                              : 0;
+                            return sortBy === "date-asc" ? dateA - dateB : dateB - dateA;
+                          }
+                        });
+                        return sorted;
+                      })()}
                       emptyMessage="Ingestion before digestion"
                       selectedFileId={selectedFileId}
                       onAddToChat={onAddFileToChat}
@@ -670,30 +771,33 @@ export function FileExplorer({
                       onMoveToFolder={isStaging ? updateFileFolders : undefined}
                       currentUserId={currentUserId}
                       heapId={heapId}
+                      useDialogForPreview={useDialogForPreview}
+                    />
+                    </ScrollArea>
+                  ) : (
+                    <div className="text-sm text-muted-foreground p-10">
+                      Select a folder to view its files.
+                    </div>
+                  )
+                ) : (
+                  <ScrollArea className="flex-1 min-h-0 h-full">
+                    <FileList
+                      files={filteredFiles}
+                      emptyMessage={
+                        search || activeTagFilter
+                          ? "No files match your filters."
+                          : "Start by searching or selecting a tag."
+                      }
+                      selectedFileId={selectedFileId}
+                      onAddToChat={onAddFileToChat}
+                      onPreview={onPreviewFile}
+                      currentUserId={currentUserId}
+                      heapId={heapId}
+                      useDialogForPreview={useDialogForPreview}
                     />
                   </ScrollArea>
-                ) : (
-                  <div className="text-sm text-muted-foreground p-10">
-                    Select a folder to view its files.
-                  </div>
-                )
-              ) : (
-                <ScrollArea className="flex-1 min-h-0 h-full">
-                  <FileList
-                    files={filteredFiles}
-                    emptyMessage={
-                      search || activeTagFilter
-                        ? "No files match your filters."
-                        : "Start by searching or selecting a tag."
-                    }
-                    selectedFileId={selectedFileId}
-                    onAddToChat={onAddFileToChat}
-                    onPreview={onPreviewFile}
-                    currentUserId={currentUserId}
-                    heapId={heapId}
-                  />
-                </ScrollArea>
-              )
+                )}
+              </>
             ) : null}
           </section>
         </div>

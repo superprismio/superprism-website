@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ProjectFileList } from "@/components/spaces/project-file-list";
 import { createClient } from "@/lib/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { isOwnerOrProjectCreator } from "@/lib/auth-helpers";
 import { useSpaceMembers } from "@/hooks/useMembers";
+import { useProfile } from "@/hooks/useProfile";
 import {
   Dialog,
   DialogContent,
@@ -40,8 +40,6 @@ type ProjectDetailProps = {
   onProjectUpdated?: (project: ChatSession) => void;
   onClose?: () => void;
 };
-
-type UserProfile = Database["public"]["Tables"]["user_profiles"]["Row"];
 
 export function ProjectDetail({
   heapId,
@@ -81,38 +79,28 @@ export function ProjectDetail({
   // Check if current user is heap owner/admin
   const isHeapOwner = useMemo(() => {
     if (!currentUserId) return false;
-    const currentUserMembership = members.find((m) => m.user_id === currentUserId);
-    return currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
+    const currentUserMembership = members.find(
+      (m) => m.user_id === currentUserId
+    );
+    return (
+      currentUserMembership?.role === "admin" ||
+      currentUserMembership?.role === "owner"
+    );
   }, [members, currentUserId]);
 
   // Check if current user can edit (must be owner or creator)
   const canEdit = useMemo(() => {
     if (isPending) return true; // Can always edit pending projects
     if (!isRealProject || !currentUserId || !projectCreatorId) return false;
-    return isOwnerOrProjectCreator(currentUserId, projectCreatorId, isHeapOwner);
+    return isOwnerOrProjectCreator(
+      currentUserId,
+      projectCreatorId,
+      isHeapOwner
+    );
   }, [isPending, isRealProject, currentUserId, projectCreatorId, isHeapOwner]);
 
   // Fetch creator profile
-  const { data: creatorProfile } = useQuery<UserProfile | null, Error>({
-    queryKey: ["user-profile", projectCreatorId],
-    queryFn: async () => {
-      if (!projectCreatorId) return null;
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("user_id", projectCreatorId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Failed to fetch creator profile:", error);
-        return null;
-      }
-      return data;
-    },
-    enabled: Boolean(projectCreatorId),
-    staleTime: 300_000, // 5 minutes
-  });
+  const { data: creatorProfile } = useProfile(projectCreatorId);
 
   useEffect(() => {
     if (project) {
@@ -130,16 +118,12 @@ export function ProjectDetail({
       return [];
     }
     const meta = project.meta as Record<string, unknown>;
-
-    console.log("meta", meta);
     const ids = meta.file_id || [];
     if (Array.isArray(ids)) {
       return ids.filter((id): id is string => typeof id === "string");
     }
     return [];
   }, [project?.meta]);
-
-  console.log("fileIds", fileIds);
 
   if (!project) {
     return (
@@ -286,7 +270,7 @@ export function ProjectDetail({
   return (
     <div
       className="holographic-shimmer h-full"
-      id={`project-detail-${project.id ?? 'pending'}`}
+      id={`project-detail-${project.id ?? "pending"}`}
     >
       <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
         <DialogContent>

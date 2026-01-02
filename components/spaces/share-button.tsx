@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CopyIcon, Check } from "lucide-react";
+import { Check, Share } from "lucide-react";
 
 type ShareButtonProps = {
   url: string;
@@ -47,13 +47,8 @@ export function ShareButton({
       className={className}
       title={copied ? "Copied!" : "Copy share link"}
     >
-      {copied ? (
-        <Check className="h-4 w-4" />
-      ) : (
-        <CopyIcon className="h-4 w-4" />
-      )}
+      {copied ? <Check className="h-4 w-4" /> : <Share className="h-4 w-4" />}
       <span className="sr-only">Copy share link</span>
     </Button>
   );
 }
-
