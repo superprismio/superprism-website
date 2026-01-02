@@ -26,8 +26,6 @@ import { useChat } from "@/hooks/useChat";
 import type { Database } from "@/lib/types/supabase";
 import { ScrollArea } from "../ui/scroll-area";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { generateShareUrl } from "@/lib/share-link";
-import { ShareButton } from "./share-button";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
