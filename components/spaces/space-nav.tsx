@@ -39,18 +39,18 @@ type SpaceNavItem = {
 const NAV_ITEMS: SpaceNavItem[] = [
   {
     key: "spaceFeed",
-    label: "Space Feed",
+    label: "Feed",
     icon: Pyramid,
     badge: "3",
   },
   {
     key: "knowledgeExplorer",
-    label: "Knowledge Explorer",
+    label: "Knowledge",
     icon: Library,
   },
   {
     key: "spaceProjects",
-    label: "Space Projects",
+    label: "Projects",
     icon: Box,
   },
   // {
@@ -65,7 +65,7 @@ const NAV_ITEMS: SpaceNavItem[] = [
   // },
   {
     key: "spaceSettings",
-    label: "Space Settings",
+    label: "Settings",
     icon: Settings,
   },
 ];
@@ -82,10 +82,10 @@ export function SpaceNav({
   onSelect,
 }: SpaceNavProps) {
   return (
-    <nav className="flex h-full flex-col border-r p-2">
-      <div className="flex w-full flex-1 flex-row items-start justify-between md:flex-col md:items-center md:justify-between">
+    <nav className="flex h-auto flex-col border-b p-2 md:h-full md:border-b-0 md:border-r">
+      <div className="flex w-full flex-row items-start justify-between md:flex-1 md:flex-col md:items-center md:justify-between">
         <TooltipProvider delayDuration={200}>
-          <ul className="flex flex-1 flex-row items-start justify-between gap-1 md:flex-initial md:flex-col md:items-stretch">
+          <ul className="flex flex-row items-start justify-between gap-1 md:flex-1 md:flex-initial md:flex-col md:items-stretch">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive =
@@ -113,11 +113,11 @@ export function SpaceNav({
                         <span className="mt-2 text-[11px] text-foreground md:hidden">
                           {item.label}
                         </span>
-                        {item.badge ? (
+                        {/* {item.badge ? (
                           <span className="mt-2 rounded-[4px] inline-flex items-center bg-primary px-2 py-[2px] text-[10px] font-semibold text-background md:mt-3">
                             {item.badge}
                           </span>
-                        ) : null}
+                        ) : null} */}
                       </button>
                     </TooltipTrigger>
                     <TooltipContent

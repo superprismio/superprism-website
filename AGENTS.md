@@ -20,6 +20,11 @@
 - Ingestion routes live under `/api/heaps/[heapId]/injest/*` and forward to an n8n webhook; follow the existing FormData/JSON shapes.
 - Theming uses CSS tokens in `app/globals.css` wired into Tailwind in `tailwind.config.ts`, with shadcn/ui variants and `next/font` variables.
 
+## API Call Pattern: Route > Hook > Component
+- **Never make direct `fetch()` calls in components**. Always wrap API calls in React hooks using React Query (`@tanstack/react-query`).
+- Create hooks in `hooks/` that use `useQuery` for GET requests and `useMutation` for POST/PATCH/DELETE requests.
+- Hooks should handle error handling, caching, and query invalidation automatically.
+
 ## Coding Style & Naming Conventions
 - TypeScript/React code is in `*.ts`/`*.tsx`; use 2-space indentation as seen in `app/`.
 - Use PascalCase for React components and camelCase for hooks/utilities.

@@ -1,8 +1,7 @@
 "use client";
 
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
-import { useEffect, useState } from "react";
-import type { Member } from "./types";
+import { useState } from "react";
 import { Button } from "../ui/button";
 import { PlusIcon, CopyIcon } from "lucide-react";
 import {
@@ -23,36 +22,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useHeapInvites, useCreateInvite, type HeapInvite } from "@/hooks/useInvites";
+import {
+  useHeapInvites,
+  useCreateInvite,
+  type HeapInvite,
+} from "@/hooks/useInvites";
+import { useSpaceMembers } from "@/hooks/useMembers";
 
 export function SpaceMembers({ heapId }: WorkspacePaneComponentProps) {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { data: members = [], isLoading: loading } = useSpaceMembers(heapId);
   const { data: invites, isLoading: invitesLoading } = useHeapInvites(heapId);
-  const createInvite = useCreateInvite();
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/heaps/${heapId}/members`);
-        const json = await res.json();
-        if (!mounted) return;
-        if (res.ok) setMembers(json.data || []);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;  
-    };
-  }, [heapId]);
 
   // Filter open invites (not expired and not used)
-  const openInvites = invites?.filter(
-    (invite) => !invite.is_expired && !invite.is_used
-  ) || [];
+  const openInvites =
+    invites?.filter((invite) => !invite.is_expired && !invite.is_used) || [];
 
   return (
     <>
@@ -61,21 +44,21 @@ export function SpaceMembers({ heapId }: WorkspacePaneComponentProps) {
         <CreateInviteDialog heapId={heapId} />
       </header>
       <div className="space-y-3 text-sm text-muted-foreground px-3 py-4">
-          {loading && (
-            <div className="text-sm text-muted-foreground">Loading...</div>
-          )}
+        {loading && (
+          <div className="text-sm text-muted-foreground">Loading...</div>
+        )}
         {!loading && members.length === 0 && openInvites.length === 0 && (
-            <div className="text-sm text-muted-foreground">No members</div>
-          )}
-          {!loading &&
-            members.map((m) => (
-              <div key={m.membership_id} className="text-sm">
-                <span className="font-medium">
-                  {m.display_name || m.user_name || m.user_email}
-                </span>
-                <span className="text-muted-foreground"> — {m.role}</span>
-              </div>
-            ))}
+          <div className="text-sm text-muted-foreground">No members</div>
+        )}
+        {!loading &&
+          members.map((m) => (
+            <div key={m.membership_id} className="text-sm">
+              <span className="font-medium">
+                {m.display_name || m.user_name || m.user_email}
+              </span>
+              <span className="text-muted-foreground"> — {m.role}</span>
+            </div>
+          ))}
         {openInvites.length > 0 && (
           <div className="mt-4 pt-4 border-t">
             <div className="text-xs font-medium text-muted-foreground mb-2">
@@ -154,7 +137,7 @@ function CreateInviteDialog({ heapId }: { heapId: string }) {
               <SelectTrigger id="invite-role">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background">
                 <SelectItem value="member">Member</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
@@ -187,7 +170,7 @@ function InviteRow({ invite }: { invite: HeapInvite }) {
 
   const handleCopy = async () => {
     if (typeof window === "undefined") return;
-    
+
     const fullUrl = `${window.location.origin}/invite/${invite.token}`;
     try {
       await navigator.clipboard.writeText(fullUrl);
@@ -225,4 +208,3 @@ function InviteRow({ invite }: { invite: HeapInvite }) {
     </div>
   );
 }
-

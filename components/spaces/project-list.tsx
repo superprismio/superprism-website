@@ -1,12 +1,44 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { useProjectList } from "@/hooks/useProjects";
+import {
+  useProjectList,
+  useProjectUpdate,
+  useCreateProject,
+} from "@/hooks/useProjects";
 import { useChat } from "@/hooks/useChat";
+import { useSpaceMembers } from "@/hooks/useMembers";
 import type { Database } from "@/lib/types/supabase";
 import { cn } from "@/lib/utils";
-import { Folder, FolderOpen } from "lucide-react";
+import { Ellipsis, Folder, FolderOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "../ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
+import { isOwnerOrProjectCreator } from "@/lib/auth-helpers";
+import { generateShareUrl } from "@/lib/share-link";
+import { ShareButton } from "./share-button";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -155,19 +187,116 @@ function ProjectSearch({
 }
 
 type ProjectListContentProps = {
+  heapId: string;
   projects: ChatSession[];
   selectedProjectId: string | null;
   onSelectProject: (project: ChatSession | null) => void;
   emptyMessage: string;
 };
 
+function formatDate(dateString: string | null): string {
+  if (!dateString) return "—";
+  try {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+}
+
 function ProjectListContent({
+  heapId,
   projects,
   selectedProjectId,
   onSelectProject,
   emptyMessage,
 }: ProjectListContentProps) {
   const { setActiveChatSession } = useChat();
+  const updateProject = useProjectUpdate();
+  const createProject = useCreateProject();
+  const { data: members = [] } = useSpaceMembers(heapId);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
+  const [projectToArchive, setProjectToArchive] = useState<ChatSession | null>(
+    null
+  );
+
+  // Get current user ID
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id ?? null);
+    };
+    void getCurrentUser();
+  }, []);
+
+  // Check if current user is heap owner/admin
+  const isHeapOwner = useMemo(() => {
+    if (!currentUserId) return false;
+    const currentUserMembership = members.find(
+      (m) => m.user_id === currentUserId
+    );
+    return (
+      currentUserMembership?.role === "admin" ||
+      currentUserMembership?.role === "owner"
+    );
+  }, [members, currentUserId]);
+
+  const handleOpen = (project: ChatSession) => {
+    onSelectProject(project);
+    setActiveChatSession(project);
+  };
+
+  const handleArchiveClick = (project: ChatSession) => {
+    setProjectToArchive(project);
+    setIsArchiveDialogOpen(true);
+  };
+
+  const handleArchive = async () => {
+    if (!projectToArchive) return;
+
+    try {
+      await updateProject.mutateAsync({
+        heapId,
+        sessionId: projectToArchive.id,
+        archived: true,
+      });
+      setIsArchiveDialogOpen(false);
+      setProjectToArchive(null);
+    } catch (error) {
+      console.error("Failed to archive project:", error);
+    }
+  };
+
+  const handleClone = async (project: ChatSession) => {
+    try {
+      const clonedTitle = `${project.title || "Untitled Project"} - Copy`;
+      const clonedMeta = project.meta
+        ? (JSON.parse(JSON.stringify(project.meta)) as Record<string, unknown>)
+        : { isProject: true, file_id: [] };
+      const clonedFilter = project.filter
+        ? JSON.parse(JSON.stringify(project.filter))
+        : undefined;
+
+      const clonedProject = await createProject.mutateAsync({
+        heapId,
+        title: clonedTitle,
+        meta: clonedMeta,
+        filter: clonedFilter,
+      });
+
+      onSelectProject(clonedProject);
+      setActiveChatSession(clonedProject);
+    } catch (error) {
+      console.error("Failed to clone project:", error);
+    }
+  };
 
   if (projects.length === 0) {
     return (
@@ -176,32 +305,107 @@ function ProjectListContent({
   }
 
   return (
-    <ul className="space-y-2 p-3">
-      {projects.map((project) => {
-        const isSelected = project.id === selectedProjectId;
-        return (
-          <li key={project.id} className="p-1">
-            <div className="flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  onSelectProject(project);
-                  setActiveChatSession(project);
-                }}
-                className={cn(
-                  "flex-1 text-left text-md font-medium hover:bg-muted transition px-2 py-1 rounded",
-                  isSelected && "bg-muted"
-                )}
-              >
-                <span className="truncate">
-                  {project.title || "Untitled Project"}
-                </span>
-              </button>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+    <>
+      <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Archive Project</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to archive &quot;
+              {projectToArchive?.title || "this project"}&quot;? Archived
+              projects will be hidden from the project list.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsArchiveDialogOpen(false);
+                setProjectToArchive(null);
+              }}
+              disabled={updateProject.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleArchive}
+              disabled={updateProject.isPending}
+            >
+              {updateProject.isPending ? "Archiving..." : "Archive"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <ul className="space-y-2 p-3">
+        {projects.map((project) => {
+          const isSelected = project.id === selectedProjectId;
+          const canArchive = isOwnerOrProjectCreator(
+            currentUserId,
+            project.created_by,
+            isHeapOwner
+          );
+          return (
+            <li key={project.id} className="p-1">
+              <div className="flex items-center justify-between gap-2">
+                <div
+                  className={cn(
+                    "flex-1 text-left text-md font-medium px-2 py-1 rounded",
+                    isSelected && "bg-muted"
+                  )}
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="truncate">
+                      {project.title || "Untitled Project"}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      {formatDate(project.created_at)}
+                    </span>
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 hover:bg-muted rounded transition"
+                      aria-label="Project menu"
+                    >
+                      <Ellipsis className="h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-background">
+                    <DropdownMenuItem onClick={() => handleOpen(project)}>
+                      Open
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleArchiveClick(project)}
+                      disabled={!canArchive}
+                    >
+                      Remove
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleClone(project)}>
+                      Clone
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      Share{" "}
+                      <ShareButton
+                        url={generateShareUrl(heapId, {
+                          section: "projects",
+                          projectId: project.id,
+                        })}
+                        size="sm"
+                      />
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }
 
@@ -220,6 +424,9 @@ export function ProjectList({
   const [mode, setMode] = useState<"explore" | "search">("explore");
   const [activeFolder, setActiveFolder] = useState<FolderType | null>(null);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<
+    "name-asc" | "name-desc" | "date-asc" | "date-desc"
+  >("name-asc");
 
   // Set default active folder
   useEffect(() => {
@@ -241,13 +448,14 @@ export function ProjectList({
 
   const activeProjects = useMemo(() => {
     if (!projectFolders) return [];
+    let projects: ChatSession[] = [];
+
     if (mode === "explore") {
       if (activeFolder === "your-projects") {
-        return projectFolders.yourProjects;
+        projects = projectFolders.yourProjects;
       } else if (activeFolder === "space-projects") {
-        return projectFolders.spaceProjects;
+        projects = projectFolders.spaceProjects;
       }
-      return [];
     } else {
       // Search mode - show all projects
       const allProjects = [
@@ -256,14 +464,32 @@ export function ProjectList({
       ];
       if (search.trim()) {
         const query = search.trim().toLowerCase();
-        return allProjects.filter((project) => {
+        projects = allProjects.filter((project) => {
           const title = (project.title || "").toLowerCase();
           return title.includes(query);
         });
+      } else {
+        projects = allProjects;
       }
-      return allProjects;
     }
-  }, [projectFolders, mode, activeFolder, search]);
+
+    // Apply sorting
+    const sorted = [...projects].sort((a, b) => {
+      if (sortBy === "name-asc" || sortBy === "name-desc") {
+        const titleA = (a.title || "Untitled Project").toLowerCase();
+        const titleB = (b.title || "Untitled Project").toLowerCase();
+        const comparison = titleA.localeCompare(titleB);
+        return sortBy === "name-asc" ? comparison : -comparison;
+      } else {
+        // Date sorting
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return sortBy === "date-asc" ? dateA - dateB : dateB - dateA;
+      }
+    });
+
+    return sorted;
+  }, [projectFolders, mode, activeFolder, search, sortBy]);
 
   if (isLoading) {
     return (
@@ -299,13 +525,15 @@ export function ProjectList({
               onChange={(nextMode) => setMode(nextMode)}
             />
             {mode === "explore" ? (
-              <FolderList
-                activeFolder={activeFolder}
-                onSelectFolder={setActiveFolder}
-                yourProjectsCount={projectFolders.yourProjects.length}
-                spaceProjectsCount={projectFolders.spaceProjects.length}
-                className="flex-1 overflow-y-auto"
-              />
+              <ScrollArea className="flex-1 min-h-0 h-full">
+                <FolderList
+                  activeFolder={activeFolder}
+                  onSelectFolder={setActiveFolder}
+                  yourProjectsCount={projectFolders.yourProjects.length}
+                  spaceProjectsCount={projectFolders.spaceProjects.length}
+                  className="flex-1 overflow-y-auto"
+                />
+              </ScrollArea>
             ) : (
               <ProjectSearch
                 search={search}
@@ -315,24 +543,43 @@ export function ProjectList({
             )}
           </div>
           <section className="flex-1 min-h-[220px] space-y-4 overflow-hidden flex flex-col">
+            <div className="px-3 py-2 border-b flex items-center justify-between">
+              <span className="text-sm font-medium">Projects</span>
+              <Select
+                value={sortBy}
+                onValueChange={(value) => setSortBy(value as typeof sortBy)}
+              >
+                <SelectTrigger className="w-[180px] h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background">
+                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="date-desc">Date (Newest)</SelectItem>
+                  <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {mode === "explore" ? (
               activeFolder ? (
-                <div className="flex-1 min-h-0 overflow-y-auto">
+                <ScrollArea className="flex-1 min-h-0 h-full">
                   <ProjectListContent
+                    heapId={heapId}
                     projects={activeProjects}
                     selectedProjectId={selectedProjectId}
                     onSelectProject={onSelectProject}
                     emptyMessage="No projects in this folder."
                   />
-                </div>
+                </ScrollArea>
               ) : (
                 <div className="text-sm text-muted-foreground p-10">
                   Select a folder to view its projects.
                 </div>
               )
             ) : (
-              <div className="flex-1 min-h-0 overflow-y-auto">
+              <ScrollArea className="flex-1 min-h-0 h-full">
                 <ProjectListContent
+                  heapId={heapId}
                   projects={activeProjects}
                   selectedProjectId={selectedProjectId}
                   onSelectProject={onSelectProject}
@@ -342,7 +589,7 @@ export function ProjectList({
                       : "Start by searching for a project."
                   }
                 />
-              </div>
+              </ScrollArea>
             )}
           </section>
         </div>

@@ -10,9 +10,13 @@ import {
 import { ProjectList } from "./project-list";
 import { ProjectDetail } from "./project-detail";
 import { KnowledgeExplorer } from "./knowledge-explorer";
-import { useProjectUpdate } from "@/hooks/useProjects";
+import { useProjectUpdate, useProject } from "@/hooks/useProjects";
 import { useChat } from "@/hooks/useChat";
 import type { Database } from "@/lib/types/supabase";
+import { ScrollArea } from "../ui/scroll-area";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { generateShareUrl } from "@/lib/share-link";
+import { ShareButton } from "./share-button";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -23,12 +27,62 @@ type PendingProject = {
   created_at: null;
 };
 
-export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
+export function SpaceProjects({
+  heapId,
+  projectId,
+}: WorkspacePaneComponentProps) {
   const [selectedProject, setSelectedProject] = useState<
     ChatSession | PendingProject | null
   >(null);
   const updateProject = useProjectUpdate();
   const { setActiveChatSession } = useChat();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Fetch project if projectId is provided in URL
+  const { data: urlProject } = useProject(heapId, projectId || null);
+
+  // Update selected project when URL projectId changes
+  useEffect(() => {
+    if (projectId && urlProject) {
+      // Only update if the selected project is different from the URL project
+      const currentId =
+        selectedProject && (selectedProject as ChatSession).id !== null
+          ? (selectedProject as ChatSession).id
+          : null;
+      if (currentId !== projectId) {
+        setSelectedProject(urlProject);
+        setActiveChatSession(urlProject);
+      }
+    } else if (
+      !projectId &&
+      selectedProject &&
+      (selectedProject as ChatSession).id !== null
+    ) {
+      // Clear selection if projectId is removed from URL
+      setSelectedProject(null);
+      setActiveChatSession(null);
+    }
+  }, [projectId, urlProject, setActiveChatSession]);
+
+  // Update URL when project selection changes
+  const updateUrlWithProject = useCallback(
+    (project: ChatSession | PendingProject | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (project && project.id !== null) {
+        params.set("projectId", project.id);
+        // Ensure section is set to projects
+        params.set("section", "projects");
+      } else {
+        params.delete("projectId");
+      }
+
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
 
   // Create or get pending project
   const getOrCreatePendingProject = useCallback((): PendingProject => {
@@ -127,7 +181,8 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
   const handleCloseProject = useCallback(() => {
     setSelectedProject(null);
     setActiveChatSession(null);
-  }, [setActiveChatSession]);
+    updateUrlWithProject(null);
+  }, [setActiveChatSession, updateUrlWithProject]);
 
   // Update active chat session when selected project changes
   useEffect(() => {
@@ -153,55 +208,41 @@ export function SpaceProjects({ heapId }: WorkspacePaneComponentProps) {
       </header>
       <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
         <ResizablePanel defaultSize={60} minSize={20}>
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            <ResizablePanel defaultSize={50} minSize={30}>
-              <div className="h-full overflow-hidden">
-                <ProjectList
-                  heapId={heapId}
-                  selectedProjectId={
-                    selectedProject && selectedProject.id !== null
-                      ? selectedProject.id
-                      : null
-                  }
-                  onSelectProject={(project) => {
-                    // Only set if it's a real project (not pending)
-                    if (project && project.id !== null) {
-                      setSelectedProject(project);
-                      setActiveChatSession(project);
-                    }
-                  }}
-                />
-              </div>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={50} minSize={30}>
-              <div className="h-full overflow-hidden border-l">
-                {selectedProject ? (
-                  <ProjectDetail
-                    heapId={heapId}
-                    project={selectedProject}
-                    onUpdatePendingProject={handleUpdatePendingProject}
-                    onUpdatePendingProjectTitle={
-                      handleUpdatePendingProjectTitle
-                    }
-                    onProjectCreated={(project) => {
-                      setSelectedProject(project);
-                      setActiveChatSession(project);
-                    }}
-                    onProjectUpdated={(project) => {
-                      setSelectedProject(project);
-                      setActiveChatSession(project);
-                    }}
-                    onClose={handleCloseProject}
-                  />
-                ) : (
-                  <div className="p-4 text-sm text-muted-foreground h-full flex items-center justify-center">
-                    Select a project to view details
-                  </div>
-                )}
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+          {selectedProject ? (
+            <ScrollArea className="flex-1 min-h-0 h-full">
+              <ProjectDetail
+                key={selectedProject.id}
+                heapId={heapId}
+                project={selectedProject}
+                onUpdatePendingProject={handleUpdatePendingProject}
+                onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
+                onProjectCreated={(project) => {
+                  setSelectedProject(project);
+                  setActiveChatSession(project);
+                  updateUrlWithProject(project);
+                }}
+                onProjectUpdated={(project) => {
+                  setSelectedProject(project);
+                  setActiveChatSession(project);
+                  updateUrlWithProject(project);
+                }}
+                onClose={handleCloseProject}
+              />
+            </ScrollArea>
+          ) : (
+            <ProjectList
+              heapId={heapId}
+              selectedProjectId={null}
+              onSelectProject={(project) => {
+                // Only set if it's a real project (not pending)
+                if (project && project.id !== null) {
+                  setSelectedProject(project);
+                  setActiveChatSession(project);
+                  updateUrlWithProject(project);
+                }
+              }}
+            />
+          )}
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={50} minSize={20}>

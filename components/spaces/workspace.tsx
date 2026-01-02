@@ -1,7 +1,8 @@
 "use client";
 
 import { ComponentType, ReactNode, useCallback, useState, useEffect } from "react";
-import { useHeap } from "../../hooks/spaces";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useHeap } from "../../hooks/useSpaces";
 import { ChatProvider, useChat } from "../../hooks/useChat";
 import { SpaceNav } from "./space-nav";
 import { PaneOne } from "./pane-one";
@@ -22,6 +23,11 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "../ui/resizable";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "../ui/dialog";
 
 type WorkspaceProps = {
   spaceId: string | null;
@@ -68,6 +74,20 @@ const PANE_DEFINITIONS: Record<WorkspacePaneKey, PaneDefinition> = {
 const DEFAULT_PRIMARY: WorkspacePaneKey = "spaceFeed";
 const DEFAULT_SECONDARY: WorkspacePaneKey = "spaceChat";
 
+// URL param mapping: section param -> WorkspacePaneKey
+const SECTION_TO_PANE: Record<string, WorkspacePaneKey> = {
+  settings: "spaceSettings",
+  projects: "spaceProjects",
+  knowledge: "knowledgeExplorer",
+};
+
+// Reverse mapping: WorkspacePaneKey -> section param
+const PANE_TO_SECTION: Partial<Record<WorkspacePaneKey, string>> = {
+  spaceSettings: "settings",
+  spaceProjects: "projects",
+  knowledgeExplorer: "knowledge",
+};
+
 // Component to monitor pane changes and clear active chat session when navigating away from the Projects workspace
 function ProjectPaneMonitor({
   primaryPane,
@@ -98,16 +118,98 @@ export function Workspace({
   emptyStateAction,
 }: WorkspaceProps) {
   const { data: space, isPending, isError, error } = useHeap(spaceId);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [primaryPane, setPrimaryPane] =
     useState<WorkspacePaneKey>(DEFAULT_PRIMARY);
   const [secondaryPane, setSecondaryPane] = useState<WorkspacePaneKey | null>(
     DEFAULT_SECONDARY
   );
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSecondaryDialogOpen, setIsSecondaryDialogOpen] = useState(false);
 
-  const handleSelectPrimary = useCallback((pane: WorkspacePaneKey) => {
-    setPrimaryPane(pane);
+  // Read URL params on mount and when they change
+  useEffect(() => {
+    const section = searchParams.get("section");
+
+    // Map section param to pane
+    if (section && SECTION_TO_PANE[section]) {
+      const newPane = SECTION_TO_PANE[section];
+      // Only update if different to avoid unnecessary re-renders
+      if (newPane !== primaryPane) {
+        setPrimaryPane(newPane);
+      }
+    }
+
+    // Note: projectId and fileId are passed to components below
+    // They will be handled by SpaceProjects and KnowledgeExplorer respectively
+  }, [searchParams, primaryPane]);
+
+  // Update URL when primary pane changes
+  const updateUrlParams = useCallback(
+    (pane: WorkspacePaneKey, projectId?: string | null, fileId?: string | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      // Update section param
+      const section = PANE_TO_SECTION[pane];
+      if (section) {
+        params.set("section", section);
+      } else {
+        // Remove section if it's not a mappable pane
+        params.delete("section");
+      }
+
+      // Clear ingest param when navigating away from knowledge section
+      if (pane !== "knowledgeExplorer") {
+        params.delete("ingest");
+      }
+
+      // Update projectId param
+      if (projectId) {
+        params.set("projectId", projectId);
+      } else {
+        params.delete("projectId");
+      }
+
+      // Update fileId param
+      if (fileId) {
+        params.set("fileId", fileId);
+      } else {
+        params.delete("fileId");
+      }
+
+      // Only update URL if params actually changed
+      const newParamsString = params.toString();
+      const currentParamsString = searchParams.toString();
+      if (newParamsString !== currentParamsString) {
+        router.replace(`${pathname}?${newParamsString}`, { scroll: false });
+      }
+    },
+    [searchParams, router, pathname]
+  );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
+
+  const handleSelectPrimary = useCallback(
+    (pane: WorkspacePaneKey) => {
+      setPrimaryPane(pane);
+      // Clear projectId and fileId when switching primary panes
+      updateUrlParams(pane, null, null);
+    },
+    [updateUrlParams]
+  );
 
   const handleOpenSecondary = useCallback((pane: WorkspacePaneKey) => {
     setSecondaryPane(pane);
@@ -117,6 +219,11 @@ export function Workspace({
   const SecondaryComponent = secondaryPane
     ? PANE_DEFINITIONS[secondaryPane].component
     : null;
+
+  // Extract URL params for passing to components
+  const urlProjectId = searchParams.get("projectId");
+  const urlFileId = searchParams.get("fileId");
+  const urlIngest = searchParams.get("ingest");
 
   const layoutColumns = SecondaryComponent
     ? "md:grid-cols-[72px,minmax(0,1fr)]"
@@ -162,9 +269,9 @@ export function Workspace({
   return (
     <ChatProvider>
       <ProjectPaneMonitor primaryPane={primaryPane} />
-      <div>
+      <div className="h-full">
         <div
-          className={`flex flex-col min-h-[calc(100vh)] md:grid ${layoutColumns}`}
+          className={`flex flex-col h-full md:grid ${layoutColumns}`}
           role="region"
           aria-label="Workspace layout"
         >
@@ -174,42 +281,93 @@ export function Workspace({
             onSelect={handleSelectPrimary}
           />
           {SecondaryComponent ? (
-            <ResizablePanelGroup
-              direction="horizontal"
-              className="flex min-h-[320px] flex-col"
-            >
-              <ResizablePanel
-                defaultSize={60}
-                minSize={10}
-                className="min-w-[280px]"
-              >
-                <PaneOne title={primaryDefinition.label}>
-                  <PrimaryComponent
-                    onOpenPaneTwo={handleOpenSecondary}
-                    heapId={spaceId}
-                  />
-                </PaneOne>
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              <ResizablePanel
-                defaultSize={40}
-                minSize={10}
-                className="min-w-[240px]"
-              >
-                <PaneTwo title={secondaryDefinition?.label}>
+            isMobile ? (
+              <>
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <PaneOne title={primaryDefinition.label}>
+                    <PrimaryComponent
+                      onOpenPaneTwo={handleOpenSecondary}
+                      heapId={spaceId}
+                      projectId={urlProjectId}
+                      fileId={urlFileId}
+                      ingest={urlIngest}
+                    />
+                  </PaneOne>
+                </div>
+                <PaneTwo
+                  title={secondaryDefinition?.label}
+                  isMobile={true}
+                  onExpand={() => setIsSecondaryDialogOpen(true)}
+                >
                   <SecondaryComponent
                     onOpenPaneTwo={handleOpenSecondary}
                     heapId={spaceId}
+                    projectId={urlProjectId}
+                    fileId={urlFileId}
+                    ingest={urlIngest}
                   />
                 </PaneTwo>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+                <Dialog
+                  open={isSecondaryDialogOpen}
+                  onOpenChange={setIsSecondaryDialogOpen}
+                >
+                  <DialogContent className="max-w-full h-[90vh] flex flex-col p-0">
+                    <DialogTitle className="sr-only">
+                      {secondaryDefinition?.label}
+                    </DialogTitle>
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                      <SecondaryComponent
+                        onOpenPaneTwo={handleOpenSecondary}
+                        heapId={spaceId}
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
+            ) : (
+              <ResizablePanelGroup
+                direction="horizontal"
+                className="flex h-full min-h-[320px] flex-col"
+              >
+                <ResizablePanel
+                  defaultSize={60}
+                  minSize={10}
+                  className="md:min-w-[280px]"
+                >
+                  <PaneOne title={primaryDefinition.label}>
+                    <PrimaryComponent
+                      onOpenPaneTwo={handleOpenSecondary}
+                      heapId={spaceId}
+                      projectId={urlProjectId}
+                      fileId={urlFileId}
+                      ingest={urlIngest}
+                    />
+                  </PaneOne>
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel
+                  defaultSize={40}
+                  minSize={10}
+                  className="md:min-w-[240px]"
+                >
+                  <PaneTwo title={secondaryDefinition?.label}>
+                    <SecondaryComponent
+                      onOpenPaneTwo={handleOpenSecondary}
+                      heapId={spaceId}
+                    />
+                  </PaneTwo>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            )
           ) : (
             <>
               <PaneOne title={primaryDefinition.label}>
                 <PrimaryComponent
                   onOpenPaneTwo={handleOpenSecondary}
                   heapId={spaceId}
+                  projectId={urlProjectId}
+                  fileId={urlFileId}
+                  ingest={urlIngest}
                 />
               </PaneOne>
               <PaneTwo title={secondaryDefinition?.label} />

@@ -32,18 +32,6 @@ export async function POST(request: Request) {
   console.log("config", config);
 
   const supabase = await createClient();
-  // const { data: inserted, error } = await supabase
-  //   .from("heaps")
-  //   .insert({
-  //     name,
-  //     description,
-  //     avatar_url,
-  //     visibility,
-  //     allowed_group_ids,
-  //     config: {},
-  //   })
-  //   .select("*")
-  //   .single();
 
   const { data: inserted, error } = await supabase.rpc("create_heap", {
     heap_name: name,

@@ -130,15 +130,53 @@ export function useProjectUpdate() {
   });
 }
 
+export function useProject(heapId: string | null, sessionId: string | null) {
+  return useQuery<ChatSession, Error>({
+    queryKey: ["chat-session", heapId, sessionId],
+    queryFn: async () => {
+      if (!heapId || !sessionId) {
+        throw new Error("Heap ID and Session ID are required");
+      }
+
+      const response = await fetch(
+        `/api/heaps/${heapId}/chat-sessions/${sessionId}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to load chat session");
+      }
+
+      const json = (await response.json()) as ApiResponse<ChatSession>;
+      if (!json.data) {
+        throw new Error("Invalid response");
+      }
+
+      return json.data;
+    },
+    enabled: Boolean(heapId) && Boolean(sessionId),
+    staleTime: 30_000,
+  });
+}
+
 export function useCreateProject() {
   const queryClient = useQueryClient();
 
   return useMutation<
     ChatSession,
     Error,
-    { heapId: string; title: string; fileIds?: string[] }
+    {
+      heapId: string;
+      title: string;
+      fileIds?: string[];
+      meta?: Record<string, unknown>;
+      filter?: unknown;
+    }
   >({
-    mutationFn: async ({ heapId, title, fileIds = [] }) => {
+    mutationFn: async ({ heapId, title, fileIds = [], meta, filter }) => {
       const response = await fetch(`/api/heaps/${heapId}/chat-sessions`, {
         method: "POST",
         headers: {
@@ -146,10 +184,11 @@ export function useCreateProject() {
         },
         body: JSON.stringify({
           title,
-          meta: {
+          meta: meta ?? {
             isProject: true,
             file_id: fileIds,
           },
+          filter,
         }),
       });
 

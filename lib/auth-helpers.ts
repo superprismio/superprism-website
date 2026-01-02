@@ -151,15 +151,16 @@ export async function requireHeapOwner(
     return authResult;
   }
 
-  // Check if user has owner role in this heap
-  const { data: membership, error: memberError } = await supabase
-    .from("memberships")
-    .select("role")
-    .eq("heap_id", heapId)
-    .eq("user_id", authResult.user.id)
-    .maybeSingle();
+  // Then check if user is a heap admin (owner or admin)
+  const { data: isAdmin, error: adminError } = await supabase.rpc(
+    "is_heap_admin",
+    {
+      p_heap_id: heapId,
+      p_user_id: authResult.user.id,
+    }
+  );
 
-  if (memberError || !membership || membership.role !== "owner") {
+  if (adminError || !isAdmin) {
     return {
       success: false,
       response: NextResponse.json(
@@ -167,70 +168,6 @@ export async function requireHeapOwner(
           error:
             errorMessage ||
             "You must be an owner of this heap to perform this action",
-        },
-        { status: 403 }
-      ),
-    };
-  }
-
-  return authResult;
-}
-
-/**
- * Verifies that a user is authenticated AND is an admin (or owner) of the specified heap.
- * Returns the user object if authorized, or an error response if not.
- *
- * @param supabase - The Supabase client instance
- * @param heapId - The heap ID to check admin status for
- * @param errorMessage - Optional custom error message (default: "You must be an admin of this heap")
- * @returns Either { success: true, user, supabase } or { success: false, response }
- *
- * @example
- * ```typescript
- * const supabase = await createClient();
- * const { heapId } = await params;
- *
- * const authResult = await requireHeapAdmin(supabase, heapId);
- *
- * if (!authResult.success) {
- *   return authResult.response;
- * }
- *
- * const { user } = authResult;
- * // User is authenticated and is a heap admin, continue with route logic
- * ```
- */
-export async function requireHeapAdmin(
-  supabase: SupabaseClient,
-  heapId: string,
-  errorMessage?: string
-): Promise<AuthResult> {
-  // First check authentication
-  const authResult = await requireAuth(supabase);
-  if (!authResult.success) {
-    return authResult;
-  }
-
-  // Check if user has admin or owner role in this heap
-  const { data: membership, error: memberError } = await supabase
-    .from("memberships")
-    .select("role")
-    .eq("heap_id", heapId)
-    .eq("user_id", authResult.user.id)
-    .maybeSingle();
-
-  if (
-    memberError ||
-    !membership ||
-    (membership.role !== "admin" && membership.role !== "owner")
-  ) {
-    return {
-      success: false,
-      response: NextResponse.json(
-        {
-          error:
-            errorMessage ||
-            "You must be an admin of this heap to perform this action",
         },
         { status: 403 }
       ),
@@ -390,6 +327,41 @@ export async function isProjectCreator(
 // ============================================================================
 
 /**
+ * List of Superprismio Brothers user UUIDs.
+ * These users have special privileges for creating spaces.
+ */
+export const SUPERPRISMIO_BROTHERS = [
+  "55d9b2e3-9bfd-480d-9ecb-c0c82578bd44",
+  "0e308bde-378c-43aa-a0ec-25b4e777c971",
+  "74f87a05-8d30-44b6-900d-8e31cbb740a4",
+] as const;
+
+/**
+ * Checks if a user is a Superprismio Brother (client-side).
+ * This is a simple ID check against the SUPERPRISMIO_BROTHERS list.
+ *
+ * @param userId - The current user's ID
+ * @returns true if the user is a Superprismio Brother, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const { data: { user } } = await supabase.auth.getUser();
+ *
+ * if (isSuperprismioBrother(user?.id)) {
+ *   // Show privileged UI elements
+ * }
+ * ```
+ */
+export function isSuperprismioBrother(
+  userId: string | null | undefined
+): boolean {
+  if (!userId) {
+    return false;
+  }
+  return SUPERPRISMIO_BROTHERS.includes(userId as typeof SUPERPRISMIO_BROTHERS[number]);
+}
+
+/**
  * Checks if a user is the creator of a file (client-side).
  * This is a simple ID comparison and does not query the database.
  *
@@ -443,4 +415,66 @@ export function isProjectCreatorClient(
     return false;
   }
   return userId === projectCreatedBy;
+}
+
+/**
+ * Checks if a user is either a heap owner/admin OR the file creator (client-side).
+ * This combines heap ownership checks with file creator checks.
+ *
+ * @param userId - The current user's ID
+ * @param fileUploaderId - The uploader_id from the file record
+ * @param isHeapOwner - Whether the user is a heap owner or admin (can be determined from membership data)
+ * @returns true if the user is a heap owner/admin or the file creator, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const { data: members } = useSpaceMembers(heapId);
+ * const currentUserMembership = members.find(m => m.user_id === userId);
+ * const isHeapOwner = currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
+ *
+ * if (isOwnerOrFileCreator(userId, file.uploader_id, isHeapOwner)) {
+ *   // Show edit/delete buttons
+ * }
+ * ```
+ */
+export function isOwnerOrFileCreator(
+  userId: string | null | undefined,
+  fileUploaderId: string | null | undefined,
+  isHeapOwner: boolean
+): boolean {
+  if (isHeapOwner) {
+    return true;
+  }
+  return isFileCreatorClient(userId, fileUploaderId);
+}
+
+/**
+ * Checks if a user is either a heap owner/admin OR the project creator (client-side).
+ * This combines heap ownership checks with project creator checks.
+ *
+ * @param userId - The current user's ID
+ * @param projectCreatedBy - The created_by from the chat_session record
+ * @param isHeapOwner - Whether the user is a heap owner or admin (can be determined from membership data)
+ * @returns true if the user is a heap owner/admin or the project creator, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const { data: members } = useSpaceMembers(heapId);
+ * const currentUserMembership = members.find(m => m.user_id === userId);
+ * const isHeapOwner = currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
+ *
+ * if (isOwnerOrProjectCreator(userId, project.created_by, isHeapOwner)) {
+ *   // Show project settings/delete buttons
+ * }
+ * ```
+ */
+export function isOwnerOrProjectCreator(
+  userId: string | null | undefined,
+  projectCreatedBy: string | null | undefined,
+  isHeapOwner: boolean
+): boolean {
+  if (isHeapOwner) {
+    return true;
+  }
+  return isProjectCreatorClient(userId, projectCreatedBy);
 }

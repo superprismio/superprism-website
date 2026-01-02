@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { FileRow } from "@/components/spaces/types";
+import { useBatchFiles } from "@/hooks/useSpaceFiles";
 
 type ProjectFileListProps = {
   heapId: string;
@@ -10,45 +10,13 @@ type ProjectFileListProps = {
   label?: string;
 };
 
-function normalizeFiles(input: unknown): FileRow[] {
-  if (!Array.isArray(input)) {
-    return [];
-  }
-
-  return input.filter((item): item is FileRow => Boolean(item && item.id));
-}
-
 export function ProjectFileList({
   heapId,
   fileIds,
   onRemoveFile,
   label = "Files",
 }: ProjectFileListProps) {
-  const { data: files, isLoading, isError } = useQuery<FileRow[], Error>({
-    queryKey: ["project-files", heapId, fileIds],
-    queryFn: async () => {
-      if (fileIds.length === 0) {
-        return [];
-      }
-
-      const idsParam = fileIds.join(",");
-      const response = await fetch(
-        `/api/heaps/${heapId}/files/batch?ids=${encodeURIComponent(idsParam)}`,
-        {
-          cache: "no-store",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Unable to load files");
-      }
-
-      const json = (await response.json()) as { data?: unknown };
-      return normalizeFiles(json?.data);
-    },
-    enabled: fileIds.length > 0,
-    staleTime: 30_000,
-  });
+  const { data: files, isLoading, isError } = useBatchFiles(heapId, fileIds);
 
   if (fileIds.length === 0) {
     return null;

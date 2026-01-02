@@ -7,8 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ProjectFileList } from "@/components/spaces/project-file-list";
 import { createClient } from "@/lib/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { isOwnerOrProjectCreator } from "@/lib/auth-helpers";
+import { useSpaceMembers } from "@/hooks/useMembers";
+import { useProfile } from "@/hooks/useProfile";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +19,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { generateShareUrl } from "@/lib/share-link";
+import { ShareButton } from "./share-button";
+import { X } from "lucide-react";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -37,8 +42,6 @@ type ProjectDetailProps = {
   onClose?: () => void;
 };
 
-type UserProfile = Database["public"]["Tables"]["user_profiles"]["Row"];
-
 export function ProjectDetail({
   heapId,
   project,
@@ -54,6 +57,7 @@ export function ProjectDetail({
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const updateProject = useProjectUpdate();
   const createProject = useCreateProject();
+  const { data: members = [] } = useSpaceMembers(heapId);
 
   const isPending = project !== null && project.id === null;
   const isRealProject = project !== null && project.id !== null;
@@ -73,34 +77,31 @@ export function ProjectDetail({
     void getCurrentUser();
   }, []);
 
-  // Check if current user can edit (must be the creator)
+  // Check if current user is heap owner/admin
+  const isHeapOwner = useMemo(() => {
+    if (!currentUserId) return false;
+    const currentUserMembership = members.find(
+      (m) => m.user_id === currentUserId
+    );
+    return (
+      currentUserMembership?.role === "admin" ||
+      currentUserMembership?.role === "owner"
+    );
+  }, [members, currentUserId]);
+
+  // Check if current user can edit (must be owner or creator)
   const canEdit = useMemo(() => {
     if (isPending) return true; // Can always edit pending projects
     if (!isRealProject || !currentUserId || !projectCreatorId) return false;
-    return currentUserId === projectCreatorId;
-  }, [isPending, isRealProject, currentUserId, projectCreatorId]);
+    return isOwnerOrProjectCreator(
+      currentUserId,
+      projectCreatorId,
+      isHeapOwner
+    );
+  }, [isPending, isRealProject, currentUserId, projectCreatorId, isHeapOwner]);
 
   // Fetch creator profile
-  const { data: creatorProfile } = useQuery<UserProfile | null, Error>({
-    queryKey: ["user-profile", projectCreatorId],
-    queryFn: async () => {
-      if (!projectCreatorId) return null;
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("user_id", projectCreatorId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Failed to fetch creator profile:", error);
-        return null;
-      }
-      return data;
-    },
-    enabled: Boolean(projectCreatorId),
-    staleTime: 300_000, // 5 minutes
-  });
+  const { data: creatorProfile } = useProfile(projectCreatorId);
 
   useEffect(() => {
     if (project) {
@@ -118,16 +119,12 @@ export function ProjectDetail({
       return [];
     }
     const meta = project.meta as Record<string, unknown>;
-
-    console.log("meta", meta);
     const ids = meta.file_id || [];
     if (Array.isArray(ids)) {
       return ids.filter((id): id is string => typeof id === "string");
     }
     return [];
   }, [project?.meta]);
-
-  console.log("fileIds", fileIds);
 
   if (!project) {
     return (
@@ -244,8 +241,38 @@ export function ProjectDetail({
     }
   };
 
+  const handleClone = async () => {
+    if (!project || isPending) return;
+
+    try {
+      const clonedTitle = `${project.title || "Untitled Project"} - Copy`;
+      const clonedMeta = project.meta
+        ? (JSON.parse(JSON.stringify(project.meta)) as Record<string, unknown>)
+        : { isProject: true, file_id: [] };
+      const clonedFilter = (project as ChatSession).filter
+        ? JSON.parse(JSON.stringify((project as ChatSession).filter))
+        : undefined;
+
+      const clonedProject = await createProject.mutateAsync({
+        heapId,
+        title: clonedTitle,
+        meta: clonedMeta,
+        filter: clonedFilter,
+      });
+
+      if (onProjectCreated) {
+        onProjectCreated(clonedProject);
+      }
+    } catch (error) {
+      console.error("Failed to clone project:", error);
+    }
+  };
+
   return (
-    <>
+    <div
+      className="holographic-shimmer h-full"
+      id={`project-detail-${project.id ?? "pending"}`}
+    >
       <Dialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -277,9 +304,38 @@ export function ProjectDetail({
         </DialogContent>
       </Dialog>
 
+      <div className="flex items-center justify-between border-b border-b-border px-3 py-4">
+        <h4 className="text-sm font-medium">Project Detail</h4>
+        <div className="flex items-center gap-2">
+          {isRealProject && (
+            <ShareButton
+              url={generateShareUrl(heapId, {
+                section: "projects",
+                projectId: project.id,
+              })}
+              size="sm"
+            />
+          )}
+          <Button type="button" size="sm" variant="ghost" onClick={onClose}>
+            <X />
+          </Button>
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {onClose && (
           <div className="flex justify-end mb-1 gap-2">
+            {isRealProject && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleClone}
+                disabled={createProject.isPending}
+              >
+                {createProject.isPending ? "Cloning..." : "Clone Project"}
+              </Button>
+            )}
             {canEdit && !isPending && (
               <Button
                 type="button"
@@ -287,12 +343,9 @@ export function ProjectDetail({
                 variant="outline"
                 onClick={() => setIsArchiveDialogOpen(true)}
               >
-                Archive
+                Remove
               </Button>
             )}
-            <Button type="button" size="sm" variant="ghost" onClick={onClose}>
-              Close
-            </Button>
           </div>
         )}
         <div className="space-y-1.5">
@@ -404,6 +457,6 @@ export function ProjectDetail({
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

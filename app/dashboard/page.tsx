@@ -37,7 +37,7 @@ export default async function Dashboard() {
   if (membershipsError) {
     // If there's an error, still show the component which will handle it
     return (
-      <div className="flex-1 w-full flex flex-col">
+      <div className="h-screen w-full flex flex-col overflow-hidden">
         <SpaceRoot />
       </div>
     );
@@ -58,7 +58,7 @@ export default async function Dashboard() {
 
   // No spaces - show the empty state with space creation
   return (
-    <div className="flex-1 w-full flex flex-col">
+    <div className="h-screen w-full flex flex-col overflow-hidden">
       <SpaceRoot />
     </div>
   );

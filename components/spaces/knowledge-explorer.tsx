@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback, useEffect } from "react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -25,6 +24,8 @@ import { ProjectDetail } from "./project-detail";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { useChat } from "@/hooks/useChat";
 import type { Database } from "@/lib/types/supabase";
+import { ScrollArea } from "../ui/scroll-area";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -53,12 +54,99 @@ type KnowledgeExplorerProps = WorkspacePaneComponentProps & {
 export function KnowledgeExplorer({
   heapId,
   useDialogForPreview = false,
+  fileId,
+  ingest,
 }: KnowledgeExplorerProps) {
-  const queryClient = useQueryClient();
-  const { deleteFile } = useSpaceFiles(heapId);
+  const { deleteFile, updateFileVisibility, files } = useSpaceFiles(heapId);
   const { setActiveChatSession } = useChat();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
+
+  // Map ingest param to secondaryView (only if fileId is not set, as file preview takes precedence)
+  useEffect(() => {
+    // Don't set ingest view if fileId is set (file preview takes precedence)
+    if (fileId) return;
+
+    if (ingest === "upload" && secondaryView !== "upload") {
+      setSecondaryView("upload");
+    } else if (ingest === "text" && secondaryView !== "text-editor") {
+      setSecondaryView("text-editor");
+    } else if (
+      !ingest &&
+      (secondaryView === "upload" || secondaryView === "text-editor")
+    ) {
+      // If ingest param is removed and we're on an ingest view, reset to graph
+      setSecondaryView("graph");
+    }
+  }, [ingest, fileId, secondaryView]);
+
+  // Find and set preview file when fileId is provided in URL
+  // Skip this when in dialog mode (useDialogForPreview) since dialog previews shouldn't sync with URL
+  useEffect(() => {
+    if (useDialogForPreview) return;
+
+    if (fileId && files.length > 0) {
+      const file = files.find((f) => f.id === fileId);
+      if (file) {
+        // Only update if the preview file is different from the URL file
+        if (previewFile?.id !== fileId) {
+          setPreviewFile(file);
+        }
+      }
+    } else if (!fileId && previewFile) {
+      // Clear preview if fileId is removed from URL
+      setPreviewFile(null);
+    }
+  }, [fileId, files, previewFile, useDialogForPreview]);
+
+  // Update URL when file preview changes
+  const updateUrlWithFile = useCallback(
+    (file: FileRow | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (file) {
+        params.set("fileId", file.id);
+        // Ensure section is set to knowledge
+        params.set("section", "knowledge");
+        // Clear ingest when showing file preview
+        params.delete("ingest");
+      } else {
+        params.delete("fileId");
+      }
+
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
+
+  // Update URL when secondary view changes (for ingest views)
+  const updateUrlWithIngest = useCallback(
+    (view: SecondaryView) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      // Ensure section is set to knowledge
+      params.set("section", "knowledge");
+
+      if (view === "upload") {
+        params.set("ingest", "upload");
+        // Clear fileId when showing upload
+        params.delete("fileId");
+      } else if (view === "text-editor") {
+        params.set("ingest", "text");
+        // Clear fileId when showing text editor
+        params.delete("fileId");
+      } else {
+        // Clear ingest for other views
+        params.delete("ingest");
+      }
+
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
   const [pendingProject, setPendingProject] = useState<PendingProject | null>(
     null
   );
@@ -73,18 +161,19 @@ export function KnowledgeExplorer({
     undefined
   );
 
-  const showGraph = () => setSecondaryView("graph");
-
   const showPreview = (file: FileRow) => {
     setPreviewFile(file);
+    // Only update URL when not in dialog mode
     if (!useDialogForPreview) {
-      setSecondaryView("preview");
+      updateUrlWithFile(file);
     }
   };
 
   const handleSelectView = (view: SecondaryView) => {
+    // Clear preview when switching to a different view
     if (view !== "preview") {
       setPreviewFile(null);
+      updateUrlWithFile(null);
     }
     if (view === "text-editor" && !editorFileId) {
       // Clear editor state when opening from menu (not from edit)
@@ -93,6 +182,13 @@ export function KnowledgeExplorer({
       setEditorFileName(undefined);
     }
     setSecondaryView(view);
+    // Update URL for ingest views
+    if (view === "upload" || view === "text-editor") {
+      updateUrlWithIngest(view);
+    } else if (view !== "preview") {
+      // Clear ingest param for other views (except preview, which handles its own URL)
+      updateUrlWithIngest(view);
+    }
   };
 
   const getOrCreatePendingProject = useCallback((): PendingProject => {
@@ -205,31 +301,13 @@ export function KnowledgeExplorer({
   const handleToggleVisibility = useCallback(
     async (fileId: string, visibility: "public" | "private") => {
       try {
-        const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ visibility }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error ?? "Failed to update file visibility"
-          );
-        }
-
-        // Invalidate and refetch files
-        await queryClient.invalidateQueries({
-          queryKey: ["space-files", heapId],
-        });
+        await updateFileVisibility(fileId, visibility);
       } catch (error) {
         console.error("Failed to toggle file visibility:", error);
         throw error;
       }
     },
-    [heapId, queryClient]
+    [updateFileVisibility]
   );
 
   const handleDeleteFile = useCallback(
@@ -240,84 +318,68 @@ export function KnowledgeExplorer({
   );
 
   const renderSecondaryContent = () => {
-    const content = (() => {
-      switch (secondaryView) {
-        case "graph":
-          return <KnowledgeGraph heapId={heapId} />;
-        case "preview":
-          if (!useDialogForPreview) {
-            return (
-              <FilePreview
-                file={previewFile}
-                onClose={showGraph}
-                heapId={heapId}
-                onEditFile={handleEditFile}
-                onToggleVisibility={handleToggleVisibility}
-                onDeleteFile={handleDeleteFile}
-                useDialog={useDialogForPreview}
-              />
-            );
-          }
-          return <KnowledgeGraph heapId={heapId} />;
-        case "project":
-          return pendingProject || createdProject ? (
-            <ProjectDetail
-              heapId={heapId}
-              project={createdProject || pendingProject}
-              onUpdatePendingProject={handleUpdatePendingProject}
-              onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
-              onProjectCreated={handleProjectCreated}
-              onProjectUpdated={handleProjectUpdated}
-              onClose={handleCloseProject}
-            />
-          ) : null;
-        case "text-editor":
-          return (
-            <TextEditor
-              heapId={heapId}
-              initialMarkdown={editorContent}
-              fileId={editorFileId}
-              initialFileName={editorFileName}
-            />
-          );
-        case "upload":
-          return <FileUpload heapId={heapId} />;
-        case "scrape-web":
-          return <PlaceholderPane title="Scrape Web" />;
-        case "import-drive":
-          return <PlaceholderPane title="Import from Drive" />;
-        case "ingest-api":
-          return <PlaceholderPane title="Ingest from API" />;
-        case "ingest-mcp":
-          return <PlaceholderPane title="Ingest from MCP" />;
-        default:
-          return null;
-      }
-    })();
-
-    // When in dialog mode and previewFile is set, render the dialog
-    if (useDialogForPreview && previewFile) {
-      return (
-        <>
-          {content}
-          <FilePreview
-            file={previewFile}
-            onClose={() => {
-              setPreviewFile(null);
-              showGraph();
-            }}
+    switch (secondaryView) {
+      case "graph":
+        return (
+          <ScrollArea className="flex-1 min-h-0 h-full">
+            <KnowledgeGraph heapId={heapId} />;
+          </ScrollArea>
+        );
+      case "project":
+        return pendingProject || createdProject ? (
+          <ProjectDetail
+            key={createdProject?.id ?? pendingProject?.id ?? "pending"}
             heapId={heapId}
-            onEditFile={handleEditFile}
-            onToggleVisibility={handleToggleVisibility}
-            onDeleteFile={handleDeleteFile}
-            useDialog={useDialogForPreview}
+            project={createdProject || pendingProject}
+            onUpdatePendingProject={handleUpdatePendingProject}
+            onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
+            onProjectCreated={handleProjectCreated}
+            onProjectUpdated={handleProjectUpdated}
+            onClose={handleCloseProject}
           />
-        </>
-      );
+        ) : null;
+      case "text-editor":
+        return (
+          <TextEditor
+            key="text-editor"
+            heapId={heapId}
+            initialMarkdown={editorContent}
+            fileId={editorFileId}
+            initialFileName={editorFileName}
+            onClose={() => {
+              setSecondaryView("graph");
+              // Clear ingest param when closing text editor
+              updateUrlWithIngest("graph");
+            }}
+          />
+        );
+      case "upload":
+        return (
+          <FileUpload
+            key="upload"
+            heapId={heapId}
+            onClose={() => {
+              setSecondaryView("graph");
+              // Clear ingest param when closing upload
+              updateUrlWithIngest("graph");
+            }}
+          />
+        );
+      case "scrape-web":
+        return <PlaceholderPane title="Scrape Web" />;
+      case "import-drive":
+        return <PlaceholderPane title="Import from Drive" />;
+      case "ingest-api":
+        return <PlaceholderPane title="Ingest from API" />;
+      case "ingest-mcp":
+        return <PlaceholderPane title="Ingest from MCP" />;
+      default:
+        return null;
     }
-
-    return content;
   };
+
+  console.log("useDialogForPreview", useDialogForPreview);
+  console.log("previewFile", previewFile);
 
   return (
     <>
@@ -328,64 +390,84 @@ export function KnowledgeExplorer({
             : `Knowledge Explorer`}
         </h3>
         {!useDialogForPreview && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">Add Knowledge</Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-background">
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("text-editor")}
-              >
-                Text Editor
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleSelectView("upload")}>
-                Upload
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("scrape-web")}
-                disabled={true}
-              >
-                Scrape Web
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("import-drive")}
-                disabled={true}
-              >
-                Import from Drive
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("ingest-api")}
-                disabled={true}
-              >
-                Ingest from API
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("ingest-mcp")}
-                disabled={true}
-              >
-                Ingest from MCP
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">Add Knowledge</Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-background">
+                <DropdownMenuItem
+                  onSelect={() => handleSelectView("text-editor")}
+                >
+                  Add Note
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleSelectView("upload")}>
+                  Upload
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         )}
       </header>
 
-      <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
-        <ResizablePanel defaultSize={60} minSize={10}>
-          <div className="h-full overflow-y-auto">
-            <FileExplorer
-              heapId={heapId}
-              onPreviewFile={showPreview}
-              selectedFileId={previewFile?.id ?? null}
-              onAddFileToChat={handleAddFileToProject}
-            />
-          </div>
+      <ResizablePanelGroup direction="vertical" className="flex flex-1 min-h-0">
+        <ResizablePanel
+          defaultSize={60}
+          minSize={10}
+          className="flex flex-col min-h-0 overflow-hidden relative"
+        >
+          <FileExplorer
+            heapId={heapId}
+            onPreviewFile={showPreview}
+            selectedFileId={previewFile?.id ?? null}
+            onAddFileToChat={handleAddFileToProject}
+            onDeleteFile={handleDeleteFile}
+            useDialogForPreview={useDialogForPreview}
+          />
+          {previewFile && !useDialogForPreview && (
+            <div className="absolute inset-0 bg-background z-10 flex flex-col">
+              <ScrollArea className="flex-1 min-h-0 h-full">
+                <FilePreview
+                  key={previewFile.id}
+                  file={previewFile}
+                  onClose={() => {
+                    setPreviewFile(null);
+                    updateUrlWithFile(null);
+                  }}
+                  heapId={heapId}
+                  onEditFile={handleEditFile}
+                  onToggleVisibility={handleToggleVisibility}
+                  onDeleteFile={handleDeleteFile}
+                  useDialog={useDialogForPreview}
+                />
+              </ScrollArea>
+            </div>
+          )}
         </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={40} minSize={10}>
-          {renderSecondaryContent()}
-        </ResizablePanel>
+        {!useDialogForPreview && (
+          <>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={40} minSize={10}>
+              {renderSecondaryContent()}
+            </ResizablePanel>
+          </>
+        )}
       </ResizablePanelGroup>
+      {useDialogForPreview && previewFile && (
+        <FilePreview
+          key={previewFile.id}
+          file={previewFile}
+          onClose={() => {
+            setPreviewFile(null);
+            // Don't update URL in dialog mode
+          }}
+          heapId={heapId}
+          onEditFile={handleEditFile}
+          onToggleVisibility={handleToggleVisibility}
+          onDeleteFile={handleDeleteFile}
+          useDialog={useDialogForPreview}
+        />
+      )}
     </>
   );
 }

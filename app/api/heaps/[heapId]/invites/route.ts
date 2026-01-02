@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireHeapMember } from "@/lib/auth-helpers";
+import { requireHeapMember, requireHeapOwner } from "@/lib/auth-helpers";
 
 type Params = { params: Promise<{ heapId: string }> };
 
@@ -8,7 +8,7 @@ export async function GET(_request: Request, { params }: Params) {
   const { heapId } = await params;
   const supabase = await createClient();
 
-  // Check if user is a heap member (admin check can be done in the RPC)
+  // Check if user is a heap member
   const authResult = await requireHeapMember(supabase, heapId);
   if (!authResult.success) {
     return authResult.response;
@@ -31,8 +31,8 @@ export async function POST(request: Request, { params }: Params) {
   const { heapId } = await params;
   const supabase = await createClient();
 
-  // Check if user is a heap member (admin check can be done in the RPC)
-  const authResult = await requireHeapMember(supabase, heapId);
+  // Check if user is a heap member
+  const authResult = await requireHeapOwner(supabase, heapId);
   if (!authResult.success) {
     return authResult.response;
   }

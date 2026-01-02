@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent, useMemo } from "react";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
-import type { Space, Tag, Member } from "./types";
+import type { Member } from "./types";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -30,205 +30,99 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useHeapInvites, useCreateInvite, type HeapInvite } from "@/hooks/useInvites";
+import {
+  useHeapInvites,
+  useCreateInvite,
+  type HeapInvite,
+} from "@/hooks/useInvites";
 import { createClient } from "@/lib/supabase/client";
 import { MemberDetails } from "./member-details";
+import {
+  useHeap,
+  useUpdateSpace,
+  useSpaceTags,
+  useCreateTag,
+} from "@/hooks/useSpaces";
+import { useSpaceMembers } from "@/hooks/useMembers";
+import { generateShareUrl } from "@/lib/share-link";
+import { ShareButton } from "./share-button";
 
 export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
-  const [space, setSpace] = useState<Space | null>(null);
-  const [spaceLoading, setSpaceLoading] = useState(false);
-  const [spaceError, setSpaceError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const {
+    data: space,
+    isLoading: spaceLoading,
+    error: spaceError,
+  } = useHeap(heapId);
+  const { data: tags = [], isLoading: tagLoading } = useSpaceTags(heapId);
+  const {
+    data: members = [],
+    isLoading: membersLoading,
+    refetch: refetchMembers,
+  } = useSpaceMembers(heapId);
+  const updateSpace = useUpdateSpace();
+  const createTag = useCreateTag();
+  const { data: invites } = useHeapInvites(heapId);
 
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [tagLoading, setTagLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [addingTag, setAddingTag] = useState(false);
   const [newTagLabel, setNewTagLabel] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
-
-  // Members state
-  const [members, setMembers] = useState<Member[]>([]);
-  const [membersLoading, setMembersLoading] = useState(false);
-  const [currentUserMembership, setCurrentUserMembership] = useState<Member | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const { data: invites, isLoading: invitesLoading } = useHeapInvites(heapId);
+  const [spaceDescription, setSpaceDescription] = useState<string>("");
 
+  // Sync space description to local state when space data changes
   useEffect(() => {
-    if (!heapId) {
-      setSpace(null);
-      setTags([]);
-      return;
+    if (space) {
+      setSpaceDescription(space.description || "");
     }
-
-    let mounted = true;
-
-    (async () => {
-      setSpaceLoading(true);
-      setSpaceError(null);
-      try {
-        const res = await fetch(`/api/heaps/${heapId}`);
-        if (!res.ok) {
-          throw new Error("Failed to load space details");
-        }
-        const json = await res.json();
-        if (!mounted) return;
-        const data = json?.data;
-        if (data && typeof data === "object") {
-          setSpace({
-            id: String(data.id ?? heapId),
-            name: String(data.name ?? ""),
-            description:
-              typeof data.description === "string" ? data.description : null,
-          });
-        } else {
-          setSpaceError("Space not found");
-        }
-      } catch (error) {
-        if (mounted) {
-          setSpaceError(
-            error instanceof Error
-              ? error.message
-              : "Failed to load space details"
-          );
-        }
-      } finally {
-        if (mounted) {
-          setSpaceLoading(false);
-        }
-      }
-    })();
-
-    (async () => {
-      setTagLoading(true);
-      try {
-        const res = await fetch(`/api/heaps/${heapId}/tags`);
-        const json = await res.json();
-        if (!mounted) return;
-        if (res.ok) {
-          setTags(
-            (json.data || []).map((tag: Record<string, unknown>) => ({
-              slug: String(tag.slug ?? ""),
-              label: String(tag.label ?? ""),
-            }))
-          );
-        }
-      } finally {
-        if (mounted) {
-          setTagLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [heapId]);
+  }, [space]);
 
   // Get current user ID
   useEffect(() => {
     const getCurrentUser = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setCurrentUserId(user?.id ?? null);
     };
     void getCurrentUser();
   }, []);
 
-  // Load members and current user's membership
-  useEffect(() => {
-    if (!heapId) {
-      setMembers([]);
-      setCurrentUserMembership(null);
-      return;
-    }
-
-    let mounted = true;
-    (async () => {
-      setMembersLoading(true);
-      try {
-        const res = await fetch(`/api/heaps/${heapId}/members`);
-        const json = await res.json();
-        if (!mounted) return;
-        if (res.ok) {
-          const membersData = json.data || [];
-          setMembers(membersData);
-          
-          // Find current user's membership
-          if (currentUserId) {
-            const userMembership = membersData.find(
-              (m: Member) => m.user_id === currentUserId
-            );
-            setCurrentUserMembership(userMembership || null);
-          }
-        }
-      } finally {
-        if (mounted) setMembersLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [heapId, currentUserId]);
+  // Find current user's membership
+  const currentUserMembership = useMemo(() => {
+    if (!currentUserId) return null;
+    return members.find((m) => m.user_id === currentUserId) || null;
+  }, [members, currentUserId]);
 
   // Filter open invites (not expired and not used)
-  const openInvites = invites?.filter(
-    (invite) => !invite.is_expired && !invite.is_used
-  ) || [];
+  const openInvites =
+    invites?.filter((invite) => !invite.is_expired && !invite.is_used) || [];
 
   // Check if current user is admin or owner
-  const isAdminOrOwner = currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
-  
+  const isAdminOrOwner =
+    currentUserMembership?.role === "admin" ||
+    currentUserMembership?.role === "owner";
+
   // Refresh members after update
   const handleMemberUpdate = () => {
-    if (!heapId) return;
-    fetch(`/api/heaps/${heapId}/members`)
-      .then((res) => res.json())
-      .then((json) => {
-        const membersData = json.data || [];
-        setMembers(membersData);
-        if (currentUserId) {
-          const userMembership = membersData.find(
-            (m: Member) => m.user_id === currentUserId
-          );
-          setCurrentUserMembership(userMembership || null);
-        }
-      })
-      .catch(() => {});
+    void refetchMembers();
   };
 
   function handleDescriptionChange(event: ChangeEvent<HTMLTextAreaElement>) {
-    const value = event.target.value;
-    setSpace((prev) =>
-      prev
-        ? { ...prev, description: value }
-        : { id: heapId, name: "", description: value }
-    );
+    setSpaceDescription(event.target.value);
   }
 
   async function handleSave() {
     if (!heapId) return;
     setSaving(true);
-    setSpaceError(null);
     try {
-      const res = await fetch(`/api/heaps/${heapId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description: space?.description ?? null,
-        }),
+      await updateSpace.mutateAsync({
+        heapId,
+        description: spaceDescription.trim() || null,
       });
-      if (!res.ok) {
-        const json = await res.json().catch(() => null);
-        const message =
-          (json && typeof json === "object" && "error" in json
-            ? String(json.error)
-            : null) ?? "Failed to save space settings";
-        throw new Error(message);
-      }
     } catch (error) {
-      setSpaceError(
-        error instanceof Error ? error.message : "Failed to save space settings"
-      );
+      // Error is handled by the hook
     } finally {
       setSaving(false);
     }
@@ -260,29 +154,11 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
     setAddingTag(true);
     setTagError(null);
     try {
-      const res = await fetch(`/api/heaps/${heapId}/tags`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, slug, is_active: true }),
+      await createTag.mutateAsync({
+        heapId,
+        label,
+        slug,
       });
-
-      if (!res.ok) {
-        const error = await res
-          .json()
-          .catch(() => ({ error: "Failed to add tag" }));
-        throw new Error(
-          typeof error?.error === "string" ? error.error : "Failed to add tag"
-        );
-      }
-
-      const json = await res.json();
-      setTags((prev) => [
-        ...prev,
-        {
-          slug: String(json?.data?.slug ?? slug),
-          label: String(json?.data?.label ?? label),
-        },
-      ]);
       setNewTagLabel("");
     } catch (error) {
       setTagError(error instanceof Error ? error.message : "Failed to add tag");
@@ -297,15 +173,21 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
         <div className="h-full overflow-y-auto">
           <div className="space-y-4">
             <div className="px-3 py-4">
-              <div className="mb-4 font-semibold text-foreground">Settings</div>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="font-semibold text-foreground">Settings</div>
+              </div>
               <div className="space-y-3">
                 {spaceError && (
-                  <div className="text-sm text-destructive">{spaceError}</div>
+                  <div className="text-sm text-destructive">
+                    {spaceError instanceof Error
+                      ? spaceError.message
+                      : "Failed to load space details"}
+                  </div>
                 )}
                 <div>
                   <div className="mb-1 text-sm">Description</div>
                   <Textarea
-                    value={space?.description ?? ""}
+                    value={spaceDescription}
                     onChange={handleDescriptionChange}
                     placeholder="Describe this space"
                     disabled={spaceLoading || saving}
@@ -364,7 +246,9 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                       Loading tags...
                     </div>
                   ) : tags.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No tags yet</div>
+                    <div className="text-sm text-muted-foreground">
+                      No tags yet
+                    </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {tags.map((tag) => (
@@ -391,11 +275,17 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
               </header>
               <div className="space-y-3 text-sm text-muted-foreground px-3 py-4">
                 {membersLoading && (
-                  <div className="text-sm text-muted-foreground">Loading...</div>
+                  <div className="text-sm text-muted-foreground">
+                    Loading...
+                  </div>
                 )}
-                {!membersLoading && members.length === 0 && openInvites.length === 0 && (
-                  <div className="text-sm text-muted-foreground">No members</div>
-                )}
+                {!membersLoading &&
+                  members.length === 0 &&
+                  openInvites.length === 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      No members
+                    </div>
+                  )}
                 {!membersLoading &&
                   members.map((m) => (
                     <div key={m.membership_id} className="text-sm">
@@ -424,16 +314,23 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
               </header>
               <div className="space-y-4">
                 {membersLoading && (
-                  <div className="text-sm text-muted-foreground px-3 py-4">Loading...</div>
+                  <div className="text-sm text-muted-foreground px-3 py-4">
+                    Loading...
+                  </div>
                 )}
                 {!membersLoading && currentUserMembership && (
                   <>
                     <div className="px-3 py-4 border-b">
                       <div className="text-sm">
                         <span className="font-medium">
-                          {currentUserMembership.display_name || currentUserMembership.user_name || currentUserMembership.user_email}
+                          {currentUserMembership.display_name ||
+                            currentUserMembership.user_name ||
+                            currentUserMembership.user_email}
                         </span>
-                        <span className="text-muted-foreground"> — {currentUserMembership.role}</span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          — {currentUserMembership.role}
+                        </span>
                       </div>
                     </div>
                     <MemberDetails
@@ -534,7 +431,7 @@ function CreateInviteDialog({ heapId }: { heapId: string }) {
               <SelectTrigger id="invite-role">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background">
                 <SelectItem value="member">Member</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
@@ -567,7 +464,7 @@ function InviteRow({ invite }: { invite: HeapInvite }) {
 
   const handleCopy = async () => {
     if (typeof window === "undefined") return;
-    
+
     const fullUrl = `${window.location.origin}/invite/${invite.token}`;
     try {
       await navigator.clipboard.writeText(fullUrl);
