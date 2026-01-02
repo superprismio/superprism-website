@@ -552,7 +552,7 @@ export function ProjectList({
                 <SelectTrigger className="w-[180px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background">
                   <SelectItem value="name-asc">Name (A-Z)</SelectItem>
                   <SelectItem value="name-desc">Name (Z-A)</SelectItem>
                   <SelectItem value="date-desc">Date (Newest)</SelectItem>

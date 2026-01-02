@@ -232,7 +232,11 @@ function FileList({
           const isSelected = selectedFileId === file.id;
           const canDelete =
             file &&
-            isOwnerOrFileCreator(currentUserId, file.uploader_id, isHeapOwner) &&
+            isOwnerOrFileCreator(
+              currentUserId,
+              file.uploader_id,
+              isHeapOwner
+            ) &&
             onDeleteFile;
           const canViewRaw = file?.meta?.extracted_storage_path !== undefined;
 
@@ -272,7 +276,7 @@ function FileList({
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Move to folder..." />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-background">
                         {LOCAL_FOLDER_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
@@ -885,7 +889,7 @@ export function FileExplorer({
                     <SelectTrigger className="w-[180px] h-8 text-xs">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background">
                       <SelectItem value="name-asc">Name (A-Z)</SelectItem>
                       <SelectItem value="name-desc">Name (Z-A)</SelectItem>
                       <SelectItem value="date-desc">Date (Newest)</SelectItem>

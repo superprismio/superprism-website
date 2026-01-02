@@ -431,7 +431,7 @@ function CreateInviteDialog({ heapId }: { heapId: string }) {
               <SelectTrigger id="invite-role">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background">
                 <SelectItem value="member">Member</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
