@@ -68,8 +68,13 @@ export function FilePreview({
   // Check if current user is heap owner/admin
   const isHeapOwner = useMemo(() => {
     if (!currentUserId) return false;
-    const currentUserMembership = members.find((m) => m.user_id === currentUserId);
-    return currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
+    const currentUserMembership = members.find(
+      (m) => m.user_id === currentUserId
+    );
+    return (
+      currentUserMembership?.role === "admin" ||
+      currentUserMembership?.role === "owner"
+    );
   }, [members, currentUserId]);
 
   const uploadedAt =
@@ -248,7 +253,7 @@ export function FilePreview({
                 variant="outline"
                 onClick={handleDeleteClick}
               >
-                <Trash2 className="h-4 w-4" />
+                Remove
               </Button>
             )}
           </div>

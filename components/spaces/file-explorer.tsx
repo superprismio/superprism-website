@@ -8,7 +8,7 @@ import {
   FileText,
   FileImage,
   FileSpreadsheet,
-  SquareMenu,
+  Ellipsis,
 } from "lucide-react";
 import { useSpaceFiles, type FolderNode } from "@/hooks/useSpaceFiles";
 import { Input } from "@/components/ui/input";
@@ -25,15 +25,29 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FileRow } from "./types";
 import { createClient } from "@/lib/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { ShareButton } from "./share-button";
+import { generateShareUrl } from "@/lib/share-link";
+import { useSpaceMembers } from "@/hooks/useMembers";
+import { isOwnerOrFileCreator } from "@/lib/auth-helpers";
 
 type FileExplorerProps = {
   heapId: string;
   onPreviewFile?: (file: FileRow) => void;
   onAddFileToChat?: (file: FileRow) => void;
+  onDeleteFile?: (fileId: string) => Promise<void>;
   selectedFileId?: string | null;
   useDialogForPreview?: boolean;
 };
@@ -50,6 +64,7 @@ type FileListProps = {
   selectedFileId?: string | null;
   onAddToChat?: (file: FileRow) => void;
   onPreview?: (file: FileRow) => void;
+  onDeleteFile?: (fileId: string) => Promise<void>;
   isStaging?: boolean;
   onMoveToFolder?: (fileId: string, folders: string[]) => Promise<void>;
   currentUserId?: string | null;
@@ -125,11 +140,34 @@ function FileList({
   selectedFileId,
   onAddToChat,
   onPreview,
+  onDeleteFile,
   isStaging = false,
   onMoveToFolder,
-  useDialogForPreview = false,
+  heapId,
+  currentUserId,
 }: FileListProps) {
   const [movingFileId, setMovingFileId] = useState<string | null>(null);
+  const [deleteFileId, setDeleteFileId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [rawFileId, setRawFileId] = useState<string | null>(null);
+  const [isRawDialogOpen, setIsRawDialogOpen] = useState(false);
+  const [rawContent, setRawContent] = useState<string | null>(null);
+  const [isLoadingRaw, setIsLoadingRaw] = useState(false);
+  const { data: members = [] } = useSpaceMembers(heapId);
+  const { fetchRawFileContent } = useSpaceFiles(heapId);
+
+  // Check if current user is heap owner/admin
+  const isHeapOwner = useMemo(() => {
+    if (!currentUserId) return false;
+    const currentUserMembership = members.find(
+      (m) => m.user_id === currentUserId
+    );
+    return (
+      currentUserMembership?.role === "admin" ||
+      currentUserMembership?.role === "owner"
+    );
+  }, [members, currentUserId]);
 
   const handleMoveToFolder = async (fileId: string, folders: string[]) => {
     if (!onMoveToFolder) return;
@@ -141,6 +179,43 @@ function FileList({
     }
   };
 
+  const handleDeleteClick = (file: FileRow) => {
+    setDeleteFileId(file.id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteFileId || !onDeleteFile) return;
+    setIsDeleting(true);
+    try {
+      await onDeleteFile(deleteFileId);
+      setIsDeleteDialogOpen(false);
+      setDeleteFileId(null);
+    } catch (error) {
+      console.error("Failed to delete file:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleViewRaw = async (file: FileRow) => {
+    if (!file?.id) return;
+
+    setIsLoadingRaw(true);
+    setRawFileId(file.id);
+    setIsRawDialogOpen(true);
+
+    try {
+      const content = await fetchRawFileContent(file.id);
+      setRawContent(content);
+    } catch (error) {
+      console.error("Error fetching raw file:", error);
+      setRawContent("Error loading file content");
+    } finally {
+      setIsLoadingRaw(false);
+    }
+  };
+
   if (files.length === 0) {
     return (
       <div className="text-sm text-muted-foreground p-10">{emptyMessage}</div>
@@ -148,85 +223,167 @@ function FileList({
   }
 
   return (
-    <ul className="space-y-2 p-3">
-      {files.map((file) => {
-        const FileIcon = getFileIcon(
-          (file as FileRow & { storage_path?: string | null }).storage_path
-        );
-        const isSelected = selectedFileId === file.id;
-        return (
-          <li key={file.id} className="p-1">
-            <div className="flex items-center justify-between gap-2">
-              <div
-                className={cn(
-                  "flex-1 text-left text-md font-medium px-2 py-1 rounded flex gap-2 items-center",
-                  isSelected && "bg-muted"
-                )}
-              >
-                <FileIcon className="h-6 w-6 shrink-0" />
-                <div className="flex flex-col gap-0.5 min-w-0">
-                  <span className="truncate">
-                    {file.file_name ?? "Untitled file"}
-                  </span>
-                  <span className="text-xs text-muted-foreground font-normal">
-                    {formatDate(file.uploaded_at)}
-                  </span>
+    <>
+      <ul className="space-y-2 p-3">
+        {files.map((file) => {
+          const FileIcon = getFileIcon(
+            (file as FileRow & { storage_path?: string | null }).storage_path
+          );
+          const isSelected = selectedFileId === file.id;
+          const canDelete =
+            file &&
+            isOwnerOrFileCreator(currentUserId, file.uploader_id, isHeapOwner) &&
+            onDeleteFile;
+          const canViewRaw = file?.meta?.extracted_storage_path !== undefined;
+
+          return (
+            <li key={file.id} className="p-1">
+              <div className="flex items-center justify-between gap-2">
+                <div
+                  className={cn(
+                    "flex-1 text-left text-md font-medium px-2 py-1 rounded flex gap-2 items-center",
+                    isSelected && "bg-muted"
+                  )}
+                >
+                  <FileIcon className="h-6 w-6 shrink-0" />
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="truncate">
+                      {file.file_name ?? "Untitled file"}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      {formatDate(file.uploaded_at)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  {isStaging && (
+                    <Select
+                      value=""
+                      onValueChange={(value) => {
+                        const option = LOCAL_FOLDER_OPTIONS.find(
+                          (opt) => opt.value === value
+                        );
+                        if (option) {
+                          void handleMoveToFolder(file.id, option.folders);
+                        }
+                      }}
+                      disabled={movingFileId === file.id}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Move to folder..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LOCAL_FOLDER_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="p-1 hover:bg-muted rounded transition"
+                        aria-label="File menu"
+                      >
+                        <Ellipsis className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background">
+                      <DropdownMenuItem onClick={() => onPreview?.(file)}>
+                        Open
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onAddToChat?.(file)}>
+                        Add to Project
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteClick(file)}
+                        disabled={!canDelete}
+                      >
+                        Remove
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleViewRaw(file)}
+                        disabled={!canViewRaw}
+                      >
+                        View Raw
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        Share{" "}
+                        <ShareButton
+                          url={generateShareUrl(heapId, {
+                            section: "knowledge",
+                            fileId: file.id,
+                          })}
+                          size="sm"
+                        />
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
-              <div className="flex gap-2 shrink-0">
-                {isStaging && (
-                  <Select
-                    value=""
-                    onValueChange={(value) => {
-                      const option = LOCAL_FOLDER_OPTIONS.find(
-                        (opt) => opt.value === value
-                      );
-                      if (option) {
-                        void handleMoveToFolder(file.id, option.folders);
-                      }
-                    }}
-                    disabled={movingFileId === file.id}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Move to folder..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LOCAL_FOLDER_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="p-1 hover:bg-muted rounded transition"
-                      aria-label="File menu"
-                    >
-                      <SquareMenu className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onPreview?.(file)}>
-                      Open
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onAddToChat?.(file)}>
-                      Add to Project
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>Remove</DropdownMenuItem>
-                    <DropdownMenuItem disabled>View Raw</DropdownMenuItem>
-                    <DropdownMenuItem disabled>Edit Raw</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+            </li>
+          );
+        })}
+      </ul>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete File</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &quot;
+              {files.find((f) => f.id === deleteFileId)?.file_name ||
+                deleteFileId}
+              &quot;? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsDeleteDialogOpen(false);
+                setDeleteFileId(null);
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRawDialogOpen} onOpenChange={setIsRawDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>
+              Raw Content -{" "}
+              {files.find((f) => f.id === rawFileId)?.file_name || rawFileId}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-auto max-h-[60vh]">
+            {isLoadingRaw ? (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            ) : (
+              <pre className="text-xs whitespace-pre-wrap font-mono bg-muted p-4 rounded">
+                {rawContent ?? "No content available"}
+              </pre>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -518,6 +675,7 @@ export function FileExplorer({
   heapId,
   onPreviewFile,
   onAddFileToChat,
+  onDeleteFile,
   selectedFileId,
   useDialogForPreview = false,
 }: FileExplorerProps) {
@@ -644,12 +802,8 @@ export function FileExplorer({
         return sortBy === "name-asc" ? comparison : -comparison;
       } else {
         // Date sorting
-        const dateA = a.uploaded_at
-          ? new Date(a.uploaded_at).getTime()
-          : 0;
-        const dateB = b.uploaded_at
-          ? new Date(b.uploaded_at).getTime()
-          : 0;
+        const dateA = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
+        const dateB = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
         return sortBy === "date-asc" ? dateA - dateB : dateB - dateA;
       }
     });
@@ -742,37 +896,53 @@ export function FileExplorer({
                 {mode === "explore" ? (
                   activeFolder ? (
                     <ScrollArea className="flex-1 min-h-0 h-full">
-                    <FileList
-                      files={(() => {
-                        // Apply sorting to active folder files
-                        const sorted = [...activeFolder.files].sort((a, b) => {
-                          if (sortBy === "name-asc" || sortBy === "name-desc") {
-                            const nameA = (a.file_name || "Untitled file").toLowerCase();
-                            const nameB = (b.file_name || "Untitled file").toLowerCase();
-                            const comparison = nameA.localeCompare(nameB);
-                            return sortBy === "name-asc" ? comparison : -comparison;
-                          } else {
-                            const dateA = a.uploaded_at
-                              ? new Date(a.uploaded_at).getTime()
-                              : 0;
-                            const dateB = b.uploaded_at
-                              ? new Date(b.uploaded_at).getTime()
-                              : 0;
-                            return sortBy === "date-asc" ? dateA - dateB : dateB - dateA;
-                          }
-                        });
-                        return sorted;
-                      })()}
-                      emptyMessage="Ingestion before digestion"
-                      selectedFileId={selectedFileId}
-                      onAddToChat={onAddFileToChat}
-                      onPreview={onPreviewFile}
-                      isStaging={isStaging}
-                      onMoveToFolder={isStaging ? updateFileFolders : undefined}
-                      currentUserId={currentUserId}
-                      heapId={heapId}
-                      useDialogForPreview={useDialogForPreview}
-                    />
+                      <FileList
+                        files={(() => {
+                          // Apply sorting to active folder files
+                          const sorted = [...activeFolder.files].sort(
+                            (a, b) => {
+                              if (
+                                sortBy === "name-asc" ||
+                                sortBy === "name-desc"
+                              ) {
+                                const nameA = (
+                                  a.file_name || "Untitled file"
+                                ).toLowerCase();
+                                const nameB = (
+                                  b.file_name || "Untitled file"
+                                ).toLowerCase();
+                                const comparison = nameA.localeCompare(nameB);
+                                return sortBy === "name-asc"
+                                  ? comparison
+                                  : -comparison;
+                              } else {
+                                const dateA = a.uploaded_at
+                                  ? new Date(a.uploaded_at).getTime()
+                                  : 0;
+                                const dateB = b.uploaded_at
+                                  ? new Date(b.uploaded_at).getTime()
+                                  : 0;
+                                return sortBy === "date-asc"
+                                  ? dateA - dateB
+                                  : dateB - dateA;
+                              }
+                            }
+                          );
+                          return sorted;
+                        })()}
+                        emptyMessage="Ingestion before digestion"
+                        selectedFileId={selectedFileId}
+                        onAddToChat={onAddFileToChat}
+                        onPreview={onPreviewFile}
+                        onDeleteFile={onDeleteFile}
+                        isStaging={isStaging}
+                        onMoveToFolder={
+                          isStaging ? updateFileFolders : undefined
+                        }
+                        currentUserId={currentUserId}
+                        heapId={heapId}
+                        useDialogForPreview={useDialogForPreview}
+                      />
                     </ScrollArea>
                   ) : (
                     <div className="text-sm text-muted-foreground p-10">
@@ -791,6 +961,7 @@ export function FileExplorer({
                       selectedFileId={selectedFileId}
                       onAddToChat={onAddFileToChat}
                       onPreview={onPreviewFile}
+                      onDeleteFile={onDeleteFile}
                       currentUserId={currentUserId}
                       heapId={heapId}
                       useDialogForPreview={useDialogForPreview}

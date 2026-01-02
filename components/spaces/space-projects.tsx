@@ -41,23 +41,25 @@ export function SpaceProjects({
   const searchParams = useSearchParams();
 
   // Fetch project if projectId is provided in URL
-  const { data: urlProject } = useProject(
-    heapId,
-    projectId || null
-  );
+  const { data: urlProject } = useProject(heapId, projectId || null);
 
   // Update selected project when URL projectId changes
   useEffect(() => {
     if (projectId && urlProject) {
       // Only update if the selected project is different from the URL project
-      const currentId = selectedProject && (selectedProject as ChatSession).id !== null
-        ? (selectedProject as ChatSession).id
-        : null;
+      const currentId =
+        selectedProject && (selectedProject as ChatSession).id !== null
+          ? (selectedProject as ChatSession).id
+          : null;
       if (currentId !== projectId) {
         setSelectedProject(urlProject);
         setActiveChatSession(urlProject);
       }
-    } else if (!projectId && selectedProject && (selectedProject as ChatSession).id !== null) {
+    } else if (
+      !projectId &&
+      selectedProject &&
+      (selectedProject as ChatSession).id !== null
+    ) {
       // Clear selection if projectId is removed from URL
       setSelectedProject(null);
       setActiveChatSession(null);
@@ -68,7 +70,7 @@ export function SpaceProjects({
   const updateUrlWithProject = useCallback(
     (project: ChatSession | PendingProject | null) => {
       const params = new URLSearchParams(searchParams.toString());
-      
+
       if (project && project.id !== null) {
         params.set("projectId", project.id);
         // Ensure section is set to projects
@@ -203,15 +205,6 @@ export function SpaceProjects({
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
         <h3 className="font-semibold text-foreground">Projects</h3>
-        <ShareButton
-          url={generateShareUrl(heapId, {
-            section: "projects",
-            projectId:
-              selectedProject && (selectedProject as ChatSession).id !== null
-                ? (selectedProject as ChatSession).id
-                : null,
-          })}
-        />
       </header>
       <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
         <ResizablePanel defaultSize={60} minSize={20}>
@@ -222,9 +215,7 @@ export function SpaceProjects({
                 heapId={heapId}
                 project={selectedProject}
                 onUpdatePendingProject={handleUpdatePendingProject}
-                onUpdatePendingProjectTitle={
-                  handleUpdatePendingProjectTitle
-                }
+                onUpdatePendingProjectTitle={handleUpdatePendingProjectTitle}
                 onProjectCreated={(project) => {
                   setSelectedProject(project);
                   setActiveChatSession(project);
