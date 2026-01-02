@@ -7,6 +7,7 @@ export function generateShareUrl(
     section?: "settings" | "projects" | "knowledge";
     projectId?: string | null;
     fileId?: string | null;
+    ingest?: "upload" | "text" | null;
   }
 ): string {
   if (typeof window === "undefined") {
@@ -25,6 +26,10 @@ export function generateShareUrl(
 
   if (options?.fileId) {
     params.set("fileId", options.fileId);
+  }
+
+  if (options?.ingest) {
+    params.set("ingest", options.ingest);
   }
 
   const queryString = params.toString();

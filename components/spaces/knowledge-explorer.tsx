@@ -57,6 +57,7 @@ export function KnowledgeExplorer({
   heapId,
   useDialogForPreview = false,
   fileId,
+  ingest,
 }: KnowledgeExplorerProps) {
   const { deleteFile, updateFileVisibility, files } = useSpaceFiles(heapId);
   const { setActiveChatSession } = useChat();
@@ -65,6 +66,21 @@ export function KnowledgeExplorer({
   const searchParams = useSearchParams();
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
+
+  // Map ingest param to secondaryView (only if fileId is not set, as file preview takes precedence)
+  useEffect(() => {
+    // Don't set ingest view if fileId is set (file preview takes precedence)
+    if (fileId) return;
+
+    if (ingest === "upload" && secondaryView !== "upload") {
+      setSecondaryView("upload");
+    } else if (ingest === "text" && secondaryView !== "text-editor") {
+      setSecondaryView("text-editor");
+    } else if (!ingest && (secondaryView === "upload" || secondaryView === "text-editor")) {
+      // If ingest param is removed and we're on an ingest view, reset to graph
+      setSecondaryView("graph");
+    }
+  }, [ingest, fileId, secondaryView]);
 
   // Find and set preview file when fileId is provided in URL
   useEffect(() => {
@@ -97,8 +113,36 @@ export function KnowledgeExplorer({
         params.set("fileId", file.id);
         // Ensure section is set to knowledge
         params.set("section", "knowledge");
+        // Clear ingest when showing file preview
+        params.delete("ingest");
       } else {
         params.delete("fileId");
+      }
+
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
+
+  // Update URL when secondary view changes (for ingest views)
+  const updateUrlWithIngest = useCallback(
+    (view: SecondaryView) => {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      // Ensure section is set to knowledge
+      params.set("section", "knowledge");
+      
+      if (view === "upload") {
+        params.set("ingest", "upload");
+        // Clear fileId when showing upload
+        params.delete("fileId");
+      } else if (view === "text-editor") {
+        params.set("ingest", "text");
+        // Clear fileId when showing text editor
+        params.delete("fileId");
+      } else {
+        // Clear ingest for other views
+        params.delete("ingest");
       }
 
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
@@ -119,7 +163,11 @@ export function KnowledgeExplorer({
     undefined
   );
 
-  const showGraph = () => setSecondaryView("graph");
+  const showGraph = () => {
+    setSecondaryView("graph");
+    // Don't update URL here - let handleSelectView handle URL updates for user interactions
+    // or let useEffect sync from URL params
+  };
 
   const showPreview = (file: FileRow) => {
     setPreviewFile(file);
@@ -140,6 +188,13 @@ export function KnowledgeExplorer({
       setEditorFileName(undefined);
     }
     setSecondaryView(view);
+    // Update URL for ingest views
+    if (view === "upload" || view === "text-editor") {
+      updateUrlWithIngest(view);
+    } else if (view !== "preview") {
+      // Clear ingest param for other views (except preview, which handles its own URL)
+      updateUrlWithIngest(view);
+    }
   };
 
   const getOrCreatePendingProject = useCallback((): PendingProject => {
@@ -319,12 +374,24 @@ export function KnowledgeExplorer({
               initialMarkdown={editorContent}
               fileId={editorFileId}
               initialFileName={editorFileName}
-              onClose={showGraph}
+              onClose={() => {
+                setSecondaryView("graph");
+                // Clear ingest param when closing text editor
+                updateUrlWithIngest("graph");
+              }}
             />
           );
         case "upload":
           return (
-            <FileUpload key="upload" heapId={heapId} onClose={showGraph} />
+            <FileUpload
+              key="upload"
+              heapId={heapId}
+              onClose={() => {
+                setSecondaryView("graph");
+                // Clear ingest param when closing upload
+                updateUrlWithIngest("graph");
+              }}
+            />
           );
         case "scrape-web":
           return <PlaceholderPane title="Scrape Web" />;
@@ -379,6 +446,12 @@ export function KnowledgeExplorer({
               url={generateShareUrl(heapId, {
                 section: "knowledge",
                 fileId: previewFile?.id ?? fileId ?? null,
+                ingest:
+                  secondaryView === "upload"
+                    ? "upload"
+                    : secondaryView === "text-editor"
+                    ? "text"
+                    : null,
               })}
             />
             <DropdownMenu>

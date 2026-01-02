@@ -12,4 +12,5 @@ export type WorkspacePaneComponentProps = {
   heapId: string;
   projectId?: string | null;
   fileId?: string | null;
+  ingest?: string | null;
 };

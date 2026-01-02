@@ -218,6 +218,7 @@ export function Workspace({
   // Extract URL params for passing to components
   const urlProjectId = searchParams.get("projectId");
   const urlFileId = searchParams.get("fileId");
+  const urlIngest = searchParams.get("ingest");
 
   const layoutColumns = SecondaryComponent
     ? "md:grid-cols-[72px,minmax(0,1fr)]"
@@ -284,6 +285,7 @@ export function Workspace({
                       heapId={spaceId}
                       projectId={urlProjectId}
                       fileId={urlFileId}
+                      ingest={urlIngest}
                     />
                   </PaneOne>
                 </div>
@@ -297,6 +299,7 @@ export function Workspace({
                     heapId={spaceId}
                     projectId={urlProjectId}
                     fileId={urlFileId}
+                    ingest={urlIngest}
                   />
                 </PaneTwo>
                 <Dialog
@@ -332,6 +335,7 @@ export function Workspace({
                       heapId={spaceId}
                       projectId={urlProjectId}
                       fileId={urlFileId}
+                      ingest={urlIngest}
                     />
                   </PaneOne>
                 </ResizablePanel>
@@ -358,6 +362,7 @@ export function Workspace({
                   heapId={spaceId}
                   projectId={urlProjectId}
                   fileId={urlFileId}
+                  ingest={urlIngest}
                 />
               </PaneOne>
               <PaneTwo title={secondaryDefinition?.label} />
