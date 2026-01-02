@@ -1,6 +1,5 @@
 "use client";
 
-import { ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,15 +10,13 @@ import {
 import { ShieldAlert } from "lucide-react";
 import { Button } from "../ui/button";
 
-export function BetaWarning({ trigger }: { trigger?: ReactNode }) {
+export function BetaWarning() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        {trigger ?? (
-          <Button size="sm" className="flex items-center gap-2" variant="ghost">
-            <ShieldAlert className="h-4 w-4 text-destructive" />
-          </Button>
-        )}
+        <Button size="sm" className="flex items-center gap-2" variant="ghost">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

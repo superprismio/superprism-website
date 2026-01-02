@@ -10,7 +10,7 @@ import { useChat } from "@/hooks/useChat";
 import { useSpaceMembers } from "@/hooks/useMembers";
 import type { Database } from "@/lib/types/supabase";
 import { cn } from "@/lib/utils";
-import { Folder, FolderOpen, SquareMenu } from "lucide-react";
+import { Ellipsis, Folder, FolderOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "../ui/scroll-area";
 import {
@@ -372,10 +372,10 @@ function ProjectListContent({
                       className="p-1 hover:bg-muted rounded transition"
                       aria-label="Project menu"
                     >
-                      <SquareMenu className="h-4 w-4" />
+                      <Ellipsis className="h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="bg-background">
                     <DropdownMenuItem onClick={() => handleOpen(project)}>
                       Open
                     </DropdownMenuItem>

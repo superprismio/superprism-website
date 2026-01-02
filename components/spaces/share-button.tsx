@@ -27,6 +27,7 @@ export function ShareButton({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
+      console.log("err", err);
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
       textArea.value = url;

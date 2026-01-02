@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { generateShareUrl } from "@/lib/share-link";
 import { ShareButton } from "./share-button";
+import { X } from "lucide-react";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -303,28 +304,37 @@ export function ProjectDetail({
         </DialogContent>
       </Dialog>
 
+      <div className="flex items-center justify-between border-b border-b-border px-3 py-4">
+        <h4 className="text-sm font-medium">Project Detail</h4>
+        <div className="flex items-center gap-2">
+          {isRealProject && (
+            <ShareButton
+              url={generateShareUrl(heapId, {
+                section: "projects",
+                projectId: project.id,
+              })}
+              size="sm"
+            />
+          )}
+          <Button type="button" size="sm" variant="ghost" onClick={onClose}>
+            <X />
+          </Button>
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {onClose && (
           <div className="flex justify-end mb-1 gap-2">
             {isRealProject && (
-              <>
-                <ShareButton
-                  url={generateShareUrl(heapId, {
-                    section: "projects",
-                    projectId: project.id,
-                  })}
-                  size="sm"
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={handleClone}
-                  disabled={createProject.isPending}
-                >
-                  {createProject.isPending ? "Cloning..." : "Clone Project"}
-                </Button>
-              </>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleClone}
+                disabled={createProject.isPending}
+              >
+                {createProject.isPending ? "Cloning..." : "Clone Project"}
+              </Button>
             )}
             {canEdit && !isPending && (
               <Button
@@ -333,12 +343,9 @@ export function ProjectDetail({
                 variant="outline"
                 onClick={() => setIsArchiveDialogOpen(true)}
               >
-                Archive
+                Remove
               </Button>
             )}
-            <Button type="button" size="sm" variant="ghost" onClick={onClose}>
-              Close
-            </Button>
           </div>
         )}
         <div className="space-y-1.5">

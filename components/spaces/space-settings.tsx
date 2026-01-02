@@ -30,18 +30,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useHeapInvites, useCreateInvite, type HeapInvite } from "@/hooks/useInvites";
+import {
+  useHeapInvites,
+  useCreateInvite,
+  type HeapInvite,
+} from "@/hooks/useInvites";
 import { createClient } from "@/lib/supabase/client";
 import { MemberDetails } from "./member-details";
-import { useHeap, useUpdateSpace, useSpaceTags, useCreateTag } from "@/hooks/useSpaces";
+import {
+  useHeap,
+  useUpdateSpace,
+  useSpaceTags,
+  useCreateTag,
+} from "@/hooks/useSpaces";
 import { useSpaceMembers } from "@/hooks/useMembers";
 import { generateShareUrl } from "@/lib/share-link";
 import { ShareButton } from "./share-button";
 
 export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
-  const { data: space, isLoading: spaceLoading, error: spaceError } = useHeap(heapId);
+  const {
+    data: space,
+    isLoading: spaceLoading,
+    error: spaceError,
+  } = useHeap(heapId);
   const { data: tags = [], isLoading: tagLoading } = useSpaceTags(heapId);
-  const { data: members = [], isLoading: membersLoading, refetch: refetchMembers } = useSpaceMembers(heapId);
+  const {
+    data: members = [],
+    isLoading: membersLoading,
+    refetch: refetchMembers,
+  } = useSpaceMembers(heapId);
   const updateSpace = useUpdateSpace();
   const createTag = useCreateTag();
   const { data: invites } = useHeapInvites(heapId);
@@ -64,7 +81,9 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
   useEffect(() => {
     const getCurrentUser = async () => {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       setCurrentUserId(user?.id ?? null);
     };
     void getCurrentUser();
@@ -77,13 +96,14 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
   }, [members, currentUserId]);
 
   // Filter open invites (not expired and not used)
-  const openInvites = invites?.filter(
-    (invite) => !invite.is_expired && !invite.is_used
-  ) || [];
+  const openInvites =
+    invites?.filter((invite) => !invite.is_expired && !invite.is_used) || [];
 
   // Check if current user is admin or owner
-  const isAdminOrOwner = currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
-  
+  const isAdminOrOwner =
+    currentUserMembership?.role === "admin" ||
+    currentUserMembership?.role === "owner";
+
   // Refresh members after update
   const handleMemberUpdate = () => {
     void refetchMembers();
@@ -155,16 +175,13 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
             <div className="px-3 py-4">
               <div className="mb-4 flex items-center justify-between">
                 <div className="font-semibold text-foreground">Settings</div>
-                <ShareButton
-                  url={generateShareUrl(heapId, {
-                    section: "settings",
-                  })}
-                />
               </div>
               <div className="space-y-3">
                 {spaceError && (
                   <div className="text-sm text-destructive">
-                    {spaceError instanceof Error ? spaceError.message : "Failed to load space details"}
+                    {spaceError instanceof Error
+                      ? spaceError.message
+                      : "Failed to load space details"}
                   </div>
                 )}
                 <div>
@@ -229,7 +246,9 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                       Loading tags...
                     </div>
                   ) : tags.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No tags yet</div>
+                    <div className="text-sm text-muted-foreground">
+                      No tags yet
+                    </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {tags.map((tag) => (
@@ -256,11 +275,17 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
               </header>
               <div className="space-y-3 text-sm text-muted-foreground px-3 py-4">
                 {membersLoading && (
-                  <div className="text-sm text-muted-foreground">Loading...</div>
+                  <div className="text-sm text-muted-foreground">
+                    Loading...
+                  </div>
                 )}
-                {!membersLoading && members.length === 0 && openInvites.length === 0 && (
-                  <div className="text-sm text-muted-foreground">No members</div>
-                )}
+                {!membersLoading &&
+                  members.length === 0 &&
+                  openInvites.length === 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      No members
+                    </div>
+                  )}
                 {!membersLoading &&
                   members.map((m) => (
                     <div key={m.membership_id} className="text-sm">
@@ -289,16 +314,23 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
               </header>
               <div className="space-y-4">
                 {membersLoading && (
-                  <div className="text-sm text-muted-foreground px-3 py-4">Loading...</div>
+                  <div className="text-sm text-muted-foreground px-3 py-4">
+                    Loading...
+                  </div>
                 )}
                 {!membersLoading && currentUserMembership && (
                   <>
                     <div className="px-3 py-4 border-b">
                       <div className="text-sm">
                         <span className="font-medium">
-                          {currentUserMembership.display_name || currentUserMembership.user_name || currentUserMembership.user_email}
+                          {currentUserMembership.display_name ||
+                            currentUserMembership.user_name ||
+                            currentUserMembership.user_email}
                         </span>
-                        <span className="text-muted-foreground"> — {currentUserMembership.role}</span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          — {currentUserMembership.role}
+                        </span>
                       </div>
                     </div>
                     <MemberDetails
@@ -432,7 +464,7 @@ function InviteRow({ invite }: { invite: HeapInvite }) {
 
   const handleCopy = async () => {
     if (typeof window === "undefined") return;
-    
+
     const fullUrl = `${window.location.origin}/invite/${invite.token}`;
     try {
       await navigator.clipboard.writeText(fullUrl);

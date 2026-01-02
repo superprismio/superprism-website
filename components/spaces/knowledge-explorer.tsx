@@ -76,7 +76,10 @@ export function KnowledgeExplorer({
       setSecondaryView("upload");
     } else if (ingest === "text" && secondaryView !== "text-editor") {
       setSecondaryView("text-editor");
-    } else if (!ingest && (secondaryView === "upload" || secondaryView === "text-editor")) {
+    } else if (
+      !ingest &&
+      (secondaryView === "upload" || secondaryView === "text-editor")
+    ) {
       // If ingest param is removed and we're on an ingest view, reset to graph
       setSecondaryView("graph");
     }
@@ -86,7 +89,7 @@ export function KnowledgeExplorer({
   // Skip this when in dialog mode (useDialogForPreview) since dialog previews shouldn't sync with URL
   useEffect(() => {
     if (useDialogForPreview) return;
-    
+
     if (fileId && files.length > 0) {
       const file = files.find((f) => f.id === fileId);
       if (file) {
@@ -105,7 +108,7 @@ export function KnowledgeExplorer({
   const updateUrlWithFile = useCallback(
     (file: FileRow | null) => {
       const params = new URLSearchParams(searchParams.toString());
-      
+
       if (file) {
         params.set("fileId", file.id);
         // Ensure section is set to knowledge
@@ -125,10 +128,10 @@ export function KnowledgeExplorer({
   const updateUrlWithIngest = useCallback(
     (view: SecondaryView) => {
       const params = new URLSearchParams(searchParams.toString());
-      
+
       // Ensure section is set to knowledge
       params.set("section", "knowledge");
-      
+
       if (view === "upload") {
         params.set("ingest", "upload");
         // Clear fileId when showing upload
@@ -159,12 +162,6 @@ export function KnowledgeExplorer({
   const [editorFileName, setEditorFileName] = useState<string | undefined>(
     undefined
   );
-
-  const showGraph = () => {
-    setSecondaryView("graph");
-    // Don't update URL here - let handleSelectView handle URL updates for user interactions
-    // or let useEffect sync from URL params
-  };
 
   const showPreview = (file: FileRow) => {
     setPreviewFile(file);
@@ -386,7 +383,6 @@ export function KnowledgeExplorer({
   console.log("useDialogForPreview", useDialogForPreview);
   console.log("previewFile", previewFile);
 
-
   return (
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between items-center">
@@ -397,57 +393,21 @@ export function KnowledgeExplorer({
         </h3>
         {!useDialogForPreview && (
           <div className="flex items-center gap-2">
-            <ShareButton
-              url={generateShareUrl(heapId, {
-                section: "knowledge",
-                fileId: previewFile?.id ?? fileId ?? null,
-                ingest:
-                  secondaryView === "upload"
-                    ? "upload"
-                    : secondaryView === "text-editor"
-                    ? "text"
-                    : null,
-              })}
-            />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">Add Knowledge</Button>
               </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-background">
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("text-editor")}
-              >
-                Text Editor
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleSelectView("upload")}>
-                Upload
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("scrape-web")}
-                disabled={true}
-              >
-                Scrape Web
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("import-drive")}
-                disabled={true}
-              >
-                Import from Drive
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("ingest-api")}
-                disabled={true}
-              >
-                Ingest from API
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => handleSelectView("ingest-mcp")}
-                disabled={true}
-              >
-                Ingest from MCP
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <DropdownMenuContent align="end" className="w-56 bg-background">
+                <DropdownMenuItem
+                  onSelect={() => handleSelectView("text-editor")}
+                >
+                  Add Note
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleSelectView("upload")}>
+                  Upload
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )}
       </header>
@@ -463,6 +423,7 @@ export function KnowledgeExplorer({
             onPreviewFile={showPreview}
             selectedFileId={previewFile?.id ?? null}
             onAddFileToChat={handleAddFileToProject}
+            onDeleteFile={handleDeleteFile}
             useDialogForPreview={useDialogForPreview}
           />
           {previewFile && !useDialogForPreview && (
