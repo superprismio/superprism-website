@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Copyright } from "lucide-react";
-import mobileLogo from "../public/images/SP_logo.png";
+import mobileLogo from "../../public/images/SP_logo.png";
 
 export function Footer() {
   return (

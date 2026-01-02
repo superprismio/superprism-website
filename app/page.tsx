@@ -1,7 +1,7 @@
 // import { Cta } from "@/components/cta";
-import { Header } from "@/components/header";
-import { Hero } from "@/components/hero";
-import { Footer } from "@/components/footer";
+import { Header } from "@/components/shared/header";
+import { Hero } from "@/components/shared/hero";
+import { Footer } from "@/components/shared/footer";
 import Image from "next/image";
 import spacesImg from "../public/images/sp_graphic-spaces.png";
 import projectsImg from "../public/images/sp_graphic-projects.png";
@@ -10,7 +10,7 @@ import sectionBreak from "../public/images/prism_overlay.png"
 import sectionBreak2 from "../public/images/prism_landscape.png"
 import sectionBreak3 from "../public/images/chroma_orb.png"
 import headerBg from "../public/images/superprism-0.png";
-import { EarlyAccessForm } from "@/components/early-access-form";
+import { EarlyAccessForm } from "@/components/shared/early-access-form";
 
 export default function Home() {
   return (

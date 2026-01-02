@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import mobileLogo from "../public/images/SP_logo.png";
-import { Button } from "./ui/button";
+import mobileLogo from "../../public/images/SP_logo.png";
+import { Button } from "../ui/button";
 
 const menuItems = [
   { label: "How it Works", href: "#how-it-works" },
