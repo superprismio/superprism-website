@@ -1,6 +1,7 @@
 // import { Cta } from "@/components/cta";
 import { Header } from "@/components/header";
 import { Hero } from "@/components/hero";
+import { Footer } from "@/components/footer";
 import Image from "next/image";
 import spacesImg from "../public/images/sp_graphic-spaces.png";
 import projectsImg from "../public/images/sp_graphic-projects.png";
@@ -356,6 +357,7 @@ export default function Home() {
         </p>
         <EarlyAccessForm className="mx-auto w-full max-w-3xl" />
       </div>
+      <Footer />
     </div>
   );
 }

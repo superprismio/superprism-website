@@ -2,9 +2,9 @@
 
 export function Footer() {
   return (
-    <footer className="w-full flex items-center justify-end border-t text-xs gap-4 py-4">
-      <p className="text-xs">superprism</p>
-      {/* <ThemeSwitcher /> */}
+    <footer className="w-full flex flex-row items-center justify-space-between border-t text-xs gap-4 py-4 px-8">
+      <p className="text-sm">cc superprism</p>
+      <p className="text-sm">@superprism</p>
     </footer>
   );
 }

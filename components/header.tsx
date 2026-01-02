@@ -62,7 +62,7 @@ export function Header() {
               alt="Superprism logo"
               priority
               sizes="271px"
-              className="h-8 w-auto object-cover"
+              className="h-12 w-auto object-cover"
               src={mobileLogo}
             />
           </Link>
