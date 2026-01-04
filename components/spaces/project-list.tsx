@@ -10,7 +10,7 @@ import { useChat } from "@/hooks/useChat";
 import { useSpaceMembers } from "@/hooks/useMembers";
 import type { Database } from "@/lib/types/supabase";
 import { cn } from "@/lib/utils";
-import { Ellipsis, Folder, FolderOpen } from "lucide-react";
+import { Folder, FolderOpen, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "../ui/scroll-area";
 import {
@@ -348,53 +348,59 @@ function ProjectListContent({
             isHeapOwner
           );
           return (
-            <li key={project.id} className="p-1">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div
-                    className={cn(
-                      "flex items-center justify-between gap-2 px-2 py-1 rounded cursor-pointer transition hover:bg-muted",
-                      isSelected && "bg-muted"
-                    )}
-                  >
-                    <div className="flex-1 text-left text-md font-medium">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="truncate">
-                          {project.title || "Untitled Project"}
-                        </span>
-                        <span className="text-xs text-muted-foreground font-normal">
-                          {formatDate(project.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                    <Ellipsis className="h-4 w-4 shrink-0" />
+            <li key={project.id} className="p-1 pr-4">
+              <div className="flex items-center justify-between gap-2 hover:bg-muted rounded transition">
+                <div
+                  className={cn(
+                    "flex-1 text-left text-md font-medium px-2 py-1 rounded",
+                    isSelected && "bg-muted"
+                  )}
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="truncate">
+                      {project.title || "Untitled Project"}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      {formatDate(project.created_at)}
+                    </span>
                   </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background">
-                  <DropdownMenuItem onClick={() => handleOpen(project)}>
-                    Open
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleArchiveClick(project)}
-                    disabled={!canArchive}
-                  >
-                    Remove
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleClone(project)}>
-                    Clone
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    Share{" "}
-                    <ShareButton
-                      url={generateShareUrl(heapId, {
-                        section: "projects",
-                        projectId: project.id,
-                      })}
-                      size="sm"
-                    />
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1 hover:bg-muted rounded transition"
+                      aria-label="Project menu"
+                    >
+                      <ChevronDown className="h-6 w-6 text-primary" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-background">
+                    <DropdownMenuItem onClick={() => handleOpen(project)}>
+                      Open
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleArchiveClick(project)}
+                      disabled={!canArchive}
+                    >
+                      Remove
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleClone(project)}>
+                      Clone
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      Share{" "}
+                      <ShareButton
+                        url={generateShareUrl(heapId, {
+                          section: "projects",
+                          projectId: project.id,
+                        })}
+                        size="sm"
+                      />
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </li>
           );
         })}
@@ -543,7 +549,7 @@ export function ProjectList({
                 value={sortBy}
                 onValueChange={(value) => setSortBy(value as typeof sortBy)}
               >
-                <SelectTrigger className="w-[180px] h-8 text-xs">
+                <SelectTrigger className="w-[180px] h-7 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-background">
