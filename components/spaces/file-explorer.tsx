@@ -8,7 +8,7 @@ import {
   FileText,
   FileImage,
   FileSpreadsheet,
-  Ellipsis,
+  ChevronDown,
 } from "lucide-react";
 import { useSpaceFiles, type FolderNode } from "@/hooks/useSpaceFiles";
 import { Input } from "@/components/ui/input";
@@ -241,61 +241,26 @@ function FileList({
           const canViewRaw = file?.meta?.extracted_storage_path !== undefined;
 
           return (
-            <li key={file.id} className="p-1">
-              <div className="flex items-center justify-between gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <div
-                      className={cn(
-                        "flex-1 text-left text-md font-medium px-2 py-1 rounded flex gap-2 items-center cursor-pointer transition hover:bg-muted",
-                        isSelected && "bg-muted"
-                      )}
-                    >
-                      <FileIcon className="h-6 w-6 shrink-0" />
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span className="truncate">
-                          {file.file_name ?? "Untitled file"}
-                        </span>
-                        <span className="text-xs text-muted-foreground font-normal">
-                          {formatDate(file.uploaded_at)}
-                        </span>
-                      </div>
-                      <Ellipsis className="h-4 w-4 shrink-0 ml-auto" />
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-background">
-                    <DropdownMenuItem onClick={() => onPreview?.(file)}>
-                      Open
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onAddToChat?.(file)}>
-                      Add to Project
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDeleteClick(file)}
-                      disabled={!canDelete}
-                    >
-                      Remove
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleViewRaw(file)}
-                      disabled={!canViewRaw}
-                    >
-                      View Raw
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      Share{" "}
-                      <ShareButton
-                        url={generateShareUrl(heapId, {
-                          section: "knowledge",
-                          fileId: file.id,
-                        })}
-                        size="sm"
-                      />
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                {isStaging && (
-                  <div className="shrink-0">
+            <li key={file.id} className="p-1 pr-4">
+              <div className="flex items-center justify-between gap-2 hover:bg-muted rounded transition">
+                <div
+                  className={cn(
+                    "flex-1 text-left text-md font-medium px-2 py-1 rounded flex gap-2 items-center",
+                    isSelected && "bg-muted"
+                  )}
+                >
+                  <FileIcon className="h-6 w-6 shrink-0" />
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <span className="truncate">
+                      {file.file_name ?? "Untitled file"}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-normal">
+                      {formatDate(file.uploaded_at)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  {isStaging && (
                     <Select
                       value=""
                       onValueChange={(value) => {
@@ -319,8 +284,49 @@ function FileList({
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                )}
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className="p-1 hover:bg-muted rounded transition"
+                        aria-label="File menu"
+                      >
+                        <ChevronDown className="h-6 w-6 text-primary" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-background">
+                      <DropdownMenuItem onClick={() => onPreview?.(file)}>
+                        Open
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onAddToChat?.(file)}>
+                        Add to Project
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteClick(file)}
+                        disabled={!canDelete}
+                      >
+                        Remove
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleViewRaw(file)}
+                        disabled={!canViewRaw}
+                      >
+                        View Raw
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        Share{" "}
+                        <ShareButton
+                          url={generateShareUrl(heapId, {
+                            section: "knowledge",
+                            fileId: file.id,
+                          })}
+                          size="sm"
+                        />
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </li>
           );
@@ -880,7 +886,7 @@ export function FileExplorer({
                     value={sortBy}
                     onValueChange={(value) => setSortBy(value as typeof sortBy)}
                   >
-                    <SelectTrigger className="w-[180px] h-8 text-xs">
+                    <SelectTrigger className="w-[180px] h-7 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-background">
