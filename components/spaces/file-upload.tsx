@@ -10,6 +10,7 @@ import {
 } from "../../lib/attachments";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { X } from "lucide-react";
+import { PrismLoader } from "../shared/prism-loader";
 
 type FileUploadProps = {
   heapId: string;
@@ -75,7 +76,14 @@ export function FileUpload({ heapId, onClose }: FileUploadProps) {
   };
 
   return (
-    <div className="holographic-shimmer h-full">
+    <div className="holographic-shimmer h-full relative">
+      {uploading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <PrismLoader size={200} className="text-primary" />
+          </div>
+        </div>
+      )}
       <div className="flex h-full flex-col gap-4 p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -144,7 +152,7 @@ export function FileUpload({ heapId, onClose }: FileUploadProps) {
             disabled={uploading || files.length === 0}
             className="flex-1"
           >
-            {uploading ? "Uploading..." : "Upload"}
+            Upload
           </Button>
           <Button
             variant="outline"
