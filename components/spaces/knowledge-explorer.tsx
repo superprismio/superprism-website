@@ -64,6 +64,7 @@ export function KnowledgeExplorer({
   const searchParams = useSearchParams();
   const [secondaryView, setSecondaryView] = useState<SecondaryView>("graph");
   const [previewFile, setPreviewFile] = useState<FileRow | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Map ingest param to secondaryView (only if fileId is not set, as file preview takes precedence)
   useEffect(() => {
@@ -82,6 +83,19 @@ export function KnowledgeExplorer({
       setSecondaryView("graph");
     }
   }, [ingest, fileId, secondaryView]);
+
+  // Detect mobile screen size (below sm breakpoint where layout is stacked)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   // Find and set preview file when fileId is provided in URL
   // Skip this when in dialog mode (useDialogForPreview) since dialog previews shouldn't sync with URL
@@ -365,14 +379,6 @@ export function KnowledgeExplorer({
             }}
           />
         );
-      case "scrape-web":
-        return <PlaceholderPane title="Scrape Web" />;
-      case "import-drive":
-        return <PlaceholderPane title="Import from Drive" />;
-      case "ingest-api":
-        return <PlaceholderPane title="Ingest from API" />;
-      case "ingest-mcp":
-        return <PlaceholderPane title="Ingest from MCP" />;
       default:
         return null;
     }
@@ -416,14 +422,27 @@ export function KnowledgeExplorer({
           minSize={10}
           className="flex flex-col min-h-0 overflow-hidden relative"
         >
-          <FileExplorer
-            heapId={heapId}
-            onPreviewFile={showPreview}
-            selectedFileId={previewFile?.id ?? null}
-            onAddFileToChat={handleAddFileToProject}
-            onDeleteFile={handleDeleteFile}
-            useDialogForPreview={useDialogForPreview}
-          />
+          {isMobile ? (
+            <ScrollArea className="flex-1 min-h-0 h-full">
+              <FileExplorer
+                heapId={heapId}
+                onPreviewFile={showPreview}
+                selectedFileId={previewFile?.id ?? null}
+                onAddFileToChat={handleAddFileToProject}
+                onDeleteFile={handleDeleteFile}
+                useDialogForPreview={useDialogForPreview}
+              />
+            </ScrollArea>
+          ) : (
+            <FileExplorer
+              heapId={heapId}
+              onPreviewFile={showPreview}
+              selectedFileId={previewFile?.id ?? null}
+              onAddFileToChat={handleAddFileToProject}
+              onDeleteFile={handleDeleteFile}
+              useDialogForPreview={useDialogForPreview}
+            />
+          )}
           {previewFile && !useDialogForPreview && (
             <div className="absolute inset-0 bg-background z-10 flex flex-col">
               <ScrollArea className="flex-1 min-h-0 h-full">

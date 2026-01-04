@@ -224,7 +224,7 @@ function FileList({
 
   return (
     <>
-      <ul className="space-y-2 p-3">
+      <ul className="space-y-2">
         {files.map((file) => {
           const FileIcon = getFileIcon(
             (file as FileRow & { storage_path?: string | null }).storage_path
@@ -243,24 +243,59 @@ function FileList({
           return (
             <li key={file.id} className="p-1">
               <div className="flex items-center justify-between gap-2">
-                <div
-                  className={cn(
-                    "flex-1 text-left text-md font-medium px-2 py-1 rounded flex gap-2 items-center",
-                    isSelected && "bg-muted"
-                  )}
-                >
-                  <FileIcon className="h-6 w-6 shrink-0" />
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <span className="truncate">
-                      {file.file_name ?? "Untitled file"}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-normal">
-                      {formatDate(file.uploaded_at)}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  {isStaging && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <div
+                      className={cn(
+                        "flex-1 text-left text-md font-medium px-2 py-1 rounded flex gap-2 items-center cursor-pointer transition hover:bg-muted",
+                        isSelected && "bg-muted"
+                      )}
+                    >
+                      <FileIcon className="h-6 w-6 shrink-0" />
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span className="truncate">
+                          {file.file_name ?? "Untitled file"}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-normal">
+                          {formatDate(file.uploaded_at)}
+                        </span>
+                      </div>
+                      <Ellipsis className="h-4 w-4 shrink-0 ml-auto" />
+                    </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-background">
+                    <DropdownMenuItem onClick={() => onPreview?.(file)}>
+                      Open
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAddToChat?.(file)}>
+                      Add to Project
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDeleteClick(file)}
+                      disabled={!canDelete}
+                    >
+                      Remove
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleViewRaw(file)}
+                      disabled={!canViewRaw}
+                    >
+                      View Raw
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      Share{" "}
+                      <ShareButton
+                        url={generateShareUrl(heapId, {
+                          section: "knowledge",
+                          fileId: file.id,
+                        })}
+                        size="sm"
+                      />
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {isStaging && (
+                  <div className="shrink-0">
                     <Select
                       value=""
                       onValueChange={(value) => {
@@ -284,49 +319,8 @@ function FileList({
                         ))}
                       </SelectContent>
                     </Select>
-                  )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        type="button"
-                        className="p-1 hover:bg-muted rounded transition"
-                        aria-label="File menu"
-                      >
-                        <Ellipsis className="h-4 w-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-background">
-                      <DropdownMenuItem onClick={() => onPreview?.(file)}>
-                        Open
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onAddToChat?.(file)}>
-                        Add to Project
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteClick(file)}
-                        disabled={!canDelete}
-                      >
-                        Remove
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleViewRaw(file)}
-                        disabled={!canViewRaw}
-                      >
-                        View Raw
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        Share{" "}
-                        <ShareButton
-                          url={generateShareUrl(heapId, {
-                            section: "knowledge",
-                            fileId: file.id,
-                          })}
-                          size="sm"
-                        />
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                  </div>
+                )}
               </div>
             </li>
           );
