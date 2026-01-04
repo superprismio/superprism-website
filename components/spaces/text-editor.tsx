@@ -7,6 +7,7 @@ import { Textarea } from "../ui/textarea";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
 import { useProject, useProjectUpdate } from "@/hooks/useProjects";
 import { X } from "lucide-react";
+import { PrismLoader } from "../shared/prism-loader";
 
 type TextEditorProps = {
   heapId: string;
@@ -123,7 +124,14 @@ export function TextEditor({
   };
 
   return (
-    <div className="holographic-shimmer h-full">
+    <div className="holographic-shimmer h-full relative">
+      {saving && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <PrismLoader size={96} className="text-primary" />
+          </div>
+        </div>
+      )}
       <div className="flex h-full flex-col gap-4 p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -183,7 +191,7 @@ export function TextEditor({
             disabled={saving || !markdown.trim()}
             className="flex-1"
           >
-            {saving ? "Saving..." : "Save"}
+            Save
           </Button>
           <Button
             variant="outline"

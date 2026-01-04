@@ -7,15 +7,13 @@ import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { ScrollArea } from "../ui/scroll-area";
 import { TextEditor } from "./text-editor";
-import {
-  Dialog,
-  DialogContent,
-} from "../ui/dialog";
+import { Dialog, DialogContent } from "../ui/dialog";
 import { History, X, Copy, Check, FileEdit } from "lucide-react";
 import { ChatSessionSelector } from "./chat-session-selector";
 import { isOwnerOrProjectCreator } from "@/lib/auth-helpers";
 import { createClient } from "@/lib/supabase/client";
 import { useSpaceMembers } from "@/hooks/useMembers";
+import { PrismLoader } from "../shared/prism-loader";
 
 // type Message = {
 //   role: "user" | "assistant";
@@ -33,7 +31,9 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   const [showEditor, setShowEditor] = useState(false);
   const [editorContent, setEditorContent] = useState("");
   const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
-  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(
+    null
+  );
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -52,8 +52,13 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   // Check if current user is heap owner/admin
   const isHeapOwner = useMemo(() => {
     if (!currentUserId) return false;
-    const currentUserMembership = members.find((m) => m.user_id === currentUserId);
-    return currentUserMembership?.role === "admin" || currentUserMembership?.role === "owner";
+    const currentUserMembership = members.find(
+      (m) => m.user_id === currentUserId
+    );
+    return (
+      currentUserMembership?.role === "admin" ||
+      currentUserMembership?.role === "owner"
+    );
   }, [members, currentUserId]);
 
   // Convert fetched messages to display format
@@ -107,9 +112,14 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
     if (!isProject || !activeChatSession || activeChatSession.id === null) {
       return true; // Allow chat for non-projects or pending projects
     }
-    const projectCreatedBy = (activeChatSession as { created_by?: string | null })
-      .created_by;
-    return isOwnerOrProjectCreator(currentUserId, projectCreatedBy, isHeapOwner);
+    const projectCreatedBy = (
+      activeChatSession as { created_by?: string | null }
+    ).created_by;
+    return isOwnerOrProjectCreator(
+      currentUserId,
+      projectCreatedBy,
+      isHeapOwner
+    );
   }, [isProject, activeChatSession, currentUserId, isHeapOwner]);
 
   const chatDisabled = isPresaved || (isProject && !isProjectOwner);
@@ -195,87 +205,96 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
             <div className="flex-1 min-h-0 mb-4 overflow-hidden">
               <ScrollArea className="h-full w-full">
                 <div className="space-y-3 pr-4">
-                {chatDisabled ? (
-                  <div className="text-sm text-muted-foreground">
-                    <div className="mb-2">&gt;_</div>
-                    <p className="text-xs">
-                      {isPresaved
-                        ? "Please save the project before starting a conversation."
-                        : isProject && !isProjectOwner
+                  {chatDisabled ? (
+                    <div className="text-sm text-muted-foreground">
+                      <div className="mb-2">&gt;_</div>
+                      <p className="text-xs">
+                        {isPresaved
+                          ? "Please save the project before starting a conversation."
+                          : isProject && !isProjectOwner
                           ? "You can only chat with projects you created. Clone this project to create your own version and chat with it."
                           : "Chat is disabled."}
-                    </p>
-                  </div>
-                ) : isLoadingMessages ? (
-                  <div className="text-sm text-muted-foreground">
-                    <div className="mb-2">&gt;_</div>
-                    <p className="text-xs">Loading messages...</p>
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">
-                    <div className="mb-2">&gt;_</div>
-                    <p className="text-xs">
-                      {isProject
-                        ? "Start a conversation about this project."
-                        : "Start a conversation by typing a message or using one of the prompts above."}
-                    </p>
-                  </div>
-                ) : (
-                  messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${
-                        message.role === "user" ? "justify-end" : "justify-start"
-                      }`}
-                    >
+                      </p>
+                    </div>
+                  ) : isLoadingMessages ? (
+                    <div className="text-sm text-muted-foreground">
+                      <div className="mb-2">&gt;_</div>
+                      <p className="text-xs">Loading messages...</p>
+                    </div>
+                  ) : messages.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">
+                      <div className="mb-2">&gt;_</div>
+                      <p className="text-xs">
+                        {isProject
+                          ? "Start a conversation about this project."
+                          : "Start a conversation by typing a message or using one of the prompts above."}
+                      </p>
+                    </div>
+                  ) : (
+                    messages.map((message, index) => (
                       <div
-                        className={`max-w-[80%] rounded-lg p-3 text-sm relative group ${
+                        key={index}
+                        className={`flex ${
                           message.role === "user"
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground pb-8"
+                            ? "justify-end"
+                            : "justify-start"
                         }`}
                       >
-                        {message.role === "assistant" && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="absolute bottom-1 right-8 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleAddToEditor(message.content)}
-                              title="Add to text editor"
-                            >
-                              <FileEdit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="absolute bottom-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleCopyMessage(message.content, index)}
-                              title="Copy message"
-                            >
-                              {copiedMessageIndex === index ? (
-                                <Check className="h-3 w-3" />
-                              ) : (
-                                <Copy className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </>
-                        )}
-                        <div className="whitespace-pre-wrap">
-                          {message.content}
+                        <div
+                          className={`max-w-[80%] rounded-lg p-3 text-sm relative group ${
+                            message.role === "user"
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-foreground pb-8"
+                          }`}
+                        >
+                          {message.role === "assistant" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute bottom-1 right-8 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() =>
+                                  handleAddToEditor(message.content)
+                                }
+                                title="Add to text editor"
+                              >
+                                <FileEdit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute bottom-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() =>
+                                  handleCopyMessage(message.content, index)
+                                }
+                                title="Copy message"
+                              >
+                                {copiedMessageIndex === index ? (
+                                  <Check className="h-3 w-3" />
+                                ) : (
+                                  <Copy className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </>
+                          )}
+                          <div className="whitespace-pre-wrap">
+                            {message.content}
+                          </div>
                         </div>
                       </div>
+                    ))
+                  )}
+                  {loading && (
+                    <div className="flex justify-start">
+                      <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
+                        <PrismLoader size={24} className="text-primary" />
+                        <span className="text-sm text-muted-foreground">
+                          Thinking...
+                        </span>
+                      </div>
                     </div>
-                  ))
-                )}
-                {loading && (
-                  <div className="flex justify-start">
-                    <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
-                      Thinking...
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
             </div>
@@ -324,7 +343,6 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
             </Button>
           )} */}
         </div>
-
       </div>
       {!isProject && (
         <ChatSessionSelector
