@@ -2,7 +2,6 @@
 
 import { useEffect, useState, type ChangeEvent, useMemo } from "react";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
-import type { Member } from "./types";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -44,8 +43,6 @@ import {
   useCreateTag,
 } from "@/hooks/useSpaces";
 import { useSpaceMembers } from "@/hooks/useMembers";
-import { generateShareUrl } from "@/lib/share-link";
-import { ShareButton } from "./share-button";
 
 export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
   const {
@@ -122,6 +119,7 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
         description: spaceDescription.trim() || null,
       });
     } catch (error) {
+      console.log("error", error);
       // Error is handled by the hook
     } finally {
       setSaving(false);
@@ -457,10 +455,6 @@ function CreateInviteDialog({ heapId }: { heapId: string }) {
 
 function InviteRow({ invite }: { invite: HeapInvite }) {
   const [copied, setCopied] = useState(false);
-  const inviteUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/invite/${invite.token}`
-      : `/invite/${invite.token}`;
 
   const handleCopy = async () => {
     if (typeof window === "undefined") return;
@@ -471,6 +465,7 @@ function InviteRow({ invite }: { invite: HeapInvite }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
+      console.log("err", err);
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
       textArea.value = fullUrl;

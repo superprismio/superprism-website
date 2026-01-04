@@ -349,58 +349,52 @@ function ProjectListContent({
           );
           return (
             <li key={project.id} className="p-1">
-              <div className="flex items-center justify-between gap-2">
-                <div
-                  className={cn(
-                    "flex-1 text-left text-md font-medium px-2 py-1 rounded",
-                    isSelected && "bg-muted"
-                  )}
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="truncate">
-                      {project.title || "Untitled Project"}
-                    </span>
-                    <span className="text-xs text-muted-foreground font-normal">
-                      {formatDate(project.created_at)}
-                    </span>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div
+                    className={cn(
+                      "flex items-center justify-between gap-2 px-2 py-1 rounded cursor-pointer transition hover:bg-muted",
+                      isSelected && "bg-muted"
+                    )}
+                  >
+                    <div className="flex-1 text-left text-md font-medium">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="truncate">
+                          {project.title || "Untitled Project"}
+                        </span>
+                        <span className="text-xs text-muted-foreground font-normal">
+                          {formatDate(project.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                    <Ellipsis className="h-4 w-4 shrink-0" />
                   </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className="p-1 hover:bg-muted rounded transition"
-                      aria-label="Project menu"
-                    >
-                      <Ellipsis className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-background">
-                    <DropdownMenuItem onClick={() => handleOpen(project)}>
-                      Open
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleArchiveClick(project)}
-                      disabled={!canArchive}
-                    >
-                      Remove
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleClone(project)}>
-                      Clone
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      Share{" "}
-                      <ShareButton
-                        url={generateShareUrl(heapId, {
-                          section: "projects",
-                          projectId: project.id,
-                        })}
-                        size="sm"
-                      />
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-background">
+                  <DropdownMenuItem onClick={() => handleOpen(project)}>
+                    Open
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleArchiveClick(project)}
+                    disabled={!canArchive}
+                  >
+                    Remove
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleClone(project)}>
+                    Clone
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    Share{" "}
+                    <ShareButton
+                      url={generateShareUrl(heapId, {
+                        section: "projects",
+                        projectId: project.id,
+                      })}
+                      size="sm"
+                    />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </li>
           );
         })}
