@@ -1,8 +1,18 @@
+import Image from "next/image";
 import { EarlyAccessForm } from "./early-access-form";
+import GlassPyramidWrapper from "./glass-pyramid-wrapper";
 
 export async function Hero() {
   return (
-    <div className="flex flex-col gap-6 lg:gap-12 w-full max-w-full px-8 lg:px-20 py-20 lg:py-40 xl:py-60">
+    <div className="flex flex-col gap-6 lg:gap-12 h-[100vh] w-full max-w-full px-8 lg:px-20 py-20 relative overflow-visible">
+      {/* <div className="w-[100vw] absolute top-0 left-0 z-0 object-cover">
+        <Image src="/hdri/prism.jpeg" alt="Prism" width={1200} height={1200} />
+      </div> */}
+      <div className="w-full absolute top-0 -right-[15%] z-1 overflow-visible">
+        <GlassPyramidWrapper />
+      </div>
+      
+      <div className="relative z-10 pointer-events-none">
       <p className="text-4xl lg:text-6xl max-w-xl text-muted-foreground">
         A collaborative knowledge base that is privacy-focused & AI-native.
       </p>
@@ -17,9 +27,11 @@ export async function Hero() {
           your AI sharp.
         </i>
       </p>
+      </div>
       <div className="items-start w-full">
         <EarlyAccessForm className="w-full max-w-xl" />
       </div>
+      
     </div>
   );
 }

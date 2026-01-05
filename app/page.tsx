@@ -11,18 +11,19 @@ import sectionBreak2 from "../public/images/prism_landscape.png"
 import sectionBreak3 from "../public/images/chroma_orb.png"
 import headerBg from "../public/images/superprism-0.png";
 import { EarlyAccessForm } from "@/components/shared/early-access-form";
+import GlassPyramidWrapper from "@/components/shared/glass-pyramid-wrapper";
 
 export default function Home() {
   return (
-    <div className="flex-1 w-full flex flex-col items-center relative">
-      <Image
+    <div className="flex-1 w-full flex flex-col items-center relative overflow-visible">
+      {/* <Image
         alt="Superprism bg"
         className="absolute lg:pl-60 inset-x-0 w-full object-left -z-10 object-cover overflow-visible min-h-[600px] top-0"
         priority
         src={headerBg}
-      />
+      /> */}
       <Header />
-      <div className="flex-1 w-full flex flex-col items-center mt-60 lg:mt-40 relative z-0">
+      <div className="flex-1 w-full flex flex-col items-center relative z-0 overflow-visible">
         <Hero />
       </div>
       <div id="how-it-works" className="flex-1 w-full flex flex-col items-center max-w-4xl px-4 lg:px-0 scroll-mt-24">
