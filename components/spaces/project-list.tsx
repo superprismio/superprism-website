@@ -403,7 +403,7 @@ function ProjectListContent({
                       Remove
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleClone(project)}>
-                      Clone
+                      Fork
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       Share{" "}

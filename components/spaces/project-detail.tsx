@@ -352,7 +352,7 @@ export function ProjectDetail({
                 onClick={handleClone}
                 disabled={createProject.isPending}
               >
-                {createProject.isPending ? "Cloning..." : "Clone Project"}
+                {createProject.isPending ? "Fork..." : "Forking Project"}
               </Button>
             )}
             {canEdit && !isPending && (
