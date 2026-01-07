@@ -221,7 +221,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                       <div className="mb-2">&gt;_</div>
                       <p className="text-xs">Loading messages...</p>
                     </div>
-                  ) : messages.length === 0 ? (
+                  ) : messages.length === 0 && !loading ? (
                     <div className="text-sm text-muted-foreground">
                       <div className="mb-2">&gt;_</div>
                       <p className="text-xs">

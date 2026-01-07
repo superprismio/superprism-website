@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useProjectUpdate, useCreateProject } from "@/hooks/useProjects";
+import { useSendChatMessage } from "@/hooks/useChat";
 import type { Database } from "@/lib/types/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { isOwnerOrProjectCreator } from "@/lib/auth-helpers";
 import { useSpaceMembers } from "@/hooks/useMembers";
-import { useProfile } from "@/hooks/useProfile";
+import { useUserDisplayName } from "@/hooks/useProfile";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ export function ProjectDetail({
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
   const updateProject = useProjectUpdate();
   const createProject = useCreateProject();
+  const sendChatMessage = useSendChatMessage(heapId);
   const { data: members = [] } = useSpaceMembers(heapId);
 
   const isPending = project !== null && project.id === null;
@@ -100,8 +102,8 @@ export function ProjectDetail({
     );
   }, [isPending, isRealProject, currentUserId, projectCreatorId, isHeapOwner]);
 
-  // Fetch creator profile
-  const { data: creatorProfile } = useProfile(projectCreatorId);
+  // Get creator display name
+  const creatorDisplayName = useUserDisplayName(projectCreatorId, heapId);
 
   useEffect(() => {
     if (project) {
@@ -245,6 +247,7 @@ export function ProjectDetail({
     if (!project || isPending) return;
 
     try {
+      const originalSessionId = (project as ChatSession).id;
       const clonedTitle = `${project.title || "Untitled Project"} - Copy`;
       const clonedMeta = project.meta
         ? (JSON.parse(JSON.stringify(project.meta)) as Record<string, unknown>)
@@ -260,8 +263,24 @@ export function ProjectDetail({
         filter: clonedFilter,
       });
 
+      
       if (onProjectCreated) {
         onProjectCreated(clonedProject);
+      }
+
+      // Send summary request in the background using the cloned project's sessionId
+      if (originalSessionId && clonedProject.id) {
+        sendChatMessage.mutate(
+          {
+            chatInput: `can you summarize the chat with session id ${originalSessionId}`,
+            sessionId: clonedProject.id,
+          },
+          {
+            onError: (error) => {
+              console.error("Failed to send summary request:", error);
+            },
+          }
+        );
       }
     } catch (error) {
       console.error("Failed to clone project:", error);
@@ -333,7 +352,7 @@ export function ProjectDetail({
                 onClick={handleClone}
                 disabled={createProject.isPending}
               >
-                {createProject.isPending ? "Cloning..." : "Clone Project"}
+                {createProject.isPending ? "Fork..." : "Forking Project"}
               </Button>
             )}
             {canEdit && !isPending && (
@@ -427,10 +446,7 @@ export function ProjectDetail({
                 Created by
               </label>
               <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                {creatorProfile?.name ||
-                  creatorProfile?.user_id ||
-                  projectCreatorId ||
-                  "Unknown"}
+                {creatorDisplayName}
               </div>
             </div>
           </>

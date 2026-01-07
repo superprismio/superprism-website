@@ -52,7 +52,9 @@ export function MemberDetails({
       onUpdate?.();
     } catch (error) {
       setError(
-        error instanceof Error ? error.message : "Failed to update member details"
+        error instanceof Error
+          ? error.message
+          : "Failed to update member details"
       );
     }
   }
@@ -72,12 +74,12 @@ export function MemberDetails({
         </p>
       </div>
 
-      {error && (
-        <div className="text-sm text-destructive">{error}</div>
-      )}
+      {error && <div className="text-sm text-destructive">{error}</div>}
 
       {success && (
-        <div className="text-sm text-green-600">Member details updated successfully</div>
+        <div className="text-sm text-green-600">
+          Member details updated successfully
+        </div>
       )}
 
       <div className="space-y-2">
@@ -108,15 +110,10 @@ export function MemberDetails({
       </div>
 
       <div className="flex gap-2">
-        <Button
-          size="sm"
-          onClick={handleSave}
-          disabled={saving || !hasChanges}
-        >
+        <Button size="sm" onClick={handleSave} disabled={saving || !hasChanges}>
           {saving ? "Saving..." : "Save"}
         </Button>
       </div>
     </div>
   );
 }
-

@@ -1,6 +1,12 @@
 "use client";
 
-import { ComponentType, ReactNode, useCallback, useState, useEffect } from "react";
+import {
+  ComponentType,
+  ReactNode,
+  useCallback,
+  useState,
+  useEffect,
+} from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useHeap } from "../../hooks/useSpaces";
 import { ChatProvider, useChat } from "../../hooks/useChat";
@@ -14,7 +20,6 @@ import {
 import { SpaceFeed } from "./space-feed";
 import { KnowledgeExplorer } from "./knowledge-explorer";
 import { SpaceChat } from "./space-chat";
-import { SpaceMembers } from "./space-members";
 import { SpaceSettings } from "./space-settings";
 import { SpaceProjects } from "./space-projects";
 import { SpacePublish } from "./space-publish";
@@ -23,11 +28,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "../ui/resizable";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "../ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "../ui/dialog";
 
 type WorkspaceProps = {
   spaceId: string | null;
@@ -56,10 +57,6 @@ const PANE_DEFINITIONS: Record<WorkspacePaneKey, PaneDefinition> = {
   spaceProjects: {
     label: "Projects",
     component: SpaceProjects,
-  },
-  spaceMembers: {
-    label: "Members",
-    component: SpaceMembers,
   },
   spacePublish: {
     label: "Publish",
@@ -150,9 +147,13 @@ export function Workspace({
 
   // Update URL when primary pane changes
   const updateUrlParams = useCallback(
-    (pane: WorkspacePaneKey, projectId?: string | null, fileId?: string | null) => {
+    (
+      pane: WorkspacePaneKey,
+      projectId?: string | null,
+      fileId?: string | null
+    ) => {
       const params = new URLSearchParams(searchParams.toString());
-      
+
       // Update section param
       const section = PANE_TO_SECTION[pane];
       if (section) {
@@ -286,6 +287,7 @@ export function Workspace({
             onSelect={handleSelectPrimary}
             onOpenChatDialog={handleOpenChatDialog}
             isMobile={isMobile}
+            heapId={spaceId}
           />
           {SecondaryComponent ? (
             isMobile ? (
@@ -390,10 +392,7 @@ export function Workspace({
               {PANE_DEFINITIONS.spaceChat.label}
             </DialogTitle>
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-              <SpaceChat
-                onOpenPaneTwo={handleOpenSecondary}
-                heapId={spaceId}
-              />
+              <SpaceChat onOpenPaneTwo={handleOpenSecondary} heapId={spaceId} />
             </div>
           </DialogContent>
         </Dialog>

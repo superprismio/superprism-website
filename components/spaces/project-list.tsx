@@ -6,7 +6,7 @@ import {
   useProjectUpdate,
   useCreateProject,
 } from "@/hooks/useProjects";
-import { useChat } from "@/hooks/useChat";
+import { useChat, useSendChatMessage } from "@/hooks/useChat";
 import { useSpaceMembers } from "@/hooks/useMembers";
 import type { Database } from "@/lib/types/supabase";
 import { cn } from "@/lib/utils";
@@ -217,6 +217,7 @@ function ProjectListContent({
   const { setActiveChatSession } = useChat();
   const updateProject = useProjectUpdate();
   const createProject = useCreateProject();
+  const sendChatMessage = useSendChatMessage(heapId);
   const { data: members = [] } = useSpaceMembers(heapId);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isArchiveDialogOpen, setIsArchiveDialogOpen] = useState(false);
@@ -276,6 +277,7 @@ function ProjectListContent({
 
   const handleClone = async (project: ChatSession) => {
     try {
+      const originalSessionId = project.id;
       const clonedTitle = `${project.title || "Untitled Project"} - Copy`;
       const clonedMeta = project.meta
         ? (JSON.parse(JSON.stringify(project.meta)) as Record<string, unknown>)
@@ -293,6 +295,21 @@ function ProjectListContent({
 
       onSelectProject(clonedProject);
       setActiveChatSession(clonedProject);
+
+      // Send summary request in the background using the cloned project's sessionId
+      if (originalSessionId && clonedProject.id) {
+        sendChatMessage.mutate(
+          {
+            chatInput: `can you summarize the chat with session id ${originalSessionId}`,
+            sessionId: clonedProject.id,
+          },
+          {
+            onError: (error) => {
+              console.error("Failed to send summary request:", error);
+            },
+          }
+        );
+      }
     } catch (error) {
       console.error("Failed to clone project:", error);
     }
@@ -386,7 +403,7 @@ function ProjectListContent({
                       Remove
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleClone(project)}>
-                      Clone
+                      Fork
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                       Share{" "}

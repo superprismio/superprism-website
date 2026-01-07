@@ -3,7 +3,6 @@ export type WorkspacePaneKey =
   | "knowledgeExplorer"
   | "spaceChat"
   | "spaceProjects"
-  | "spaceMembers"
   | "spacePublish"
   | "spaceSettings";
 

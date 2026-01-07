@@ -76,6 +76,13 @@ type N8nMessage = {
   content: string;
 };
 
+type N8nNewFormatMessage = {
+  output: {
+    answer: string;
+    follow_up_questions: string[];
+  };
+};
+
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -118,19 +125,61 @@ export function useChatMessages(heapId: string | null) {
       // Transform n8n chat history format to ChatMessage format
       return histories
         .map((history) => {
-          const message = history.message as N8nMessage;
-          if (
-            !message ||
-            typeof message !== "object" ||
-            !message.type ||
-            !message.content
-          ) {
+          const message = history.message;
+          if (!message || typeof message !== "object") {
             return null;
           }
 
+          // Handle format: { type, content }
+          const oldFormat = message as N8nMessage;
+          if (!oldFormat.type || !oldFormat.content) {
+            return null;
+          }
+
+          const role = oldFormat.type === "human" ? "user" : "assistant";
+
+          // For assistant messages, check if content is a JSON string with new format
+          if (role === "assistant" && typeof oldFormat.content === "string") {
+            try {
+              const parsedContent = JSON.parse(oldFormat.content);
+              // Check for new format: { output: { answer, follow_up_questions } }
+              if (
+                parsedContent &&
+                typeof parsedContent === "object" &&
+                !Array.isArray(parsedContent) &&
+                "output" in parsedContent &&
+                typeof parsedContent.output === "object" &&
+                parsedContent.output !== null &&
+                !Array.isArray(parsedContent.output) &&
+                "answer" in parsedContent.output &&
+                typeof parsedContent.output.answer === "string"
+              ) {
+                const newFormat = parsedContent as N8nNewFormatMessage;
+                const answer = newFormat.output.answer;
+                const followUpQuestions = newFormat.output.follow_up_questions || [];
+
+                // Format as string with answer and bulleted follow-up questions
+                let content = answer;
+
+                // console.log('followUpQuestions', followUpQuestions)
+                if (followUpQuestions.length > 0) {
+                  content += "\n\n" + followUpQuestions.map((q) => `• ${q}`).join("\n");
+                }
+
+                return {
+                  role: "assistant" as const,
+                  content,
+                } as ChatMessage;
+              }
+            } catch {
+              // If parsing fails, treat content as plain string (old format)
+            }
+          }
+
+          // Use content as-is (old format or failed JSON parse)
           return {
-            role: message.type === "human" ? "user" : "assistant",
-            content: message.content,
+            role,
+            content: oldFormat.content,
           } as ChatMessage;
         })
         .filter((msg): msg is ChatMessage => msg !== null);
@@ -142,6 +191,7 @@ export function useChatMessages(heapId: string | null) {
 
 type SendMessageParams = {
   chatInput: string;
+  sessionId?: string | null;
 };
 
 type SendMessageResponse = {
@@ -197,14 +247,17 @@ export function useSendChatMessage(heapId: string | null) {
       : null;
 
   return useMutation<SendMessageResponse, Error, SendMessageParams>({
-    mutationFn: async ({ chatInput }) => {
+    mutationFn: async ({ chatInput, sessionId: overrideSessionId }) => {
       if (!heapId) {
         throw new Error("heapId is required");
       }
 
+      // Use override sessionId if provided, otherwise use context sessionId
+      const finalSessionId = overrideSessionId ?? sessionId;
+
       const requestBody: Record<string, unknown> = {
         chatInput,
-        sessionId,
+        sessionId: finalSessionId,
         isProject,
       };
 
@@ -239,9 +292,10 @@ export function useSendChatMessage(heapId: string | null) {
 
       return data.data!;
     },
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
       // If a new session was created (for space chat), update the active session
-      if (data.sessionId && (!sessionId || data.sessionId !== sessionId)) {
+      const finalSessionId = variables.sessionId ?? sessionId;
+      if (data.sessionId && (!finalSessionId || data.sessionId !== finalSessionId)) {
         // Fetch all sessions to find the new one
         const sessionsResponse = await fetch(
           `/api/heaps/${heapId}/chat-sessions`,
@@ -266,7 +320,7 @@ export function useSendChatMessage(heapId: string | null) {
 
       // Refetch messages after sending
       await queryClient.invalidateQueries({
-        queryKey: ["chat-messages", heapId, data.sessionId || sessionId],
+        queryKey: ["chat-messages", heapId, data.sessionId || finalSessionId],
       });
     },
   });

@@ -36,16 +36,7 @@ type PendingProject = {
   created_at: null;
 };
 
-type SecondaryView =
-  | "graph"
-  | "preview"
-  | "text-editor"
-  | "upload"
-  | "scrape-web"
-  | "import-drive"
-  | "ingest-api"
-  | "ingest-mcp"
-  | "project";
+type SecondaryView = "graph" | "preview" | "text-editor" | "upload" | "project";
 
 type KnowledgeExplorerProps = WorkspacePaneComponentProps & {
   useDialogForPreview?: boolean;
@@ -384,9 +375,6 @@ export function KnowledgeExplorer({
     }
   };
 
-  console.log("useDialogForPreview", useDialogForPreview);
-  console.log("previewFile", previewFile);
-
   return (
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between items-center">
@@ -488,13 +476,5 @@ export function KnowledgeExplorer({
         />
       )}
     </>
-  );
-}
-
-function PlaceholderPane({ title }: { title: string }) {
-  return (
-    <div className="h-full w-full flex items-center justify-center">
-      <h4 className="text-lg font-semibold text-muted-foreground">{title}</h4>
-    </div>
   );
 }
