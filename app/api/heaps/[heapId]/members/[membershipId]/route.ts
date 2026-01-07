@@ -8,26 +8,23 @@ type Params = { params: Promise<{ heapId: string; membershipId: string }> };
 export async function PATCH(request: Request, { params }: Params) {
   const { heapId, membershipId } = await params;
   const body = await request.json().catch(() => ({}));
-  const { display_name, member_bio } = body ?? {};
+  const { role } = body ?? {};
 
-  const updates: Record<string, unknown> = {};
-  if (display_name !== undefined) updates.display_name = display_name;
-  if (member_bio !== undefined) updates.member_bio = member_bio;
-
-  if (Object.keys(updates).length === 0) {
+  // Validate role
+  if (!role || !["member", "admin", "owner"].includes(role)) {
     return NextResponse.json(
-      { error: "No valid fields to update" },
+      { error: "Invalid role. Must be 'member', 'admin', or 'owner'" },
       { status: 400 }
     );
   }
 
   const supabase = await createClient();
 
-  // Verify user is authenticated and is a heap member
+  // Verify user is authenticated and is a heap admin/owner
   const authResult = await requireHeapOwner(
     supabase,
     heapId,
-    "You must be a member of this heap to update membership"
+    "You must be an admin or owner of this heap to update member roles"
   );
   if (!authResult.success) {
     return authResult.response;
@@ -35,7 +32,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const { user } = authResult;
 
-  // Get the membership to verify ownership
+  // Get the membership to verify it exists
   const serviceClient = await createServiceRoleClient();
   const { data: membership, error: fetchError } = await serviceClient
     .from("memberships")
@@ -52,18 +49,18 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Membership not found" }, { status: 404 });
   }
 
-  // Users can only update their own membership
-  if (membership.user_id !== user.id) {
+  // Prevent users from setting themselves to 'member'
+  if (membership.user_id === user.id && role === "member") {
     return NextResponse.json(
-      { error: "You can only update your own membership" },
+      { error: "You cannot set your own role to 'member'" },
       { status: 403 }
     );
   }
 
-  // Update the membership
+  // Update the membership role
   const { data, error } = await serviceClient
     .from("memberships")
-    .update(updates)
+    .update({ role })
     .eq("id", membershipId)
     .eq("heap_id", heapId)
     .select("*")

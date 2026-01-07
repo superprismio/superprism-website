@@ -4,7 +4,8 @@ export type WorkspacePaneKey =
   | "spaceChat"
   | "spaceProjects"
   | "spacePublish"
-  | "spaceSettings";
+  | "spaceSettings"
+  | "userProfile";
 
 export type WorkspacePaneComponentProps = {
   onOpenPaneTwo?: (pane: WorkspacePaneKey) => void;

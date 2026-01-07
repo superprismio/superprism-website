@@ -42,20 +42,16 @@ export function useUpdateMember() {
     {
       heapId: string;
       membershipId: string;
-      displayName?: string | null;
-      memberBio?: string | null;
+      role: "member" | "admin" | "owner";
     }
   >({
-    mutationFn: async ({ heapId, membershipId, displayName, memberBio }) => {
+    mutationFn: async ({ heapId, membershipId, role }) => {
       const response = await fetch(
         `/api/heaps/${heapId}/members/${membershipId}`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            display_name: displayName?.trim() || null,
-            member_bio: memberBio?.trim() || null,
-          }),
+          body: JSON.stringify({ role }),
         }
       );
 
@@ -64,7 +60,7 @@ export function useUpdateMember() {
         const message =
           (json && typeof json === "object" && "error" in json
             ? String(json.error)
-            : null) ?? "Failed to update member details";
+            : null) ?? "Failed to update member role";
         throw new Error(message);
       }
 
