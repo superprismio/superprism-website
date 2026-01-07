@@ -6,11 +6,6 @@ import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "../ui/resizable";
 import { PlusIcon, CopyIcon } from "lucide-react";
 import {
   Dialog,
@@ -65,11 +60,13 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
   const [newTagLabel, setNewTagLabel] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [spaceName, setSpaceName] = useState<string>("");
   const [spaceDescription, setSpaceDescription] = useState<string>("");
 
-  // Sync space description to local state when space data changes
+  // Sync space name and description to local state when space data changes
   useEffect(() => {
     if (space) {
+      setSpaceName(space.name || "");
       setSpaceDescription(space.description || "");
     }
   }, [space]);
@@ -106,6 +103,10 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
     void refetchMembers();
   };
 
+  function handleNameChange(event: ChangeEvent<HTMLInputElement>) {
+    setSpaceName(event.target.value);
+  }
+
   function handleDescriptionChange(event: ChangeEvent<HTMLTextAreaElement>) {
     setSpaceDescription(event.target.value);
   }
@@ -116,6 +117,7 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
     try {
       await updateSpace.mutateAsync({
         heapId,
+        name: spaceName.trim() || undefined,
         description: spaceDescription.trim() || null,
       });
     } catch (error) {
@@ -166,112 +168,115 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
   }
 
   return (
-    <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
-      <ResizablePanel defaultSize={60} minSize={20}>
-        <div className="h-full overflow-y-auto">
-          <div className="space-y-4">
-            <div className="px-3 py-4">
-              <div className="mb-4 flex items-center justify-between">
-                <div className="font-semibold text-foreground">Settings</div>
+    <div className="h-full overflow-y-auto">
+      <div className="space-y-4">
+        <div className="px-3 py-4">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="font-semibold text-foreground">Settings</div>
+          </div>
+          <div className="space-y-3">
+            {spaceError && (
+              <div className="text-sm text-destructive">
+                {spaceError instanceof Error
+                  ? spaceError.message
+                  : "Failed to load space details"}
               </div>
-              <div className="space-y-3">
-                {spaceError && (
-                  <div className="text-sm text-destructive">
-                    {spaceError instanceof Error
-                      ? spaceError.message
-                      : "Failed to load space details"}
-                  </div>
-                )}
-                <div>
-                  <div className="mb-1 text-sm">Description</div>
-                  <Textarea
-                    value={spaceDescription}
-                    onChange={handleDescriptionChange}
-                    placeholder="Describe this space"
-                    disabled={spaceLoading || saving}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={saving || spaceLoading || !heapId}
-                  >
-                    {saving ? "Saving..." : "Save"}
-                  </Button>
-                </div>
-              </div>
+            )}
+            <div>
+              <div className="mb-1 text-sm">Name</div>
+              <Input
+                value={spaceName}
+                onChange={handleNameChange}
+                placeholder="Space name"
+                disabled={spaceLoading || saving}
+              />
             </div>
-
-            <div className="px-3 py-4">
-              <div className="mb-4 font-semibold text-foreground">Tags</div>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">Add new tag</div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={newTagLabel}
-                      onChange={(event) => {
-                        setNewTagLabel(event.target.value);
-                        setTagError(null);
-                      }}
-                      placeholder="Enter tag name"
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          handleAddTag();
-                        }
-                      }}
-                      disabled={addingTag || !heapId}
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleAddTag}
-                      disabled={addingTag || !newTagLabel.trim() || !heapId}
-                    >
-                      {addingTag ? "Adding..." : "Add"}
-                    </Button>
-                  </div>
-                  {tagError && (
-                    <div className="text-sm text-destructive">{tagError}</div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">Existing tags</div>
-                  {tagLoading ? (
-                    <div className="text-sm text-muted-foreground">
-                      Loading tags...
-                    </div>
-                  ) : tags.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">
-                      No tags yet
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {tags.map((tag) => (
-                        <Badge key={tag.slug} variant="secondary">
-                          {tag.label}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+            <div>
+              <div className="mb-1 text-sm">Description</div>
+              <Textarea
+                value={spaceDescription}
+                onChange={handleDescriptionChange}
+                placeholder="Describe this space"
+                disabled={spaceLoading || saving}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={saving || spaceLoading || !heapId}
+              >
+                {saving ? "Saving..." : "Save"}
+              </Button>
             </div>
           </div>
         </div>
-      </ResizablePanel>
-      <ResizableHandle withHandle />
-      <ResizablePanel defaultSize={40} minSize={20}>
-        <div className="h-full overflow-y-auto">
+
+        <div className="px-3 py-4">
+          <div className="mb-4 font-semibold text-foreground">Tags</div>
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Add new tag</div>
+              <div className="flex gap-2">
+                <Input
+                  value={newTagLabel}
+                  onChange={(event) => {
+                    setNewTagLabel(event.target.value);
+                    setTagError(null);
+                  }}
+                  placeholder="Enter tag name"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      handleAddTag();
+                    }
+                  }}
+                  disabled={addingTag || !heapId}
+                />
+                <Button
+                  size="sm"
+                  onClick={handleAddTag}
+                  disabled={addingTag || !newTagLabel.trim() || !heapId}
+                >
+                  {addingTag ? "Adding..." : "Add"}
+                </Button>
+              </div>
+              {tagError && (
+                <div className="text-sm text-destructive">{tagError}</div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Existing tags</div>
+              {tagLoading ? (
+                <div className="text-sm text-muted-foreground">
+                  Loading tags...
+                </div>
+              ) : tags.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  No tags yet
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <Badge key={tag.slug} variant="secondary">
+                      {tag.label}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-3 py-4 border-t">
           {isAdminOrOwner ? (
             <>
-              <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
+              <header className="gap-4 w-full px-0 py-4 flex justify-between">
                 <h3 className="font-semibold text-foreground">Members</h3>
                 <CreateInviteDialog heapId={heapId} />
               </header>
-              <div className="space-y-3 text-sm text-muted-foreground px-3 py-4">
+              <div className="space-y-3 text-sm text-muted-foreground">
                 {membersLoading && (
                   <div className="text-sm text-muted-foreground">
                     Loading...
@@ -307,18 +312,18 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
             </>
           ) : (
             <>
-              <header className="gap-4 border-b w-full px-3 py-4">
+              <header className="gap-4 w-full px-0 py-4">
                 <h3 className="font-semibold text-foreground">Members</h3>
               </header>
               <div className="space-y-4">
                 {membersLoading && (
-                  <div className="text-sm text-muted-foreground px-3 py-4">
+                  <div className="text-sm text-muted-foreground">
                     Loading...
                   </div>
                 )}
                 {!membersLoading && currentUserMembership && (
                   <>
-                    <div className="px-3 py-4 border-b">
+                    <div className="border-b pb-4">
                       <div className="text-sm">
                         <span className="font-medium">
                           {currentUserMembership.display_name ||
@@ -341,7 +346,7 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                   </>
                 )}
                 {!membersLoading && !currentUserMembership && (
-                  <div className="text-sm text-muted-foreground px-3 py-4">
+                  <div className="text-sm text-muted-foreground">
                     Unable to load membership information
                   </div>
                 )}
@@ -350,7 +355,7 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
           )}
           {/* Show MemberDetails for admin/owner too */}
           {isAdminOrOwner && currentUserMembership && (
-            <div className="border-t">
+            <div className="mt-4 pt-4 border-t">
               <MemberDetails
                 heapId={heapId}
                 membershipId={currentUserMembership.membership_id}
@@ -361,8 +366,8 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
             </div>
           )}
         </div>
-      </ResizablePanel>
-    </ResizablePanelGroup>
+      </div>
+    </div>
   );
 }
 

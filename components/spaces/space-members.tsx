@@ -28,6 +28,7 @@ import {
   type HeapInvite,
 } from "@/hooks/useInvites";
 import { useSpaceMembers } from "@/hooks/useMembers";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function SpaceMembers({ heapId }: WorkspacePaneComponentProps) {
   const { data: members = [], isLoading: loading } = useSpaceMembers(heapId);
@@ -38,12 +39,13 @@ export function SpaceMembers({ heapId }: WorkspacePaneComponentProps) {
     invites?.filter((invite) => !invite.is_expired && !invite.is_used) || [];
 
   return (
-    <>
-      <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
+    <div className="flex flex-col h-full min-h-0">
+      <header className="gap-4 border-b w-full px-3 py-4 flex justify-between flex-shrink-0">
         <h3 className="font-semibold text-foreground">Members</h3>
         <CreateInviteDialog heapId={heapId} />
       </header>
-      <div className="space-y-3 text-sm text-muted-foreground px-3 py-4">
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="space-y-3 text-sm text-muted-foreground px-3 py-4">
         {loading && (
           <div className="text-sm text-muted-foreground">Loading...</div>
         )}
@@ -69,8 +71,9 @@ export function SpaceMembers({ heapId }: WorkspacePaneComponentProps) {
             ))}
           </div>
         )}
-      </div>
-    </>
+        </div>
+      </ScrollArea>
+    </div>
   );
 }
 

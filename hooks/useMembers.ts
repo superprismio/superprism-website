@@ -84,3 +84,27 @@ export function useUpdateMember() {
   });
 }
 
+export function useIsMember(heapId: string | null) {
+  return useQuery<boolean, Error>({
+    queryKey: ["is-member", heapId],
+    queryFn: async () => {
+      if (!heapId) {
+        return false;
+      }
+
+      const response = await fetch(`/api/heaps/${heapId}/members/check`, {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        const json = (await response.json()) as ApiResponse<{ isMember: boolean }>;
+        throw new Error(json.error || "Failed to check membership");
+      }
+
+      const json = (await response.json()) as ApiResponse<{ isMember: boolean }>;
+      return json.data?.isMember ?? false;
+    },
+    enabled: Boolean(heapId),
+    staleTime: 30_000,
+  });
+}

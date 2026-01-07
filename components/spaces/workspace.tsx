@@ -129,6 +129,7 @@ export function Workspace({
   );
   const [isMobile, setIsMobile] = useState(false);
   const [isSecondaryDialogOpen, setIsSecondaryDialogOpen] = useState(false);
+  const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
 
   // Read URL params on mount and when they change
   useEffect(() => {
@@ -215,6 +216,10 @@ export function Workspace({
     setSecondaryPane(pane);
   }, []);
 
+  const handleOpenChatDialog = useCallback(() => {
+    setIsChatDialogOpen(true);
+  }, []);
+
   const PrimaryComponent = PANE_DEFINITIONS[primaryPane].component;
   const SecondaryComponent = secondaryPane
     ? PANE_DEFINITIONS[secondaryPane].component
@@ -279,6 +284,8 @@ export function Workspace({
             activePrimary={primaryPane}
             activeSecondary={secondaryPane}
             onSelect={handleSelectPrimary}
+            onOpenChatDialog={handleOpenChatDialog}
+            isMobile={isMobile}
           />
           {SecondaryComponent ? (
             isMobile ? (
@@ -375,6 +382,22 @@ export function Workspace({
           )}
         </div>
       </div>
+      {/* Mobile chat dialog */}
+      {isMobile && (
+        <Dialog open={isChatDialogOpen} onOpenChange={setIsChatDialogOpen}>
+          <DialogContent className="max-w-full h-[90vh] flex flex-col p-0">
+            <DialogTitle className="sr-only">
+              {PANE_DEFINITIONS.spaceChat.label}
+            </DialogTitle>
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              <SpaceChat
+                onOpenPaneTwo={handleOpenSecondary}
+                heapId={spaceId}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </ChatProvider>
   );
 }
