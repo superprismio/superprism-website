@@ -4,7 +4,10 @@ import { useMemo } from "react";
 import type { GraphData, GraphNode, GraphLink } from "@/lib/space-graph";
 import { FileRow } from "@/components/spaces/types";
 
-export function useGraphData(files: FileRow[]): GraphData {
+export function useGraphData(
+  files: FileRow[],
+  userDisplayNames?: Record<string, string>
+): GraphData {
   return useMemo(() => {
     const nodes: GraphNode[] = [];
     const links: GraphLink[] = [];
@@ -49,10 +52,12 @@ export function useGraphData(files: FileRow[]): GraphData {
       if (uploaderId) {
         const userId = `user-${uploaderId}`;
         if (!userNodeIds.has(userId)) {
+          // Use display name if available, otherwise use uploaderId
+          const displayName = userDisplayNames?.[uploaderId] ?? uploaderId;
           nodes.push({
             id: userId,
             type: "user",
-            label: uploaderId,
+            label: displayName,
           });
           userNodeIds.add(userId);
         }
@@ -66,5 +71,5 @@ export function useGraphData(files: FileRow[]): GraphData {
     });
 
     return { nodes, links };
-  }, [files]);
+  }, [files, userDisplayNames]);
 }

@@ -20,6 +20,7 @@ import { isOwnerOrFileCreator } from "@/lib/auth-helpers";
 import { useSpaceMembers } from "@/hooks/useMembers";
 import { generateShareUrl } from "@/lib/share-link";
 import { ShareButton } from "./share-button";
+import { useUserDisplayName } from "@/hooks/useProfile";
 
 type FilePreviewProps = {
   file: FileRow | null;
@@ -45,6 +46,7 @@ export function FilePreview({
 }: FilePreviewProps) {
   const { fetchRawFileContent } = useSpaceFiles(heapId);
   const { data: members = [] } = useSpaceMembers(heapId);
+  const uploaderDisplayName = useUserDisplayName(file?.uploader_id ?? null, heapId);
   const [rawContent, setRawContent] = useState<string | null>(null);
   const [isRawDialogOpen, setIsRawDialogOpen] = useState(false);
   const [isLoadingRaw, setIsLoadingRaw] = useState(false);
@@ -301,8 +303,8 @@ export function FilePreview({
         {file.uploader_id ? (
           <div>
             <div className="font-medium mb-1">Uploaded by</div>
-            <div className="text-muted-foreground text-xs font-mono">
-              {file.uploader_id}
+            <div className="text-muted-foreground text-xs">
+              {uploaderDisplayName}
             </div>
           </div>
         ) : null}

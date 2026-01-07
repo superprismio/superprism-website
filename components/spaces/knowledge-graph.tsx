@@ -8,9 +8,16 @@ import { GraphCanvas } from "./graph-canvas";
 import { getNodeTypeColor } from "@/lib/space-graph";
 import type { GraphNode } from "@/lib/space-graph";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Maximize2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FileRow } from "./types";
+import { useUserDisplayName, useUserDisplayNames } from "@/hooks/useProfile";
 
 interface KnowledgeGraphProps {
   heapId: string;
@@ -61,13 +68,26 @@ function GraphLegend() {
 function NodeMetadataPanel({
   node,
   file,
+  heapId,
   onClose,
 }: {
   node: GraphNode | null;
   file: FileRow | null;
+  heapId: string;
   onClose: () => void;
 }) {
   if (!node) return null;
+
+  // Extract userId from user node ID (format: "user-{userId}")
+  const userId =
+    node.type === "user" && node.id.startsWith("user-")
+      ? node.id.slice(5)
+      : null;
+  const userDisplayName = useUserDisplayName(userId, heapId);
+  const fileUploaderDisplayName = useUserDisplayName(
+    file?.uploader_id ?? null,
+    heapId
+  );
 
   return (
     <div className="absolute left-2 top-2 bottom-2 w-80 bg-background border border-border rounded-lg shadow-lg z-20 flex flex-col">
@@ -191,10 +211,10 @@ function NodeMetadataPanel({
             {file.uploader_id && (
               <div>
                 <div className="text-xs font-medium text-muted-foreground mb-1">
-                  Uploader ID
+                  Uploaded by
                 </div>
-                <div className="text-sm text-foreground font-mono text-xs break-all">
-                  {file.uploader_id}
+                <div className="text-sm text-foreground">
+                  {fileUploaderDisplayName}
                 </div>
               </div>
             )}
@@ -213,10 +233,10 @@ function NodeMetadataPanel({
         {node.type === "user" && (
           <div>
             <div className="text-xs font-medium text-muted-foreground mb-1">
-              User ID
+              User
             </div>
-            <div className="text-sm text-foreground font-mono text-xs break-all">
-              {node.label}
+            <div className="text-sm text-foreground">
+              {userDisplayName}
             </div>
           </div>
         )}
@@ -227,8 +247,24 @@ function NodeMetadataPanel({
 
 export function KnowledgeGraph({ heapId }: KnowledgeGraphProps) {
   const { files, isLoading, isError } = useSpaceFiles(heapId);
-  const graphData = useGraphData(files);
+  
+  // Extract unique user IDs from files
+  const userIds = useMemo(() => {
+    const ids = new Set<string>();
+    files.forEach((file) => {
+      if (file.uploader_id) {
+        ids.add(file.uploader_id);
+      }
+    });
+    return Array.from(ids);
+  }, [files]);
+  
+  // Get display names for all users
+  const userDisplayNames = useUserDisplayNames(userIds, heapId);
+  
+  const graphData = useGraphData(files, userDisplayNames);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [isFullScreenOpen, setIsFullScreenOpen] = useState(false);
 
   const selectedNode = useMemo(() => {
     if (!selectedNodeId) return null;
@@ -279,24 +315,51 @@ export function KnowledgeGraph({ heapId }: KnowledgeGraphProps) {
     );
   }
 
-  return (
-    <div className="space-y-3 text-sm text-muted-foreground h-full flex flex-col">
-      <div className="flex items-center justify-between border-b border-b-border px-3 py-4">
-        <h4 className="text-sm font-medium">Knowledge Graph</h4>
-      </div>
-      <div className="flex-1 min-h-0 relative">
-        <GraphCanvas
-          data={graphData}
-          selectedNodeId={selectedNodeId}
-          onNodeClick={setSelectedNodeId}
-        />
-        <GraphLegend />
-        <NodeMetadataPanel
-          node={selectedNode}
-          file={selectedFile}
-          onClose={() => setSelectedNodeId(null)}
-        />
-      </div>
+  const graphContent = (
+    <div className="flex-1 min-h-0 relative">
+      <GraphCanvas
+        data={graphData}
+        selectedNodeId={selectedNodeId}
+        onNodeClick={setSelectedNodeId}
+      />
+      <GraphLegend />
+      <NodeMetadataPanel
+        node={selectedNode}
+        file={selectedFile}
+        heapId={heapId}
+        onClose={() => setSelectedNodeId(null)}
+      />
     </div>
+  );
+
+  return (
+    <>
+      <div className="space-y-3 text-sm text-muted-foreground h-full flex flex-col">
+        <div className="flex items-center justify-between border-b border-b-border px-3 py-4">
+          <h4 className="text-sm font-medium">Knowledge Graph</h4>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setIsFullScreenOpen(true)}
+            aria-label="Open graph in full screen"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        </div>
+        {graphContent}
+      </div>
+
+      <Dialog open={isFullScreenOpen} onOpenChange={setIsFullScreenOpen}>
+        <DialogContent className="max-w-[100vw] max-h-[100vh] w-full h-full m-0 p-0 rounded-none left-0 top-0 translate-x-0 translate-y-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle>Knowledge Graph</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 relative h-[calc(100vh-4rem)]">
+            {graphContent}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

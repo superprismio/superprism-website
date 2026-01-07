@@ -29,6 +29,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUserDisplayName } from "@/hooks/useProfile";
 
 type SpaceNavItem = {
   key: WorkspacePaneKey;
@@ -77,6 +79,7 @@ type SpaceNavProps = {
   onSelect: (pane: WorkspacePaneKey) => void;
   onOpenChatDialog?: () => void;
   isMobile?: boolean;
+  heapId?: string | null;
 };
 
 export function SpaceNav({
@@ -85,7 +88,11 @@ export function SpaceNav({
   onSelect,
   onOpenChatDialog,
   isMobile = false,
+  heapId,
 }: SpaceNavProps) {
+  const { data: currentUser } = useCurrentUser();
+  const userDisplayName = useUserDisplayName(currentUser?.id ?? null, heapId);
+
   return (
     <nav className="flex h-auto flex-col border-b p-2 md:h-full md:border-b-0 md:border-r">
       <div className="flex w-full flex-row items-start justify-between md:flex-1 md:flex-col md:items-center md:justify-between">
@@ -180,6 +187,12 @@ export function SpaceNav({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48 bg-background">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium text-foreground">
+                    {userDisplayName}
+                  </p>
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild disabled={true}>
                   <p>User settings</p>
                 </DropdownMenuItem>

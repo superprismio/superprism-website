@@ -89,6 +89,7 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
     return members.find((m) => m.user_id === currentUserId) || null;
   }, [members, currentUserId]);
 
+
   // Filter open invites (not expired and not used)
   const openInvites =
     invites?.filter((invite) => !invite.is_expired && !invite.is_used) || [];
@@ -167,6 +168,7 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
     }
   }
 
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="space-y-4">
@@ -188,7 +190,7 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                 value={spaceName}
                 onChange={handleNameChange}
                 placeholder="Space name"
-                disabled={spaceLoading || saving}
+                disabled={spaceLoading || saving || !isAdminOrOwner}
               />
             </div>
             <div>
@@ -197,14 +199,14 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                 value={spaceDescription}
                 onChange={handleDescriptionChange}
                 placeholder="Describe this space"
-                disabled={spaceLoading || saving}
+                disabled={spaceLoading || saving || !isAdminOrOwner}
               />
             </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
                 onClick={handleSave}
-                disabled={saving || spaceLoading || !heapId}
+                disabled={saving || spaceLoading || !heapId || !isAdminOrOwner}
               >
                 {saving ? "Saving..." : "Save"}
               </Button>
@@ -231,12 +233,12 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                       handleAddTag();
                     }
                   }}
-                  disabled={addingTag || !heapId}
+                  disabled={addingTag || !heapId || !isAdminOrOwner}
                 />
                 <Button
                   size="sm"
                   onClick={handleAddTag}
-                  disabled={addingTag || !newTagLabel.trim() || !heapId}
+                  disabled={addingTag || !newTagLabel.trim() || !heapId || !isAdminOrOwner}
                 >
                   {addingTag ? "Adding..." : "Add"}
                 </Button>
@@ -253,9 +255,7 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                   Loading tags...
                 </div>
               ) : tags.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  No tags yet
-                </div>
+                <div className="text-sm text-muted-foreground">No tags yet</div>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {tags.map((tag) => (
@@ -269,103 +269,59 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
           </div>
         </div>
 
-        <div className="px-3 py-4 border-t">
-          {isAdminOrOwner ? (
-            <>
-              <header className="gap-4 w-full px-0 py-4 flex justify-between">
-                <h3 className="font-semibold text-foreground">Members</h3>
-                <CreateInviteDialog heapId={heapId} />
-              </header>
-              <div className="space-y-3 text-sm text-muted-foreground">
-                {membersLoading && (
+        {isAdminOrOwner && (
+          <div className="px-3 py-4 border-t">
+            <header className="gap-4 w-full px-0 py-4 flex justify-between">
+              <h3 className="font-semibold text-foreground">Members</h3>
+              <CreateInviteDialog heapId={heapId} />
+            </header>
+            <div className="space-y-3 text-sm text-muted-foreground">
+              {membersLoading && (
+                <div className="text-sm text-muted-foreground">
+                  Loading...
+                </div>
+              )}
+              {!membersLoading &&
+                members.length === 0 &&
+                openInvites.length === 0 && (
                   <div className="text-sm text-muted-foreground">
-                    Loading...
+                    No members
                   </div>
                 )}
-                {!membersLoading &&
-                  members.length === 0 &&
-                  openInvites.length === 0 && (
-                    <div className="text-sm text-muted-foreground">
-                      No members
-                    </div>
-                  )}
-                {!membersLoading &&
-                  members.map((m) => (
-                    <div key={m.membership_id} className="text-sm">
-                      <span className="font-medium">
-                        {m.display_name || m.user_name || m.user_email}
-                      </span>
-                      <span className="text-muted-foreground"> — {m.role}</span>
-                    </div>
+              {!membersLoading &&
+                members.map((m) => (
+                  <div key={m.membership_id} className="text-sm">
+                    <span className="font-medium">
+                      {m.display_name || m.user_name || m.user_email}
+                    </span>
+                    <span className="text-muted-foreground"> — {m.role}</span>
+                  </div>
+                ))}
+              {openInvites.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">
+                    Open Invites
+                  </div>
+                  {openInvites.map((invite) => (
+                    <InviteRow key={invite.invite_id} invite={invite} />
                   ))}
-                {openInvites.length > 0 && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="text-xs font-medium text-muted-foreground mb-2">
-                      Open Invites
-                    </div>
-                    {openInvites.map((invite) => (
-                      <InviteRow key={invite.invite_id} invite={invite} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <header className="gap-4 w-full px-0 py-4">
-                <h3 className="font-semibold text-foreground">Members</h3>
-              </header>
-              <div className="space-y-4">
-                {membersLoading && (
-                  <div className="text-sm text-muted-foreground">
-                    Loading...
-                  </div>
-                )}
-                {!membersLoading && currentUserMembership && (
-                  <>
-                    <div className="border-b pb-4">
-                      <div className="text-sm">
-                        <span className="font-medium">
-                          {currentUserMembership.display_name ||
-                            currentUserMembership.user_name ||
-                            currentUserMembership.user_email}
-                        </span>
-                        <span className="text-muted-foreground">
-                          {" "}
-                          — {currentUserMembership.role}
-                        </span>
-                      </div>
-                    </div>
-                    <MemberDetails
-                      heapId={heapId}
-                      membershipId={currentUserMembership.membership_id}
-                      initialDisplayName={currentUserMembership.display_name}
-                      initialMemberBio={currentUserMembership.member_bio}
-                      onUpdate={handleMemberUpdate}
-                    />
-                  </>
-                )}
-                {!membersLoading && !currentUserMembership && (
-                  <div className="text-sm text-muted-foreground">
-                    Unable to load membership information
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-          {/* Show MemberDetails for admin/owner too */}
-          {isAdminOrOwner && currentUserMembership && (
-            <div className="mt-4 pt-4 border-t">
-              <MemberDetails
-                heapId={heapId}
-                membershipId={currentUserMembership.membership_id}
-                initialDisplayName={currentUserMembership.display_name}
-                initialMemberBio={currentUserMembership.member_bio}
-                onUpdate={handleMemberUpdate}
-              />
+                </div>
+              )}
             </div>
-          )}
-        </div>
+            {/* Show MemberDetails for admin/owner too */}
+            {currentUserMembership && (
+              <div className="mt-4 pt-4 border-t">
+                <MemberDetails
+                  heapId={heapId}
+                  membershipId={currentUserMembership.membership_id}
+                  initialDisplayName={currentUserMembership.display_name}
+                  initialMemberBio={currentUserMembership.member_bio}
+                  onUpdate={handleMemberUpdate}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
