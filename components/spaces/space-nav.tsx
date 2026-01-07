@@ -80,6 +80,7 @@ type SpaceNavProps = {
   onOpenChatDialog?: () => void;
   isMobile?: boolean;
   heapId?: string | null;
+  onOpenUserProfile?: () => void;
 };
 
 export function SpaceNav({
@@ -89,6 +90,7 @@ export function SpaceNav({
   onOpenChatDialog,
   isMobile = false,
   heapId,
+  onOpenUserProfile,
 }: SpaceNavProps) {
   const { data: currentUser } = useCurrentUser();
   const userDisplayName = useUserDisplayName(currentUser?.id ?? null, heapId);
@@ -193,8 +195,11 @@ export function SpaceNav({
                   </p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild disabled={true}>
-                  <p>User settings</p>
+                <DropdownMenuItem
+                  onClick={() => onOpenUserProfile?.()}
+                  disabled={!onOpenUserProfile}
+                >
+                  User settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <div className="px-1 pb-1">

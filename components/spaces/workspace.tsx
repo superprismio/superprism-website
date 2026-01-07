@@ -23,6 +23,7 @@ import { SpaceChat } from "./space-chat";
 import { SpaceSettings } from "./space-settings";
 import { SpaceProjects } from "./space-projects";
 import { SpacePublish } from "./space-publish";
+import { UserProfile } from "./user-profile";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -65,6 +66,10 @@ const PANE_DEFINITIONS: Record<WorkspacePaneKey, PaneDefinition> = {
   spaceSettings: {
     label: "Settings",
     component: SpaceSettings,
+  },
+  userProfile: {
+    label: "User Profile",
+    component: UserProfile,
   },
 };
 
@@ -127,6 +132,7 @@ export function Workspace({
   const [isMobile, setIsMobile] = useState(false);
   const [isSecondaryDialogOpen, setIsSecondaryDialogOpen] = useState(false);
   const [isChatDialogOpen, setIsChatDialogOpen] = useState(false);
+  const [isUserProfileDialogOpen, setIsUserProfileDialogOpen] = useState(false);
 
   // Read URL params on mount and when they change
   useEffect(() => {
@@ -213,6 +219,10 @@ export function Workspace({
     [updateUrlParams]
   );
 
+  const handleOpenUserProfile = useCallback(() => {
+    setIsUserProfileDialogOpen(true);
+  }, []);
+
   const handleOpenSecondary = useCallback((pane: WorkspacePaneKey) => {
     setSecondaryPane(pane);
   }, []);
@@ -288,6 +298,7 @@ export function Workspace({
             onOpenChatDialog={handleOpenChatDialog}
             isMobile={isMobile}
             heapId={spaceId}
+            onOpenUserProfile={handleOpenUserProfile}
           />
           {SecondaryComponent ? (
             isMobile ? (
@@ -397,6 +408,15 @@ export function Workspace({
           </DialogContent>
         </Dialog>
       )}
+      {/* User profile dialog */}
+      <Dialog open={isUserProfileDialogOpen} onOpenChange={setIsUserProfileDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogTitle className="sr-only">
+            {PANE_DEFINITIONS.userProfile.label}
+          </DialogTitle>
+          <UserProfile heapId={spaceId} />
+        </DialogContent>
+      </Dialog>
     </ChatProvider>
   );
 }

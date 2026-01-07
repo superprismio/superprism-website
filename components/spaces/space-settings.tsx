@@ -30,14 +30,15 @@ import {
   type HeapInvite,
 } from "@/hooks/useInvites";
 import { createClient } from "@/lib/supabase/client";
-import { MemberDetails } from "./member-details";
 import {
   useHeap,
   useUpdateSpace,
   useSpaceTags,
   useCreateTag,
 } from "@/hooks/useSpaces";
-import { useSpaceMembers } from "@/hooks/useMembers";
+import { useSpaceMembers, useUpdateMember } from "@/hooks/useMembers";
+import { useUserDisplayNames } from "@/hooks/useProfile";
+import type { Member } from "./types";
 
 export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
   const {
@@ -51,8 +52,13 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
     isLoading: membersLoading,
     refetch: refetchMembers,
   } = useSpaceMembers(heapId);
+  const userDisplayNames = useUserDisplayNames(
+    members.map((m) => m.user_id),
+    heapId
+  );
   const updateSpace = useUpdateSpace();
   const createTag = useCreateTag();
+  const updateMember = useUpdateMember();
   const { data: invites } = useHeapInvites(heapId);
 
   const [saving, setSaving] = useState(false);
@@ -99,9 +105,21 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
     currentUserMembership?.role === "admin" ||
     currentUserMembership?.role === "owner";
 
-  // Refresh members after update
-  const handleMemberUpdate = () => {
-    void refetchMembers();
+  // Handle role update
+  const handleRoleUpdate = async (
+    membershipId: string,
+    newRole: "member" | "admin" | "owner"
+  ) => {
+    if (!heapId) return;
+    try {
+      await updateMember.mutateAsync({
+        heapId,
+        membershipId,
+        role: newRole,
+      });
+    } catch (error) {
+      console.error("Failed to update member role:", error);
+    }
   };
 
   function handleNameChange(event: ChangeEvent<HTMLInputElement>) {
@@ -290,12 +308,15 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                 )}
               {!membersLoading &&
                 members.map((m) => (
-                  <div key={m.membership_id} className="text-sm">
-                    <span className="font-medium">
-                      {m.display_name || m.user_name || m.user_email}
-                    </span>
-                    <span className="text-muted-foreground"> — {m.role}</span>
-                  </div>
+                  <MemberRow
+                    key={m.membership_id}
+                    member={m}
+                    displayName={userDisplayNames[m.user_id] || m.user_email}
+                    currentUserId={currentUserId}
+                    isAdminOrOwner={isAdminOrOwner}
+                    onRoleUpdate={handleRoleUpdate}
+                    updating={updateMember.isPending}
+                  />
                 ))}
               {openInvites.length > 0 && (
                 <div className="mt-4 pt-4 border-t">
@@ -308,21 +329,58 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                 </div>
               )}
             </div>
-            {/* Show MemberDetails for admin/owner too */}
-            {currentUserMembership && (
-              <div className="mt-4 pt-4 border-t">
-                <MemberDetails
-                  heapId={heapId}
-                  membershipId={currentUserMembership.membership_id}
-                  initialDisplayName={currentUserMembership.display_name}
-                  initialMemberBio={currentUserMembership.member_bio}
-                  onUpdate={handleMemberUpdate}
-                />
-              </div>
-            )}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function MemberRow({
+  member,
+  displayName,
+  currentUserId,
+  isAdminOrOwner,
+  onRoleUpdate,
+  updating,
+}: {
+  member: Member;
+  displayName: string;
+  currentUserId: string | null;
+  isAdminOrOwner: boolean;
+  onRoleUpdate: (membershipId: string, role: "member" | "admin" | "owner") => Promise<void>;
+  updating: boolean;
+}) {
+  const isCurrentUser = member.user_id === currentUserId;
+
+  const handleRoleChange = (newRole: "member" | "admin" | "owner") => {
+    if (isCurrentUser && newRole === "member") {
+      return; // Prevent self-demotion to member
+    }
+    void onRoleUpdate(member.membership_id, newRole);
+  };
+
+  return (
+    <div className="flex items-center justify-between text-sm py-2">
+      <span className="font-medium">{displayName}</span>
+      {isAdminOrOwner ? (
+        <Select
+          value={member.role}
+          onValueChange={handleRoleChange}
+          disabled={updating}
+        >
+          <SelectTrigger className="w-32 h-8">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-background">
+            {!isCurrentUser && <SelectItem value="member">Member</SelectItem>}
+            <SelectItem value="admin">Admin</SelectItem>
+            <SelectItem value="owner">Owner</SelectItem>
+          </SelectContent>
+        </Select>
+      ) : (
+        <span className="text-muted-foreground">{member.role}</span>
+      )}
     </div>
   );
 }
