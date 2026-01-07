@@ -38,7 +38,7 @@ export function SpaceRoot({ heapId }: SpaceRootProps) {
   const activeSpaceId =
     heapId ?? (params?.heapId as string | undefined) ?? null;
 
-  const { isMember, isLoading: isLoadingMembership } = useIsMember(activeSpaceId);
+  const { data: isMember = false, isPending: isLoadingMembership } = useIsMember(activeSpaceId);
   const isSuperprismio = isSuperprismioBrother(currentUser?.id);
 
   const handleCreatedSpace = useCallback(

@@ -10,18 +10,20 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export function SpaceFeed({ heapId }: WorkspacePaneComponentProps) {
   const { activities, isLoading, pagination, nextPage, prevPage } =
     useSpaceActivities(heapId);
 
   return (
-    <>
-      <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
+    <div className="flex flex-col h-full min-h-0">
+      <header className="gap-4 border-b w-full px-3 py-4 flex justify-between flex-shrink-0">
         <h3 className="font-semibold text-foreground">Feed</h3>
         <div className="text-foreground">Filter</div>
       </header>
-      <div className="space-y-6 px-3 py-4">
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="space-y-6 px-3 py-4">
         {isLoading && (
           <div className="text-sm text-muted-foreground">Loading...</div>
         )}
@@ -87,7 +89,8 @@ export function SpaceFeed({ heapId }: WorkspacePaneComponentProps) {
             </Pagination>
           </div>
         )}
-      </div>
-    </>
+        </div>
+      </ScrollArea>
+    </div>
   );
 }

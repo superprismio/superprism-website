@@ -6,6 +6,7 @@ import {
   CircleUserRound,
   // Globe,
   Library,
+  MessageCircle,
   Pyramid,
   Settings,
   // UserPlus,
@@ -74,12 +75,16 @@ type SpaceNavProps = {
   activePrimary: WorkspacePaneKey;
   activeSecondary: WorkspacePaneKey | null;
   onSelect: (pane: WorkspacePaneKey) => void;
+  onOpenChatDialog?: () => void;
+  isMobile?: boolean;
 };
 
 export function SpaceNav({
   activePrimary,
   activeSecondary,
   onSelect,
+  onOpenChatDialog,
+  isMobile = false,
 }: SpaceNavProps) {
   return (
     <nav className="flex h-auto flex-col border-b p-2 md:h-full md:border-b-0 md:border-r">
@@ -99,7 +104,7 @@ export function SpaceNav({
                         type="button"
                         onClick={() => onSelect(item.key)}
                         className={cn(
-                          "flex w-full flex-col items-center justify-center rounded-md px-2 py-3 text-xs font-medium transition-colors md:px-3 md:py-4",
+                          "flex w-full flex-col items-center justify-center rounded-md px-2 py-2 text-xs font-medium transition-colors md:px-3 md:py-4",
                           isActive
                             ? "text-foreground"
                             : "text-primary hover:text-foreground",
@@ -130,6 +135,34 @@ export function SpaceNav({
                 </li>
               );
             })}
+            {isMobile && onOpenChatDialog && (
+              <li className="flex flex-1 md:hidden">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={onOpenChatDialog}
+                      className={cn(
+                        "flex w-full flex-col items-center justify-center rounded-md px-2 py-2 text-xs font-medium transition-colors",
+                        "text-primary hover:text-foreground"
+                      )}
+                      aria-label="Open chat"
+                    >
+                      <MessageCircle className="h-5 w-5" aria-hidden="true" />
+                      <span className="mt-2 text-[11px] text-foreground">
+                        Chat
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="hidden md:block border-border bg-background text-foreground"
+                  >
+                    Chat
+                  </TooltipContent>
+                </Tooltip>
+              </li>
+            )}
           </ul>
           <div className="ml-2 flex justify-center md:ml-0 md:mt-10">
             <DropdownMenu>
@@ -138,10 +171,10 @@ export function SpaceNav({
                   aria-label="Open account menu"
                   size="icon"
                   variant="ghost"
-                  className="h-auto w-auto flex-col px-2 py-3 md:h-9 md:w-9 md:px-0 md:py-0"
+                  className="h-auto w-auto flex-col px-2 pt-2 pb-0 md:h-9 md:w-9 md:px-0 md:py-0"
                 >
                   <CircleUserRound />
-                  <span className="mt-2 text-[11px] text-foreground md:hidden">
+                  <span className="mt-0 text-[11px] text-foreground md:hidden">
                     Profile
                   </span>
                 </Button>

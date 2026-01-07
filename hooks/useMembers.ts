@@ -1,9 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
 import type { Member } from "@/components/spaces/types";
-import { useCurrentUser } from "./useCurrentUser";
 
 type ApiResponse<T> = {
   data?: T;
@@ -87,18 +85,26 @@ export function useUpdateMember() {
 }
 
 export function useIsMember(heapId: string | null) {
-  const { data: members = [], isPending: isLoadingMembers } = useSpaceMembers(heapId);
-  const { data: currentUser, isPending: isLoadingUser } = useCurrentUser();
+  return useQuery<boolean, Error>({
+    queryKey: ["is-member", heapId],
+    queryFn: async () => {
+      if (!heapId) {
+        return false;
+      }
 
-  const isMember = useMemo(() => {
-    if (!heapId || !currentUser) {
-      return false;
-    }
-    return members.some((member) => member.user_id === currentUser.id);
-  }, [members, currentUser, heapId]);
+      const response = await fetch(`/api/heaps/${heapId}/members/check`, {
+        cache: "no-store",
+      });
 
-  return {
-    isMember,
-    isLoading: isLoadingMembers || isLoadingUser,
-  };
+      if (!response.ok) {
+        const json = (await response.json()) as ApiResponse<{ isMember: boolean }>;
+        throw new Error(json.error || "Failed to check membership");
+      }
+
+      const json = (await response.json()) as ApiResponse<{ isMember: boolean }>;
+      return json.data?.isMember ?? false;
+    },
+    enabled: Boolean(heapId),
+    staleTime: 30_000,
+  });
 }

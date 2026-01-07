@@ -187,15 +187,17 @@ export function useUpdateSpace() {
   return useMutation<
     Space,
     Error,
-    { heapId: string; description?: string | null }
+    { heapId: string; name?: string; description?: string | null }
   >({
-    mutationFn: async ({ heapId, description }) => {
+    mutationFn: async ({ heapId, name, description }) => {
+      const body: Record<string, unknown> = {};
+      if (name !== undefined) body.name = name;
+      if (description !== undefined) body.description = description ?? null;
+
       const response = await fetch(`/api/heaps/${heapId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description: description ?? null,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
@@ -224,10 +226,26 @@ export function useUpdateSpace() {
 
       return normalized;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (updatedSpace, variables) => {
       // Invalidate space query
       queryClient.invalidateQueries({
         queryKey: ["heap", variables.heapId],
+      });
+      
+      // Optimistically update the space in the user-heaps list
+      queryClient.setQueryData<Space[] | undefined>(
+        USER_HEAPS_QUERY_KEY,
+        (prev) => {
+          if (!prev) return prev;
+          return prev.map((space) =>
+            space.id === variables.heapId ? updatedSpace : space
+          );
+        }
+      );
+      
+      // Also invalidate to ensure fresh data is fetched
+      queryClient.invalidateQueries({
+        queryKey: USER_HEAPS_QUERY_KEY,
       });
     },
   });
