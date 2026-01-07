@@ -48,6 +48,7 @@ type FileExplorerProps = {
   onPreviewFile?: (file: FileRow) => void;
   onAddFileToChat?: (file: FileRow) => void;
   onDeleteFile?: (fileId: string) => Promise<void>;
+  onEditFile?: (file: FileRow, content: string) => void;
   selectedFileId?: string | null;
   useDialogForPreview?: boolean;
 };
@@ -65,6 +66,7 @@ type FileListProps = {
   onAddToChat?: (file: FileRow) => void;
   onPreview?: (file: FileRow) => void;
   onDeleteFile?: (fileId: string) => Promise<void>;
+  onEditFile?: (file: FileRow, content: string) => void;
   isStaging?: boolean;
   onMoveToFolder?: (fileId: string, folders: string[]) => Promise<void>;
   currentUserId?: string | null;
@@ -141,6 +143,7 @@ function FileList({
   onAddToChat,
   onPreview,
   onDeleteFile,
+  onEditFile,
   isStaging = false,
   onMoveToFolder,
   heapId,
@@ -216,6 +219,46 @@ function FileList({
     }
   };
 
+  const stripFrontMatter = (markdown: string): string => {
+    // Check if content starts with front matter delimiter
+    if (!markdown.trim().startsWith("---")) {
+      return markdown;
+    }
+
+    // Find the first line break after the opening ---
+    const firstLineBreak = markdown.indexOf("\n");
+    if (firstLineBreak === -1) {
+      return markdown;
+    }
+
+    // Find the closing --- delimiter (must be on its own line: \n---\n or \n--- at end)
+    const closingMatch = markdown.match(/\n---(\n|$)/);
+    if (!closingMatch || closingMatch.index === undefined) {
+      return markdown;
+    }
+
+    // Extract content after the closing delimiter
+    const contentStart = closingMatch.index + closingMatch[0].length;
+    return markdown.slice(contentStart);
+  };
+
+  const handleEditRaw = async (file: FileRow) => {
+    if (!file?.id || !onEditFile) return;
+
+    setIsLoadingRaw(true);
+
+    try {
+      const rawContent = await fetchRawFileContent(file.id);
+      const content = stripFrontMatter(rawContent);
+
+      onEditFile(file, content);
+    } catch (error) {
+      console.error("Error fetching raw file for editing:", error);
+    } finally {
+      setIsLoadingRaw(false);
+    }
+  };
+
   if (files.length === 0) {
     return (
       <div className="text-sm text-muted-foreground p-10">{emptyMessage}</div>
@@ -239,6 +282,14 @@ function FileList({
             ) &&
             onDeleteFile;
           const canViewRaw = file?.meta?.extracted_storage_path !== undefined;
+          const isMarkdownFile =
+            file?.file_name?.toLowerCase().endsWith(".md") ?? false;
+          const canEdit =
+            file &&
+            currentUserId &&
+            isOwnerOrFileCreator(currentUserId, file.uploader_id, isHeapOwner) &&
+            isMarkdownFile &&
+            onEditFile;
 
           return (
             <li key={file.id} className="p-1 pr-4">
@@ -297,7 +348,7 @@ function FileList({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-background">
                       <DropdownMenuItem onClick={() => onPreview?.(file)}>
-                        Open
+                        Open Preview
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onAddToChat?.(file)}>
                         Add to Project
@@ -312,7 +363,13 @@ function FileList({
                         onClick={() => handleViewRaw(file)}
                         disabled={!canViewRaw}
                       >
-                        View Raw
+                        View
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleEditRaw(file)}
+                        disabled={!canEdit}
+                      >
+                        Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         Share{" "}
@@ -680,6 +737,7 @@ export function FileExplorer({
   onPreviewFile,
   onAddFileToChat,
   onDeleteFile,
+  onEditFile,
   selectedFileId,
   useDialogForPreview = false,
 }: FileExplorerProps) {
@@ -939,6 +997,7 @@ export function FileExplorer({
                         onAddToChat={onAddFileToChat}
                         onPreview={onPreviewFile}
                         onDeleteFile={onDeleteFile}
+                        onEditFile={onEditFile}
                         isStaging={isStaging}
                         onMoveToFolder={
                           isStaging ? updateFileFolders : undefined
@@ -966,6 +1025,7 @@ export function FileExplorer({
                       onAddToChat={onAddFileToChat}
                       onPreview={onPreviewFile}
                       onDeleteFile={onDeleteFile}
+                      onEditFile={onEditFile}
                       currentUserId={currentUserId}
                       heapId={heapId}
                       useDialogForPreview={useDialogForPreview}
