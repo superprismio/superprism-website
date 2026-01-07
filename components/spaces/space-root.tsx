@@ -15,11 +15,13 @@ import {
 } from "@/components/ui/select";
 import { CreateSpaceDialog } from "./create-space-dialog";
 import { BetaWarning } from "../shared/beta-warning";
+import { PrismLoader } from "../shared/prism-loader";
 import { Workspace } from "./workspace";
 import { Space } from "./types";
 import { useUserHeaps, USER_HEAPS_QUERY_KEY } from "../../hooks/useSpaces";
 import { isSuperprismioBrother } from "@/lib/auth-helpers";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useIsMember } from "@/hooks/useMembers";
 
 type SpaceRootProps = {
   heapId?: string;
@@ -36,6 +38,7 @@ export function SpaceRoot({ heapId }: SpaceRootProps) {
   const activeSpaceId =
     heapId ?? (params?.heapId as string | undefined) ?? null;
 
+  const { isMember, isLoading: isLoadingMembership } = useIsMember(activeSpaceId);
   const isSuperprismio = isSuperprismioBrother(currentUser?.id);
 
   const handleCreatedSpace = useCallback(
@@ -118,11 +121,26 @@ export function SpaceRoot({ heapId }: SpaceRootProps) {
         <div className="px-6 py-10 rounded border border-destructive/50 text-destructive text-sm">
           {errorMessage}
         </div>
+      ) : activeSpaceId && isLoadingMembership ? (
+        <div className="flex-1 min-h-0 flex items-center justify-center">
+          <PrismLoader size={144} className="text-primary" />
+        </div>
+      ) : activeSpaceId && !isMember ? (
+        <div className="flex-1 min-h-0 flex items-center justify-center px-6 py-12">
+          <div className="text-center max-w-md">
+            <p className="mb-2 text-xl font-medium text-foreground">
+              You are not a member of this space
+            </p>
+            <p className="text-lg text-muted-foreground">
+              Please select a space you are a member of using the space selector above.
+            </p>
+          </div>
+        </div>
       ) : (
         <div className="flex-1 min-h-0">
           <Workspace
             spaceId={activeSpaceId}
-            isLoadingList={isLoading}
+            isLoadingList={isLoading || isLoadingMembership}
             emptyStateAction={
               <CreateSpaceDialog
                 onCreated={(space) => {

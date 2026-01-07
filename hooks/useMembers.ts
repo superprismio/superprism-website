@@ -1,7 +1,9 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import type { Member } from "@/components/spaces/types";
+import { useCurrentUser } from "./useCurrentUser";
 
 type ApiResponse<T> = {
   data?: T;
@@ -84,3 +86,19 @@ export function useUpdateMember() {
   });
 }
 
+export function useIsMember(heapId: string | null) {
+  const { data: members = [], isPending: isLoadingMembers } = useSpaceMembers(heapId);
+  const { data: currentUser, isPending: isLoadingUser } = useCurrentUser();
+
+  const isMember = useMemo(() => {
+    if (!heapId || !currentUser) {
+      return false;
+    }
+    return members.some((member) => member.user_id === currentUser.id);
+  }, [members, currentUser, heapId]);
+
+  return {
+    isMember,
+    isLoading: isLoadingMembers || isLoadingUser,
+  };
+}
