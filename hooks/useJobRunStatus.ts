@@ -10,6 +10,35 @@ const getErrorMessage = (errors: JobRun["errors"]) => {
   if (!errors) return null;
   if (typeof errors === "string") return errors;
   try {
+    if (Array.isArray(errors)) {
+      const messages = errors
+        .map((err) => {
+          if (!err) return null;
+          if (typeof err === "string") return err;
+          if (typeof err === "object") {
+            const anyErr = err as Record<string, unknown>;
+            const msg =
+              anyErr.message ||
+              anyErr.error ||
+              anyErr.detail ||
+              anyErr.reason;
+            return typeof msg === "string" ? msg : null;
+          }
+          return null;
+        })
+        .filter((msg): msg is string => Boolean(msg));
+      if (messages.length > 0) {
+        return messages.join("; ");
+      }
+    }
+    if (typeof errors === "object") {
+      const anyErr = errors as Record<string, unknown>;
+      const msg =
+        anyErr.message || anyErr.error || anyErr.detail || anyErr.reason;
+      if (typeof msg === "string") {
+        return msg;
+      }
+    }
     return JSON.stringify(errors);
   } catch {
     return "Unknown error";
@@ -65,8 +94,18 @@ export function useJobRunStatus(jobId: string | null) {
           filter: `job_id=eq.${jobId}`,
         },
         (payload) => {
-          if (payload.new) {
-            setJobRun(payload.new as JobRun);
+          switch (payload.eventType) {
+            case "INSERT":
+            case "UPDATE":
+              if (payload.new) {
+                setJobRun(payload.new as JobRun);
+              }
+              break;
+            case "DELETE":
+              setJobRun(null);
+              break;
+            default:
+              break;
           }
         }
       )

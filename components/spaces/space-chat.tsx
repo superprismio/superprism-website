@@ -38,7 +38,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   );
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { statusMessages } = useJobRunStatus(jobId);
+  const { jobRun, statusMessages } = useJobRunStatus(jobId);
 
   // Get current user ID
   useEffect(() => {
@@ -99,12 +99,25 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
         onError: (error) => {
           console.error("Error sending message:", error);
         },
-        onSettled: () => {
-          setJobId(null);
-        },
       }
     );
   };
+
+  useEffect(() => {
+    if (!jobRun?.status) return;
+    const normalizedStatus = jobRun.status.toLowerCase();
+    const terminalStatuses = new Set([
+      "completed",
+      "complete",
+      "failed",
+      "error",
+      "canceled",
+      "cancelled",
+    ]);
+    if (terminalStatuses.has(normalizedStatus)) {
+      setJobId(null);
+    }
+  }, [jobRun?.status]);
 
   const handlePreFilledPrompt = (prompt: string) => {
     sendMessage(prompt);

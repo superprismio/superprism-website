@@ -72,17 +72,15 @@ export async function POST(request: Request, { params }: Params) {
   console.log("filter", filter);
 
   // Call n8n webhook
-  const finalJobId =
-    typeof jobId === "string" && jobId.trim().length > 0
-      ? jobId
-      : crypto.randomUUID();
-
   const payload: Record<string, unknown> = {
     chatInput: chatInput,
     sessionId: finalSessionId,
     heapId: heapId,
-    job_id: finalJobId,
   };
+  // Client uses jobId (camelCase); n8n expects job_id (snake_case).
+  if (typeof jobId === "string" && jobId.trim().length > 0) {
+    payload.job_id = jobId;
+  }
 
   // TODO: can activate this if/when we allow the user to toggle
   // filter filed limits rag to selected files
@@ -120,7 +118,7 @@ export async function POST(request: Request, { params }: Params) {
         ...webhookData,
         message: assistantMessage,
         sessionId: finalSessionId,
-        jobId: finalJobId,
+        jobId: typeof jobId === "string" ? jobId : "",
       },
     });
   } catch (error) {

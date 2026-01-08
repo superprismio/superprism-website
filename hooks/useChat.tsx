@@ -263,13 +263,13 @@ export function useSendChatMessage(heapId: string | null) {
       const finalJobId =
         overrideJobId && overrideJobId.trim().length > 0
           ? overrideJobId
-          : crypto.randomUUID();
+          : undefined;
 
       const requestBody: Record<string, unknown> = {
         chatInput,
         sessionId: finalSessionId,
         isProject,
-        jobId: finalJobId,
+        ...(finalJobId ? { jobId: finalJobId } : {}),
       };
 
       // Include meta and filter from activeChatSession if available
@@ -303,7 +303,7 @@ export function useSendChatMessage(heapId: string | null) {
 
       return {
         ...data.data!,
-        jobId: data.data?.jobId ?? finalJobId,
+        jobId: data.data?.jobId ?? finalJobId ?? "",
       };
     },
     onSuccess: async (data, variables) => {
