@@ -418,6 +418,7 @@ export function KnowledgeExplorer({
                 selectedFileId={previewFile?.id ?? null}
                 onAddFileToChat={handleAddFileToProject}
                 onDeleteFile={handleDeleteFile}
+                onEditFile={handleEditFile}
                 useDialogForPreview={useDialogForPreview}
               />
             </ScrollArea>
@@ -428,6 +429,7 @@ export function KnowledgeExplorer({
               selectedFileId={previewFile?.id ?? null}
               onAddFileToChat={handleAddFileToProject}
               onDeleteFile={handleDeleteFile}
+              onEditFile={handleEditFile}
               useDialogForPreview={useDialogForPreview}
             />
           )}

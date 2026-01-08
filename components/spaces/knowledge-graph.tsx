@@ -8,8 +8,9 @@ import { GraphCanvas } from "./graph-canvas";
 import { getNodeTypeColor } from "@/lib/space-graph";
 import type { GraphNode } from "@/lib/space-graph";
 import { Button } from "@/components/ui/button";
-import { X, Maximize2 } from "lucide-react";
+import { X, Maximize2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
 import {
   Dialog,
   DialogContent,
@@ -70,11 +71,13 @@ function NodeMetadataPanel({
   file,
   heapId,
   onClose,
+  onFileOpen,
 }: {
   node: GraphNode | null;
   file: FileRow | null;
   heapId: string;
   onClose: () => void;
+  onFileOpen?: () => void;
 }) {
   if (!node) return null;
 
@@ -122,6 +125,17 @@ function NodeMetadataPanel({
 
         {node.type === "file" && file && (
           <>
+            <div>
+              <Link
+                href={`/dashboard/${heapId}?section=knowledge&fileId=${file.id}`}
+                onClick={onFileOpen}
+                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open File
+              </Link>
+            </div>
+
             {file.uploaded_at && (
               <div>
                 <div className="text-xs font-medium text-muted-foreground mb-1">
@@ -328,6 +342,7 @@ export function KnowledgeGraph({ heapId }: KnowledgeGraphProps) {
         file={selectedFile}
         heapId={heapId}
         onClose={() => setSelectedNodeId(null)}
+        onFileOpen={() => setIsFullScreenOpen(false)}
       />
     </div>
   );

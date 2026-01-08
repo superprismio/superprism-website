@@ -42,6 +42,7 @@ import { ShareButton } from "./share-button";
 import { generateShareUrl } from "@/lib/share-link";
 import { useSpaceMembers } from "@/hooks/useMembers";
 import { isOwnerOrFileCreator } from "@/lib/auth-helpers";
+import { TextEditor } from "./text-editor";
 
 type FileExplorerProps = {
   heapId: string;
@@ -157,6 +158,10 @@ function FileList({
   const [isRawDialogOpen, setIsRawDialogOpen] = useState(false);
   const [rawContent, setRawContent] = useState<string | null>(null);
   const [isLoadingRaw, setIsLoadingRaw] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFileId, setEditFileId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState<string>("");
+  const [editFileName, setEditFileName] = useState<string | undefined>(undefined);
   const { data: members = [] } = useSpaceMembers(heapId);
   const { fetchRawFileContent } = useSpaceFiles(heapId);
 
@@ -243,17 +248,20 @@ function FileList({
   };
 
   const handleEditRaw = async (file: FileRow) => {
-    if (!file?.id || !onEditFile) return;
+    if (!file?.id) return;
 
     setIsLoadingRaw(true);
+    setEditFileId(file.id);
+    setEditFileName(file.file_name || undefined);
+    setIsEditDialogOpen(true);
 
     try {
       const rawContent = await fetchRawFileContent(file.id);
       const content = stripFrontMatter(rawContent);
-
-      onEditFile(file, content);
+      setEditContent(content);
     } catch (error) {
       console.error("Error fetching raw file for editing:", error);
+      setEditContent("");
     } finally {
       setIsLoadingRaw(false);
     }
@@ -287,9 +295,12 @@ function FileList({
           const canEdit =
             file &&
             currentUserId &&
-            isOwnerOrFileCreator(currentUserId, file.uploader_id, isHeapOwner) &&
-            isMarkdownFile &&
-            onEditFile;
+            isOwnerOrFileCreator(
+              currentUserId,
+              file.uploader_id,
+              isHeapOwner
+            ) &&
+            isMarkdownFile;
 
           return (
             <li key={file.id} className="p-1 pr-4">
@@ -440,6 +451,44 @@ function FileList({
               <pre className="text-xs whitespace-pre-wrap font-mono bg-muted p-4 rounded">
                 {rawContent ?? "No content available"}
               </pre>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setEditFileId(null);
+            setEditContent("");
+            setEditFileName(undefined);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              Edit - {files.find((f) => f.id === editFileId)?.file_name || editFileId}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {isLoadingRaw ? (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            ) : (
+              <TextEditor
+                heapId={heapId}
+                initialMarkdown={editContent}
+                fileId={editFileId || undefined}
+                initialFileName={editFileName}
+                onClose={() => {
+                  setIsEditDialogOpen(false);
+                  setEditFileId(null);
+                  setEditContent("");
+                  setEditFileName(undefined);
+                }}
+              />
             )}
           </div>
         </DialogContent>
