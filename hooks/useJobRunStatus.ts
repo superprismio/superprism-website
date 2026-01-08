@@ -1,0 +1,114 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { Database } from "@/lib/types/supabase";
+
+type JobRun = Database["public"]["Tables"]["job_runs"]["Row"];
+
+const getErrorMessage = (errors: JobRun["errors"]) => {
+  if (!errors) return null;
+  if (typeof errors === "string") return errors;
+  try {
+    return JSON.stringify(errors);
+  } catch {
+    return "Unknown error";
+  }
+};
+
+const getLastString = (value: unknown) => {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    const last = value[value.length - 1];
+    return typeof last === "string" ? last : null;
+  }
+  return null;
+};
+
+export function useJobRunStatus(jobId: string | null) {
+  const [jobRun, setJobRun] = useState<JobRun | null>(null);
+
+  useEffect(() => {
+    if (!jobId) {
+      setJobRun(null);
+      return;
+    }
+
+    const supabase = createClient();
+    let isActive = true;
+
+    const fetchLatest = async () => {
+      const { data, error } = await supabase
+        .from("job_runs")
+        .select("*")
+        .eq("job_id", jobId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!isActive) return;
+      if (!error && data) {
+        setJobRun(data);
+      }
+    };
+
+    void fetchLatest();
+
+    const channel = supabase
+      .channel(`job-runs-${jobId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "job_runs",
+          filter: `job_id=eq.${jobId}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            setJobRun(payload.new as JobRun);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      isActive = false;
+      supabase.removeChannel(channel);
+    };
+  }, [jobId]);
+
+  const statusMessages = useMemo(() => {
+    if (!jobRun) return [];
+
+    const messages: string[] = [];
+    const seen = new Set<string>();
+
+    const pushMessage = (message: string | null) => {
+      if (!message) return;
+      if (seen.has(message)) return;
+      seen.add(message);
+      messages.push(message);
+    };
+
+    const lastStepStatus = getLastString(jobRun.step_status);
+    const lastStep = getLastString(jobRun.steps);
+
+    if (lastStepStatus) {
+      pushMessage(lastStepStatus);
+    } else if (lastStep) {
+      pushMessage(lastStep);
+    } else {
+      pushMessage(jobRun.status);
+    }
+
+    const errorMessage = getErrorMessage(jobRun.errors);
+    if (errorMessage) {
+      pushMessage(`Error: ${errorMessage}`);
+    }
+
+    return messages;
+  }, [jobRun]);
+
+  return { jobRun, statusMessages };
+}

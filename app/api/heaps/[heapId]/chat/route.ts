@@ -10,7 +10,7 @@ const webhookUrl = N8N_ENDPOINTS.chat;
 export async function POST(request: Request, { params }: Params) {
   const { heapId } = await params;
   const body = await request.json().catch(() => ({}));
-  const { chatInput, sessionId, isProject, meta, filter } = body ?? {};
+  const { chatInput, sessionId, isProject, meta, filter, jobId } = body ?? {};
 
   if (!chatInput || typeof chatInput !== "string") {
     return NextResponse.json(
@@ -72,10 +72,16 @@ export async function POST(request: Request, { params }: Params) {
   console.log("filter", filter);
 
   // Call n8n webhook
+  const finalJobId =
+    typeof jobId === "string" && jobId.trim().length > 0
+      ? jobId
+      : crypto.randomUUID();
+
   const payload: Record<string, unknown> = {
     chatInput: chatInput,
     sessionId: finalSessionId,
     heapId: heapId,
+    job_id: finalJobId,
   };
 
   // TODO: can activate this if/when we allow the user to toggle
@@ -114,6 +120,7 @@ export async function POST(request: Request, { params }: Params) {
         ...webhookData,
         message: assistantMessage,
         sessionId: finalSessionId,
+        jobId: finalJobId,
       },
     });
   } catch (error) {
