@@ -25,6 +25,12 @@ import {
   SelectValue,
 } from "../ui/select";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
+import {
   useHeapInvites,
   useCreateInvite,
   type HeapInvite,
@@ -322,9 +328,18 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {defaultTags.map((tag) => (
-                          <Badge key={tag.slug} variant="secondary">
-                            {tag.label}
-                          </Badge>
+                          <TooltipProvider key={tag.slug}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="secondary">{tag.label}</Badge>
+                              </TooltipTrigger>
+                              {tag.description && (
+                                <TooltipContent>
+                                  {tag.description}
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
                         ))}
                       </div>
                     )}
@@ -340,9 +355,18 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {spaceTags.map((tag) => (
-                          <Badge key={tag.slug} variant="secondary">
-                            {tag.label}
-                          </Badge>
+                          <TooltipProvider key={tag.slug}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="secondary">{tag.label}</Badge>
+                              </TooltipTrigger>
+                              {tag.description && (
+                                <TooltipContent>
+                                  {tag.description}
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
                         ))}
                       </div>
                     )}

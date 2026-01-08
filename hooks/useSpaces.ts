@@ -287,6 +287,10 @@ export function useCreateTag() {
           typeof json?.data?.description === "string"
             ? json.data.description
             : description,
+        heapId:
+          json?.data?.heap_id === null || json?.data?.heap_id === undefined
+            ? null
+            : String(json.data.heap_id),
       };
     },
     onSuccess: (_, variables) => {
