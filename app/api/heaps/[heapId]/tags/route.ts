@@ -7,10 +7,22 @@ type Params = { params: Promise<{ heapId: string }> };
 export async function GET(_request: Request, { params }: Params) {
   const { heapId } = await params;
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const serviceClient = await createServiceRoleClient();
+
+  // Verify user is authenticated and is a heap member
+  const authResult = await requireHeapMember(
+    supabase,
+    heapId,
+    "You must be a member of this heap to view tags"
+  );
+  if (!authResult.success) {
+    return authResult.response;
+  }
+
+  const { data, error } = await serviceClient
     .from("kb_tags")
     .select("*")
-    .eq("heap_id", heapId)
+    .or(`heap_id.eq.${heapId},heap_id.is.null`)
     .order("label", { ascending: true });
   if (error)
     return NextResponse.json({ error: error.message }, { status: 400 });

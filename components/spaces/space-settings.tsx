@@ -64,6 +64,7 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
   const [saving, setSaving] = useState(false);
   const [addingTag, setAddingTag] = useState(false);
   const [newTagLabel, setNewTagLabel] = useState("");
+  const [newTagDescription, setNewTagDescription] = useState("");
   const [tagError, setTagError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [spaceName, setSpaceName] = useState<string>("");
@@ -157,7 +158,13 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
   async function handleAddTag() {
     if (!heapId || !newTagLabel.trim()) return;
 
+    if (!newTagDescription.trim()) {
+      setTagError("Description is required");
+      return;
+    }
+
     const label = newTagLabel.trim();
+    const description = newTagDescription.trim();
     const slug = generateSlug(label);
 
     if (
@@ -177,14 +184,25 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
         heapId,
         label,
         slug,
+        description,
       });
       setNewTagLabel("");
+      setNewTagDescription("");
     } catch (error) {
       setTagError(error instanceof Error ? error.message : "Failed to add tag");
     } finally {
       setAddingTag(false);
     }
   }
+
+  const defaultTags = useMemo(
+    () => tags.filter((tag) => tag.heapId === null),
+    [tags]
+  );
+  const spaceTags = useMemo(
+    () => tags.filter((tag) => tag.heapId === heapId),
+    [tags, heapId]
+  );
 
 
   return (
@@ -256,10 +274,29 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                 <Button
                   size="sm"
                   onClick={handleAddTag}
-                  disabled={addingTag || !newTagLabel.trim() || !heapId || !isAdminOrOwner}
+                  disabled={
+                    addingTag ||
+                    !newTagLabel.trim() ||
+                    !newTagDescription.trim() ||
+                    !heapId ||
+                    !isAdminOrOwner
+                  }
                 >
                   {addingTag ? "Adding..." : "Add"}
                 </Button>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="new-tag-description">Description</Label>
+                <Textarea
+                  id="new-tag-description"
+                  value={newTagDescription}
+                  onChange={(event) => {
+                    setNewTagDescription(event.target.value);
+                    setTagError(null);
+                  }}
+                  placeholder="What should this tag capture?"
+                  disabled={addingTag || !heapId || !isAdminOrOwner}
+                />
               </div>
               {tagError && (
                 <div className="text-sm text-destructive">{tagError}</div>
@@ -272,15 +309,44 @@ export function SpaceSettings({ heapId }: WorkspacePaneComponentProps) {
                 <div className="text-sm text-muted-foreground">
                   Loading tags...
                 </div>
-              ) : tags.length === 0 ? (
-                <div className="text-sm text-muted-foreground">No tags yet</div>
               ) : (
-                <div className="flex flex-wrap gap-2">
-                  {tags.map((tag) => (
-                    <Badge key={tag.slug} variant="secondary">
-                      {tag.label}
-                    </Badge>
-                  ))}
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      Default tags
+                    </div>
+                    {defaultTags.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">
+                        No default tags
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {defaultTags.map((tag) => (
+                          <Badge key={tag.slug} variant="secondary">
+                            {tag.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium text-muted-foreground">
+                      Space tags
+                    </div>
+                    {spaceTags.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">
+                        No space tags yet
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {spaceTags.map((tag) => (
+                          <Badge key={tag.slug} variant="secondary">
+                            {tag.label}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
