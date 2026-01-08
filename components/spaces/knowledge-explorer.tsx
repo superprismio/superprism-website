@@ -17,6 +17,7 @@ import { FileExplorer } from "./file-explorer";
 import { FileUpload } from "./file-upload";
 import { KnowledgeGraph } from "./knowledge-graph";
 import { TextEditor } from "./text-editor";
+import { WebScrape } from "./web-scrape";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import { FilePreview } from "./file-preview";
 import { FileRow } from "./types";
@@ -36,7 +37,7 @@ type PendingProject = {
   created_at: null;
 };
 
-type SecondaryView = "graph" | "preview" | "text-editor" | "upload" | "project";
+type SecondaryView = "graph" | "preview" | "text-editor" | "upload" | "project" | "web-scrape";
 
 type KnowledgeExplorerProps = WorkspacePaneComponentProps & {
   useDialogForPreview?: boolean;
@@ -190,6 +191,8 @@ export function KnowledgeExplorer({
     // Update URL for ingest views
     if (view === "upload" || view === "text-editor") {
       updateUrlWithIngest(view);
+    } else if (view === "web-scrape") {
+      // Don't update URL for web-scrape, it's a temporary view
     } else if (view !== "preview") {
       // Clear ingest param for other views (except preview, which handles its own URL)
       updateUrlWithIngest(view);
@@ -322,6 +325,18 @@ export function KnowledgeExplorer({
     [deleteFile]
   );
 
+  const handleWebScrapeSuccess = useCallback(
+    (markdown: string) => {
+      // Set editor content and switch to text editor
+      setEditorContent(markdown);
+      setEditorFileId(undefined);
+      setEditorFileName(undefined);
+      setSecondaryView("text-editor");
+      updateUrlWithIngest("text-editor");
+    },
+    [updateUrlWithIngest]
+  );
+
   const renderSecondaryContent = () => {
     switch (secondaryView) {
       case "graph":
@@ -370,6 +385,19 @@ export function KnowledgeExplorer({
             }}
           />
         );
+      case "web-scrape":
+        return (
+          <WebScrape
+            key="web-scrape"
+            heapId={heapId}
+            onClose={() => {
+              setSecondaryView("graph");
+              // Clear ingest param when closing web scrape
+              updateUrlWithIngest("graph");
+            }}
+            onSuccess={handleWebScrapeSuccess}
+          />
+        );
       default:
         return null;
     }
@@ -397,6 +425,11 @@ export function KnowledgeExplorer({
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => handleSelectView("upload")}>
                   Upload
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => handleSelectView("web-scrape")}
+                >
+                  Scrape Web
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

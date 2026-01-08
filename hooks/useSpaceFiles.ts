@@ -33,6 +33,8 @@ export type UseSpaceFilesResult = {
   fetchRawFileContent: (fileId: string) => Promise<string>;
   uploadFile: (file: File) => Promise<void>;
   saveMarkdown: (params: SaveMarkdownParams) => Promise<void>;
+  scrapeWeb: (url: string) => Promise<string>;
+  isScrapingWeb: boolean;
 };
 
 const SPACE_FOLDERS: FolderNode[] = [
@@ -378,6 +380,32 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     },
   });
 
+  const scrapeWebMutation = useMutation({
+    mutationFn: async (url: string): Promise<string> => {
+      if (!heapId) {
+        throw new Error("Heap ID is required");
+      }
+
+      const response = await fetch(`/api/heaps/${heapId}/injest/web`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({ error: "Failed to scrape URL" }));
+        throw new Error(json.error || "Failed to scrape URL");
+      }
+
+      const data = await response.json();
+      if (!data.markdown) {
+        throw new Error("No content returned from URL");
+      }
+
+      return data.markdown;
+    },
+  });
+
   const filesByFolder = useMemo(
     () => groupFilesByFolder(query.data ?? []),
     [query.data]
@@ -438,5 +466,9 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     saveMarkdown: async (params: SaveMarkdownParams) => {
       await saveMarkdownMutation.mutateAsync(params);
     },
+    scrapeWeb: async (url: string) => {
+      return await scrapeWebMutation.mutateAsync(url);
+    },
+    isScrapingWeb: scrapeWebMutation.isPending,
   };
 }
