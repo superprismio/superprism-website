@@ -174,6 +174,12 @@ export function useSpaceTags(heapId: string | null): UseQueryResult<Tag[], Error
       return (json.data || []).map((tag) => ({
         slug: String(tag.slug ?? ""),
         label: String(tag.label ?? ""),
+        description:
+          typeof tag.description === "string" ? tag.description : null,
+        heapId:
+          tag.heap_id === null || tag.heap_id === undefined
+            ? null
+            : String(tag.heap_id),
       }));
     },
     enabled: Boolean(heapId),
@@ -257,13 +263,13 @@ export function useCreateTag() {
   return useMutation<
     Tag,
     Error,
-    { heapId: string; label: string; slug: string }
+    { heapId: string; label: string; slug: string; description: string }
   >({
-    mutationFn: async ({ heapId, label, slug }) => {
+    mutationFn: async ({ heapId, label, slug, description }) => {
       const response = await fetch(`/api/heaps/${heapId}/tags`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label, slug, is_active: true }),
+        body: JSON.stringify({ label, slug, description, is_active: true }),
       });
 
       if (!response.ok) {
@@ -277,6 +283,14 @@ export function useCreateTag() {
       return {
         slug: String(json?.data?.slug ?? slug),
         label: String(json?.data?.label ?? label),
+        description:
+          typeof json?.data?.description === "string"
+            ? json.data.description
+            : description,
+        heapId:
+          json?.data?.heap_id === null || json?.data?.heap_id === undefined
+            ? null
+            : String(json.data.heap_id),
       };
     },
     onSuccess: (_, variables) => {
@@ -289,4 +303,3 @@ export function useCreateTag() {
 }
 
 export { USER_HEAPS_QUERY_KEY };
-

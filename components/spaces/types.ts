@@ -47,6 +47,8 @@ export type FileRow = {
 export type Tag = {
   slug: string;
   label: string;
+  description: string | null;
+  heapId: string | null;
 };
 
 export type Member = {
