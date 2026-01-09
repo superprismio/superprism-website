@@ -263,7 +263,6 @@ export function ProjectDetail({
         filter: clonedFilter,
       });
 
-      
       if (onProjectCreated) {
         onProjectCreated(clonedProject);
       }
@@ -352,7 +351,7 @@ export function ProjectDetail({
                 onClick={handleClone}
                 disabled={createProject.isPending}
               >
-                {createProject.isPending ? "Fork..." : "Forking Project"}
+                {createProject.isPending ? "Forking..." : "Fork Project"}
               </Button>
             )}
             {canEdit && !isPending && (

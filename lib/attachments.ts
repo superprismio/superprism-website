@@ -34,6 +34,9 @@ export const UPLOAD_ACCEPT_ATTRIBUTE = UPLOAD_ALLOWED_EXTENSIONS.map(
   (extension) => `.${extension}`
 ).join(",");
 
+// Maximum file size for uploads (3 MB in bytes)
+export const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3 MB
+
 export function getAttachmentExtension(
   fileName: string
 ): AttachmentAllowedExtension | null {

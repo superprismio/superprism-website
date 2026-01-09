@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useChat, useSpaceChatSessions } from "@/hooks/useChat";
 import {
   Dialog,
@@ -94,4 +93,3 @@ export function ChatSessionSelector({
     </Dialog>
   );
 }
-

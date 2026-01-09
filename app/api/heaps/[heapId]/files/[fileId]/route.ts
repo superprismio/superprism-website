@@ -23,7 +23,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
     // Parse body
     const body = await request.json();
-    const { folders, visibility } = body ?? {};
+    const { folders, visibility, file_name } = body ?? {};
 
     if (folders !== undefined) {
       if (!Array.isArray(folders) || folders.some((f) => typeof f !== "string")) {
@@ -37,6 +37,13 @@ export async function PATCH(request: Request, { params }: Params) {
     if (visibility !== undefined && visibility !== "public" && visibility !== "private") {
       return NextResponse.json(
         { error: "visibility must be 'public' or 'private'" },
+        { status: 400 }
+      );
+    }
+
+    if (file_name !== undefined && typeof file_name !== "string") {
+      return NextResponse.json(
+        { error: "file_name must be a string" },
         { status: 400 }
       );
     }
@@ -64,10 +71,13 @@ export async function PATCH(request: Request, { params }: Params) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    // Check if user is the uploader (required for visibility changes)
-    if (visibility !== undefined && currentFile.uploader_id !== user.id) {
+    // Check if user is the uploader (required for visibility and file_name changes)
+    if (
+      (visibility !== undefined || file_name !== undefined) &&
+      currentFile.uploader_id !== user.id
+    ) {
       return NextResponse.json(
-        { error: "Only the file uploader can change visibility" },
+        { error: "Only the file uploader can change visibility or file name" },
         { status: 403 }
       );
     }
@@ -93,6 +103,11 @@ export async function PATCH(request: Request, { params }: Params) {
     // Update visibility if provided
     if (visibility !== undefined) {
       updateData.visibility = visibility;
+    }
+
+    // Update file_name if provided
+    if (file_name !== undefined) {
+      updateData.file_name = file_name.trim() || null;
     }
 
     // Apply update

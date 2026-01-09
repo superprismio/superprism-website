@@ -30,6 +30,7 @@ export type UseSpaceFilesResult = {
   deleteFile: (fileId: string) => Promise<void>;
   updateFileFolders: (fileId: string, folders: string[]) => Promise<void>;
   updateFileVisibility: (fileId: string, visibility: "public" | "private") => Promise<void>;
+  updateFileName: (fileId: string, fileName: string) => Promise<void>;
   fetchRawFileContent: (fileId: string) => Promise<string>;
   uploadFile: (file: File) => Promise<void>;
   saveMarkdown: (params: SaveMarkdownParams) => Promise<void>;
@@ -322,6 +323,33 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     },
   });
 
+  const updateFileNameMutation = useMutation({
+    mutationFn: async ({ fileId, fileName }: { fileId: string; fileName: string }) => {
+      if (!heapId) {
+        throw new Error("Heap ID is required");
+      }
+
+      const response = await fetch(`/api/heaps/${heapId}/files/${fileId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file_name: fileName }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Failed to rename file");
+      }
+    },
+    onSuccess: () => {
+      // Invalidate and refetch files after successful update
+      void queryClient.invalidateQueries({
+        queryKey: ["space-files", heapId],
+      });
+    },
+  });
+
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       if (!heapId) {
@@ -458,6 +486,9 @@ export function useSpaceFiles(heapId: string | null): UseSpaceFilesResult {
     },
     updateFileVisibility: async (fileId: string, visibility: "public" | "private") => {
       await updateVisibilityMutation.mutateAsync({ fileId, visibility });
+    },
+    updateFileName: async (fileId: string, fileName: string) => {
+      await updateFileNameMutation.mutateAsync({ fileId, fileName });
     },
     fetchRawFileContent,
     uploadFile: async (file: File) => {
