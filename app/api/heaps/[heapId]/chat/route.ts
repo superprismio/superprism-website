@@ -10,7 +10,7 @@ const webhookUrl = N8N_ENDPOINTS.chat;
 export async function POST(request: Request, { params }: Params) {
   const { heapId } = await params;
   const body = await request.json().catch(() => ({}));
-  const { chatInput, sessionId, isProject, meta, filter } = body ?? {};
+  const { chatInput, sessionId, isProject, meta, filter, jobId } = body ?? {};
 
   if (!chatInput || typeof chatInput !== "string") {
     return NextResponse.json(
@@ -77,6 +77,10 @@ export async function POST(request: Request, { params }: Params) {
     sessionId: finalSessionId,
     heapId: heapId,
   };
+  // Client uses jobId (camelCase); n8n expects job_id (snake_case).
+  if (typeof jobId === "string" && jobId.trim().length > 0) {
+    payload.job_id = jobId;
+  }
 
   // TODO: can activate this if/when we allow the user to toggle
   // filter filed limits rag to selected files
@@ -114,6 +118,7 @@ export async function POST(request: Request, { params }: Params) {
         ...webhookData,
         message: assistantMessage,
         sessionId: finalSessionId,
+        jobId: typeof jobId === "string" ? jobId : "",
       },
     });
   } catch (error) {

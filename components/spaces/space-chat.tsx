@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { WorkspacePaneComponentProps } from "./workspace-pane-types";
 import { useChat, useChatMessages, useSendChatMessage } from "@/hooks/useChat";
+import { useJobRunStatus } from "@/hooks/useJobRunStatus";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { ScrollArea } from "../ui/scroll-area";
@@ -31,11 +32,13 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
   const [showEditor, setShowEditor] = useState(false);
   const [editorContent, setEditorContent] = useState("");
   const [isSessionSelectorOpen, setIsSessionSelectorOpen] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(null);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(
     null
   );
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { jobRun, statusMessages } = useJobRunStatus(jobId);
 
   // Get current user ID
   useEffect(() => {
@@ -87,9 +90,11 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
       return;
     }
 
+    const nextJobId = crypto.randomUUID();
+    setJobId(nextJobId);
     setInput("");
     sendMessageMutation.mutate(
-      { chatInput: messageText },
+      { chatInput: messageText, jobId: nextJobId },
       {
         onError: (error) => {
           console.error("Error sending message:", error);
@@ -97,6 +102,22 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
       }
     );
   };
+
+  useEffect(() => {
+    if (!jobRun?.status) return;
+    const normalizedStatus = jobRun.status.toLowerCase();
+    const terminalStatuses = new Set([
+      "completed",
+      "complete",
+      "failed",
+      "error",
+      "canceled",
+      "cancelled",
+    ]);
+    if (terminalStatuses.has(normalizedStatus)) {
+      setJobId(null);
+    }
+  }, [jobRun?.status]);
 
   const handlePreFilledPrompt = (prompt: string) => {
     sendMessage(prompt);
@@ -288,9 +309,20 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                     <div className="flex justify-start">
                       <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
                         <PrismLoader size={24} className="text-primary" />
-                        <span className="text-sm text-muted-foreground">
-                          Thinking...
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm text-muted-foreground">
+                            Thinking...
+                          </span>
+                          {statusMessages.length > 0 && (
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              {statusMessages.map((message, index) => (
+                                <div key={`${message}-${index}`}>
+                                  {message}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}

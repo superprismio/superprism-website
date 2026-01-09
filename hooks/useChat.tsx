@@ -192,11 +192,13 @@ export function useChatMessages(heapId: string | null) {
 type SendMessageParams = {
   chatInput: string;
   sessionId?: string | null;
+  jobId?: string | null;
 };
 
 type SendMessageResponse = {
   message: string;
   sessionId: string;
+  jobId: string;
 };
 
 export function useSpaceChatSessions(heapId: string | null) {
@@ -247,18 +249,27 @@ export function useSendChatMessage(heapId: string | null) {
       : null;
 
   return useMutation<SendMessageResponse, Error, SendMessageParams>({
-    mutationFn: async ({ chatInput, sessionId: overrideSessionId }) => {
+    mutationFn: async ({
+      chatInput,
+      sessionId: overrideSessionId,
+      jobId: overrideJobId,
+    }) => {
       if (!heapId) {
         throw new Error("heapId is required");
       }
 
       // Use override sessionId if provided, otherwise use context sessionId
       const finalSessionId = overrideSessionId ?? sessionId;
+      const finalJobId =
+        overrideJobId && overrideJobId.trim().length > 0
+          ? overrideJobId
+          : undefined;
 
       const requestBody: Record<string, unknown> = {
         chatInput,
         sessionId: finalSessionId,
         isProject,
+        ...(finalJobId ? { jobId: finalJobId } : {}),
       };
 
       // Include meta and filter from activeChatSession if available
@@ -290,7 +301,10 @@ export function useSendChatMessage(heapId: string | null) {
 
       console.log("data", data);
 
-      return data.data!;
+      return {
+        ...data.data!,
+        jobId: data.data?.jobId ?? finalJobId ?? "",
+      };
     },
     onSuccess: async (data, variables) => {
       // If a new session was created (for space chat), update the active session
