@@ -17,6 +17,8 @@ import { ScrollArea } from "../ui/scroll-area";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { generateShareUrl } from "@/lib/share-link";
 import { ShareButton } from "./share-button";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
 
@@ -184,6 +186,14 @@ export function SpaceProjects({
     updateUrlWithProject(null);
   }, [setActiveChatSession, updateUrlWithProject]);
 
+  // Handle creating a new project
+  const handleCreateNewProject = useCallback(() => {
+    const pendingProject = getOrCreatePendingProject();
+    setSelectedProject(pendingProject);
+    setActiveChatSession(pendingProject);
+    // Don't update URL for pending projects (no ID yet)
+  }, [getOrCreatePendingProject, setActiveChatSession]);
+
   // Update active chat session when selected project changes
   useEffect(() => {
     setActiveChatSession(selectedProject);
@@ -205,6 +215,15 @@ export function SpaceProjects({
     <>
       <header className="gap-4 border-b w-full px-3 py-4 flex justify-between">
         <h3 className="font-semibold text-foreground">Projects</h3>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleCreateNewProject}
+          className="flex items-center gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          New Project
+        </Button>
       </header>
       <ResizablePanelGroup direction="vertical" className="flex min-h-screen">
         <ResizablePanel defaultSize={60} minSize={20}>
