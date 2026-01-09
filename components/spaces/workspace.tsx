@@ -6,6 +6,7 @@ import {
   useCallback,
   useState,
   useEffect,
+  useRef,
 } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useHeap } from "../../hooks/useSpaces";
@@ -97,18 +98,36 @@ function ProjectPaneMonitor({
   primaryPane: WorkspacePaneKey;
 }) {
   const { activeChatSession, isProject, setActiveChatSession } = useChat();
+  const previousPaneRef = useRef<WorkspacePaneKey>(primaryPane);
 
   useEffect(() => {
-    // Only keep projects active when in the Projects workspace (spaceProjects primary pane)
-    // Clear project when navigating away from spaceProjects, even if going to knowledgeExplorer
+    // Clear project when navigating away from spaceProjects or knowledgeExplorer
+    // Don't clear if user is creating a new project while staying in knowledgeExplorer
+    const wasInSpaceProjects = previousPaneRef.current === "spaceProjects";
+    const wasInKnowledgeExplorer =
+      previousPaneRef.current === "knowledgeExplorer";
+    const isNowInSpaceProjects = primaryPane === "spaceProjects";
+    const isNowInKnowledgeExplorer = primaryPane === "knowledgeExplorer";
+
+    const navigatedAwayFromSpaceProjects =
+      wasInSpaceProjects && !isNowInSpaceProjects;
+    // Clear if navigating away from knowledgeExplorer to any pane except spaceProjects or knowledgeExplorer
+    const navigatedAwayFromKnowledgeExplorer =
+      wasInKnowledgeExplorer &&
+      !isNowInKnowledgeExplorer &&
+      !isNowInSpaceProjects;
+
     const shouldClearProject =
       isProject &&
       activeChatSession !== null &&
-      primaryPane !== "spaceProjects";
+      (navigatedAwayFromSpaceProjects || navigatedAwayFromKnowledgeExplorer);
 
     if (shouldClearProject) {
       setActiveChatSession(null);
     }
+
+    // Update the previous pane reference
+    previousPaneRef.current = primaryPane;
   }, [primaryPane, isProject, activeChatSession, setActiveChatSession]);
 
   return null;
@@ -409,7 +428,10 @@ export function Workspace({
         </Dialog>
       )}
       {/* User profile dialog */}
-      <Dialog open={isUserProfileDialogOpen} onOpenChange={setIsUserProfileDialogOpen}>
+      <Dialog
+        open={isUserProfileDialogOpen}
+        onOpenChange={setIsUserProfileDialogOpen}
+      >
         <DialogContent className="max-w-md">
           <DialogTitle className="sr-only">
             {PANE_DEFINITIONS.userProfile.label}

@@ -37,7 +37,13 @@ type PendingProject = {
   created_at: null;
 };
 
-type SecondaryView = "graph" | "preview" | "text-editor" | "upload" | "project" | "web-scrape";
+type SecondaryView =
+  | "graph"
+  | "preview"
+  | "text-editor"
+  | "upload"
+  | "project"
+  | "web-scrape";
 
 type KnowledgeExplorerProps = WorkspacePaneComponentProps & {
   useDialogForPreview?: boolean;

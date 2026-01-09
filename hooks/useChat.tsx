@@ -156,14 +156,16 @@ export function useChatMessages(heapId: string | null) {
               ) {
                 const newFormat = parsedContent as N8nNewFormatMessage;
                 const answer = newFormat.output.answer;
-                const followUpQuestions = newFormat.output.follow_up_questions || [];
+                const followUpQuestions =
+                  newFormat.output.follow_up_questions || [];
 
                 // Format as string with answer and bulleted follow-up questions
                 let content = answer;
 
                 // console.log('followUpQuestions', followUpQuestions)
                 if (followUpQuestions.length > 0) {
-                  content += "\n\n" + followUpQuestions.map((q) => `• ${q}`).join("\n");
+                  content +=
+                    "\n\n" + followUpQuestions.map((q) => `• ${q}`).join("\n");
                 }
 
                 return {
@@ -295,7 +297,10 @@ export function useSendChatMessage(heapId: string | null) {
     onSuccess: async (data, variables) => {
       // If a new session was created (for space chat), update the active session
       const finalSessionId = variables.sessionId ?? sessionId;
-      if (data.sessionId && (!finalSessionId || data.sessionId !== finalSessionId)) {
+      if (
+        data.sessionId &&
+        (!finalSessionId || data.sessionId !== finalSessionId)
+      ) {
         // Fetch all sessions to find the new one
         const sessionsResponse = await fetch(
           `/api/heaps/${heapId}/chat-sessions`,

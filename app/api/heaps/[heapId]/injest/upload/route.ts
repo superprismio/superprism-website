@@ -5,9 +5,9 @@ import {
 } from "@/lib/attachments";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { N8N_ENDPOINTS } from "@/lib/constants";
 
-const UPLOAD_ENDPOINT =
-  "https://n8n-workflows-production-d083.up.railway.app/webhook/ingest-pipeline";
+const UPLOAD_ENDPOINT = N8N_ENDPOINTS.ingest;
 
 export const dynamic = "force-dynamic";
 
