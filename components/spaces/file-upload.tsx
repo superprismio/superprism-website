@@ -233,15 +233,15 @@ export function FileUpload({ heapId, onClose }: FileUploadProps) {
         });
 
         // Show progress as indeterminate (50%) while batch upload is processing
-        pendingItems.forEach((item) => {
-          setFileItems((prev) =>
-            prev.map((fileItem) =>
-              fileItem.id === item.id
-                ? { ...fileItem, progress: 50 }
-                : fileItem
-            )
-          );
-        });
+        // Update all files in a single state update
+        const pendingItemIds = new Set(pendingItems.map((item) => item.id));
+        setFileItems((prev) =>
+          prev.map((fileItem) =>
+            pendingItemIds.has(fileItem.id)
+              ? { ...fileItem, progress: 50 }
+              : fileItem
+          )
+        );
 
         const response = await fetch(
           `/api/heaps/${heapId}/injest/upload/batch`,
@@ -265,28 +265,58 @@ export function FileUpload({ heapId, onClose }: FileUploadProps) {
           error?: string;
         }>;
 
-        // Update file items based on batch results
-        results.forEach((fileResult) => {
-          const item = pendingItems.find(
-            (item) => item.file.name === fileResult.fileName
-          );
-          if (item) {
-            setFileItems((prev) =>
-              prev.map((fileItem) =>
-                fileItem.id === item.id
-                  ? {
-                      ...fileItem,
-                      status: fileResult.success
-                        ? "success"
-                        : "error",
-                      progress: fileResult.success ? 100 : 0,
-                      error: fileResult.error,
-                    }
-                  : fileItem
-              )
-            );
-          }
-        });
+        // Helper to extract just the filename from a path
+        const getFileNameOnly = (fileName: string): string => {
+          const parts = fileName.split(/[/\\]/);
+          return parts[parts.length - 1] || fileName;
+        };
+
+        // Update all file items in a single state update
+        // Match by finding uploading files and updating them based on results
+        setFileItems((prev) =>
+          prev.map((fileItem) => {
+            // Only update items that are currently uploading (were in the batch)
+            if (fileItem.status === "uploading") {
+              // Get just the filename (no path) for matching
+              const ourFileName = getFileNameOnly(fileItem.file.name).toLowerCase().trim();
+              
+              // Try to find a matching result
+              // First try exact match, then try if result filename ends with our filename
+              // This handles cases where upstream API prepends folder names like "batch-2pork.md"
+              let fileResult = results.find(
+                (r) =>
+                  getFileNameOnly(r.fileName).toLowerCase().trim() === ourFileName ||
+                  r.fileName.toLowerCase().endsWith(ourFileName)
+              );
+
+              if (fileResult) {
+                return {
+                  ...fileItem,
+                  status: fileResult.success ? "success" : "error",
+                  progress: fileResult.success ? 100 : 0,
+                  error: fileResult.error,
+                };
+              }
+              // If file wasn't in results, mark as error
+              // This shouldn't happen, but handle gracefully
+              console.warn(
+                `File ${fileItem.file.name} not found in batch results`,
+                { 
+                  results: results.map((r) => r.fileName), 
+                  fileName: fileItem.file.name,
+                  ourFileName 
+                }
+              );
+              return {
+                ...fileItem,
+                status: "error",
+                progress: 0,
+                error: "File not processed in batch upload",
+              };
+            }
+            return fileItem;
+          })
+        );
       }
 
       // Invalidate query cache to refresh file list
@@ -479,7 +509,7 @@ export function FileUpload({ heapId, onClose }: FileUploadProps) {
                         </div>
                       )}
                     </div>
-                    {!uploading && (
+                    {!uploading && (item.status === "pending" || item.status === "error") && (
                       <Button
                         size="sm"
                         variant="ghost"
@@ -519,6 +549,8 @@ export function FileUpload({ heapId, onClose }: FileUploadProps) {
           >
             {uploading
               ? `Uploading (${uploadingCount}/${pendingCount + uploadingCount})`
+              : !hasPendingOrUploading && fileItems.length > 0
+              ? "Upload Complete"
               : `Upload ${pendingCount > 0 ? `${pendingCount} file(s)` : ""}`}
           </Button>
           <Button
@@ -530,7 +562,7 @@ export function FileUpload({ heapId, onClose }: FileUploadProps) {
                 fileInputRef.current.value = "";
               }
             }}
-            disabled={uploading || fileItems.length === 0}
+            disabled={uploading}
           >
             Clear
           </Button>

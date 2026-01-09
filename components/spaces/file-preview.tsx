@@ -11,8 +11,9 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect, useMemo } from "react";
-import { X, ChevronRight, Eye, EyeOff, Trash2 } from "lucide-react";
+import { X, ChevronRight, Eye, EyeOff } from "lucide-react";
 import { FileRow } from "./types";
 import { createClient } from "@/lib/supabase/client";
 import { useSpaceFiles } from "@/hooks/useSpaceFiles";
@@ -44,9 +45,12 @@ export function FilePreview({
   onDeleteFile,
   useDialog = false,
 }: FilePreviewProps) {
-  const { fetchRawFileContent } = useSpaceFiles(heapId);
+  const { fetchRawFileContent, updateFileName } = useSpaceFiles(heapId);
   const { data: members = [] } = useSpaceMembers(heapId);
-  const uploaderDisplayName = useUserDisplayName(file?.uploader_id ?? null, heapId);
+  const uploaderDisplayName = useUserDisplayName(
+    file?.uploader_id ?? null,
+    heapId
+  );
   const [rawContent, setRawContent] = useState<string | null>(null);
   const [isRawDialogOpen, setIsRawDialogOpen] = useState(false);
   const [isLoadingRaw, setIsLoadingRaw] = useState(false);
@@ -54,6 +58,9 @@ export function FilePreview({
   const [isTogglingVisibility, setIsTogglingVisibility] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   // Get current user ID
   useEffect(() => {
@@ -145,13 +152,11 @@ export function FilePreview({
     }
   };
 
-  const isMarkdownFile =
-    file?.file_name?.toLowerCase().endsWith(".md") ?? false;
   const canEdit =
     file &&
     currentUserId &&
     isOwnerOrFileCreator(currentUserId, file.uploader_id, isHeapOwner) &&
-    isMarkdownFile;
+    file.meta?.extracted_file_hash !== undefined;
   const canToggleVisibility =
     file &&
     isOwnerOrFileCreator(currentUserId, file.uploader_id, isHeapOwner) &&
@@ -160,6 +165,8 @@ export function FilePreview({
     file &&
     isOwnerOrFileCreator(currentUserId, file.uploader_id, isHeapOwner) &&
     onDeleteFile;
+  const canRename =
+    file && isOwnerOrFileCreator(currentUserId, file.uploader_id, isHeapOwner);
 
   const handleToggleVisibility = async () => {
     if (!file || !onToggleVisibility) return;
@@ -189,6 +196,26 @@ export function FilePreview({
       console.error("Failed to delete file:", error);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleRenameClick = () => {
+    if (!file) return;
+    setRenameValue(file.file_name || "");
+    setIsRenameDialogOpen(true);
+  };
+
+  const handleConfirmRename = async () => {
+    if (!file || !renameValue.trim()) return;
+    setIsRenaming(true);
+    try {
+      await updateFileName(file.id, renameValue.trim());
+      setIsRenameDialogOpen(false);
+      setRenameValue("");
+    } catch (error) {
+      console.error("Failed to rename file:", error);
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -246,6 +273,16 @@ export function FilePreview({
                 disabled={isLoadingRaw}
               >
                 Edit Raw
+              </Button>
+            )}
+            {canRename && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={handleRenameClick}
+              >
+                Rename
               </Button>
             )}
             {canDelete && (
@@ -443,6 +480,51 @@ export function FilePreview({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename File</DialogTitle>
+              <DialogDescription>
+                Enter a new name for the file.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                placeholder="File name"
+                disabled={isRenaming}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && renameValue.trim()) {
+                    void handleConfirmRename();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsRenameDialogOpen(false);
+                  setRenameValue("");
+                }}
+                disabled={isRenaming}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmRename}
+                disabled={isRenaming || !renameValue.trim()}
+              >
+                {isRenaming ? "Renaming..." : "Rename"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </>
     );
   }
@@ -497,6 +579,51 @@ export function FilePreview({
                 disabled={isDeleting}
               >
                 {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename File</DialogTitle>
+              <DialogDescription>
+                Enter a new name for the file.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                placeholder="File name"
+                disabled={isRenaming}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && renameValue.trim()) {
+                    void handleConfirmRename();
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsRenameDialogOpen(false);
+                  setRenameValue("");
+                }}
+                disabled={isRenaming}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmRename}
+                disabled={isRenaming || !renameValue.trim()}
+              >
+                {isRenaming ? "Renaming..." : "Rename"}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -32,15 +32,24 @@ function isFileLike(val: unknown): val is File {
   );
 }
 
+// Extract just the filename from a path (handles both / and \ separators)
+function getFileNameOnly(fileName: string): string {
+  // Extract just the filename, ignoring any folder path
+  const parts = fileName.split(/[/\\]/);
+  return parts[parts.length - 1] || fileName;
+}
+
 async function uploadSingleFile(
   file: File,
   heapId: string,
   userId: string
 ): Promise<BatchUploadResult> {
-  const extension = getAttachmentExtension(file.name);
+  // Extract just the filename (ignore folder path if present)
+  const fileNameOnly = getFileNameOnly(file.name);
+  const extension = getAttachmentExtension(fileNameOnly);
   if (!extension) {
     return {
-      fileName: file.name,
+      fileName: fileNameOnly, // Return just filename, not full path
       success: false,
       error: "Unsupported file type.",
     };
@@ -48,7 +57,7 @@ async function uploadSingleFile(
 
   if (!isAttachmentMimeTypeAllowed(extension, file.type)) {
     return {
-      fileName: file.name,
+      fileName: fileNameOnly, // Return just filename, not full path
       success: false,
       error: "Unsupported MIME type.",
     };
@@ -56,7 +65,7 @@ async function uploadSingleFile(
 
   if (file.size > MAX_FILE_SIZE) {
     return {
-      fileName: file.name,
+      fileName: fileNameOnly, // Return just filename, not full path
       success: false,
       error: `File size exceeds maximum allowed size of ${MAX_FILE_SIZE / (1024 * 1024)}MB.`,
     };
@@ -68,8 +77,9 @@ async function uploadSingleFile(
   const fileOp = "create";
 
   // Add required fields for the upstream API
+  // Use just the filename (not the full path) when sending to upstream API
   formData.set("file_id", crypto.randomUUID());
-  formData.set("file_name", file.name);
+  formData.set("file_name", fileNameOnly);
   formData.set("heap_id", heapId);
   formData.set("user_id", userId);
   formData.set("file_ext", extension);
@@ -120,14 +130,14 @@ async function uploadSingleFile(
           : "File upload failed.";
 
       return {
-        fileName: file.name,
+        fileName: fileNameOnly, // Return just filename, not full path
         success: false,
         error: message,
       };
     }
 
     return {
-      fileName: file.name,
+      fileName: fileNameOnly, // Return just filename, not full path
       success: true,
     };
   } catch (error) {

@@ -137,6 +137,14 @@ function formatDate(dateString: string | null): string {
   }
 }
 
+function truncateFileName(fileName: string | null | undefined): string {
+  const name = fileName ?? "Untitled file";
+  if (name.length <= 30) {
+    return name;
+  }
+  return `${name.slice(0, 20)}...${name.slice(-4)}`;
+}
+
 function FileList({
   files,
   emptyMessage,
@@ -162,8 +170,12 @@ function FileList({
   const [editFileId, setEditFileId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState<string>("");
   const [editFileName, setEditFileName] = useState<string | undefined>(undefined);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [renameFileId, setRenameFileId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
   const { data: members = [] } = useSpaceMembers(heapId);
-  const { fetchRawFileContent } = useSpaceFiles(heapId);
+  const { fetchRawFileContent, updateFileName } = useSpaceFiles(heapId);
 
   // Check if current user is heap owner/admin
   const isHeapOwner = useMemo(() => {
@@ -267,6 +279,28 @@ function FileList({
     }
   };
 
+  const handleRenameClick = (file: FileRow) => {
+    if (!file?.id) return;
+    setRenameFileId(file.id);
+    setRenameValue(file.file_name || "");
+    setIsRenameDialogOpen(true);
+  };
+
+  const handleConfirmRename = async () => {
+    if (!renameFileId || !renameValue.trim()) return;
+    setIsRenaming(true);
+    try {
+      await updateFileName(renameFileId, renameValue.trim());
+      setIsRenameDialogOpen(false);
+      setRenameFileId(null);
+      setRenameValue("");
+    } catch (error) {
+      console.error("Failed to rename file:", error);
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
   if (files.length === 0) {
     return (
       <div className="text-sm text-muted-foreground p-10">{emptyMessage}</div>
@@ -290,8 +324,6 @@ function FileList({
             ) &&
             onDeleteFile;
           const canViewRaw = file?.meta?.extracted_storage_path !== undefined;
-          const isMarkdownFile =
-            file?.file_name?.toLowerCase().endsWith(".md") ?? false;
           const canEdit =
             file &&
             currentUserId &&
@@ -300,53 +332,36 @@ function FileList({
               file.uploader_id,
               isHeapOwner
             ) &&
-            isMarkdownFile;
+            file.meta?.extracted_file_hash !== undefined;
+          const canRename =
+            file &&
+            currentUserId &&
+            isOwnerOrFileCreator(
+              currentUserId,
+              file.uploader_id,
+              isHeapOwner
+            );
 
           return (
             <li key={file.id} className="p-1 pr-4">
-              <div className="flex items-center justify-between gap-2 hover:bg-muted rounded transition">
+              <div className="flex items-center justify-between gap-1 hover:bg-muted rounded transition overflow-x-auto">
                 <div
                   className={cn(
-                    "flex-1 text-left text-md font-medium px-2 py-1 rounded flex gap-2 items-center",
+                    "flex-1 text-left text-md font-medium px-2 py-1 rounded flex gap-2 items-center min-w-0",
                     isSelected && "bg-muted"
                   )}
                 >
                   <FileIcon className="h-6 w-6 shrink-0" />
-                  <div className="flex flex-col gap-0.5 min-w-0">
+                  <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                     <span className="truncate">
-                      {file.file_name ?? "Untitled file"}
+                      {truncateFileName(file.file_name)}
                     </span>
-                    <span className="text-xs text-muted-foreground font-normal">
+                    <span className="text-xs text-muted-foreground font-normal truncate">
                       {formatDate(file.uploaded_at)}
                     </span>
                   </div>
                 </div>
-                <div className="flex gap-2 shrink-0">
-                  {isStaging && (
-                    <Select
-                      value=""
-                      onValueChange={(value) => {
-                        const option = LOCAL_FOLDER_OPTIONS.find(
-                          (opt) => opt.value === value
-                        );
-                        if (option) {
-                          void handleMoveToFolder(file.id, option.folders);
-                        }
-                      }}
-                      disabled={movingFileId === file.id}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Move to folder..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background">
-                        {LOCAL_FOLDER_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                <div className="flex gap-1 shrink-0">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
@@ -358,6 +373,22 @@ function FileList({
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-background">
+                      {isStaging && (
+                        <>
+                          {LOCAL_FOLDER_OPTIONS.map((option) => (
+                            <DropdownMenuItem
+                              key={option.value}
+                              onClick={() => {
+                                void handleMoveToFolder(file.id, option.folders);
+                              }}
+                              disabled={movingFileId === file.id}
+                            >
+                              Move to {option.label}
+                            </DropdownMenuItem>
+                          ))}
+                          <div className="h-px bg-border my-1" />
+                        </>
+                      )}
                       <DropdownMenuItem onClick={() => onPreview?.(file)}>
                         Open Preview
                       </DropdownMenuItem>
@@ -381,6 +412,12 @@ function FileList({
                         disabled={!canEdit}
                       >
                         Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleRenameClick(file)}
+                        disabled={!canRename}
+                      >
+                        Rename
                       </DropdownMenuItem>
                       <DropdownMenuItem>
                         Share{" "}
@@ -491,6 +528,61 @@ function FileList({
               />
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isRenameDialogOpen}
+        onOpenChange={(open) => {
+          setIsRenameDialogOpen(open);
+          if (!open) {
+            setRenameFileId(null);
+            setRenameValue("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename File</DialogTitle>
+            <DialogDescription>
+              Enter a new name for the file.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="File name"
+              disabled={isRenaming}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && renameValue.trim()) {
+                  void handleConfirmRename();
+                }
+              }}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsRenameDialogOpen(false);
+                setRenameFileId(null);
+                setRenameValue("");
+              }}
+              disabled={isRenaming}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmRename}
+              disabled={isRenaming || !renameValue.trim()}
+            >
+              {isRenaming ? "Renaming..." : "Rename"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
