@@ -308,7 +308,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                   {loading && (
                     <div className="flex justify-start">
                       <div className="bg-muted rounded-lg p-3 flex items-center gap-2">
-                        <PrismLoader size={24} className="text-primary" />
+                        <PrismLoader size={48} className="text-primary" />
                         <div className="flex flex-col gap-1">
                           <span className="text-sm text-muted-foreground">
                             Thinking...
@@ -316,9 +316,7 @@ export function SpaceChat({ heapId }: WorkspacePaneComponentProps) {
                           {statusMessages.length > 0 && (
                             <div className="text-xs text-muted-foreground space-y-1">
                               {statusMessages.map((message, index) => (
-                                <div key={`${message}-${index}`}>
-                                  {message}
-                                </div>
+                                <div key={`${message}-${index}`}>{message}</div>
                               ))}
                             </div>
                           )}
