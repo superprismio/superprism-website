@@ -23,8 +23,8 @@ export function ReferenceImplSection() {
             </p>
             <h2 className="text-4xl font-bold mb-6">Superprism</h2>
             <p className="text-muted-foreground mb-4">
-              Superprism is our primary research artifact — a collaborative AI
-              workspace for distributed teams.
+              The Superprism app is our primary research artifact — a
+              collaborative AI workspace for distributed teams.
             </p>
             <p className="text-muted-foreground mb-8">
               Each capability represents a hypothesis about how humans and
@@ -46,7 +46,11 @@ export function ReferenceImplSection() {
             </ul>
           </div>
           <div className="border border-border">
-            <Image src={screenshotImg} alt="Superprism platform screenshot" className="w-full h-auto" />
+            <Image
+              src={screenshotImg}
+              alt="Superprism platform screenshot"
+              className="w-full h-auto"
+            />
           </div>
         </div>
       </div>
