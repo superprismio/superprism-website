@@ -16,11 +16,11 @@ const caseStudies = [
     label: "Case Study",
     title: "Open Machine",
     description:
-      "AI-native knowledge infrastructure for cultural reasearch initiatives.",
+      "AI-native knowledge infrastructure for cultural search initiatives.",
     areas: [
       "Git-centric knowledge base",
       "Inner Mind built for knowledge production",
-      "Outer Mind meant for public interaction"
+      "Outer Mind meant for public interaction",
     ],
   },
 ];
