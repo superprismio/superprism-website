@@ -1,9 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import heroImg from "../../public/images/superprism-0.png";
 import { Button } from "@/components/ui/button";
+import { ContactFormModal } from "@/components/shared/contact-form-modal";
 
 export function HeroSection() {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <section className="w-full">
       <Image
@@ -35,12 +41,14 @@ export function HeroSection() {
             <Button asChild className="holographic-shimmer-hover">
               <Link href="#research">Explore Our Research</Link>
             </Button>
-            <Button asChild variant="outline">
-              <Link href="#contact">Partner With Us</Link>
+            <Button variant="outline" onClick={() => setModalOpen(true)}>
+              Partner With Us
             </Button>
           </div>
         </div>
       </div>
+
+      <ContactFormModal open={modalOpen} onOpenChange={setModalOpen} />
     </section>
   );
 }
