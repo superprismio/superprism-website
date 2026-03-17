@@ -7,8 +7,8 @@ const caseStudies = [
     title: "Raid Guild",
     description: "Collaborative AI systems for decentralized teams.",
     areas: [
-      "shared DAO knowledge base",
-      "automated ingestion of chats and governance discussions",
+      "Shared knowledge base for contributors",
+      "Automated ingestion of chats and governance discussions",
       "AI-assisted sensemaking across distributed contributors",
     ],
   },
@@ -19,7 +19,8 @@ const caseStudies = [
       "AI-native knowledge infrastructure for cultural reasearch initiatives.",
     areas: [
       "Git-centric knowledge base",
-      "private and public publishing workflows",
+      "Inner Mind built for knowledge production",
+      "Outer Mind meant for public interaction"
     ],
   },
 ];
