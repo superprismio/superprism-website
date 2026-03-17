@@ -7,20 +7,14 @@ const researchAreas = [
   {
     title: "Collaborative AI Environments",
     description:
-      "Shared workspaces where humans and agents operate on the same evolving context.",
+      "Shared environments where teams and AI agents operate on the same evolving context. Designed so agents assist without displacing human judgment.",
     active: true,
   },
   {
     title: "Context Engineering",
     description:
-      "Techniques for creating, maintaining, and isolating context so AI systems stay useful.",
+      "Techniques for creating, maintaining, and isolating context so AI systems stay useful at scale.",
     active: true,
-  },
-  {
-    title: "Human-Agent Coordination",
-    description:
-      "Designing systems where agents assist teams without replacing human judgment.",
-    active: false,
   },
   {
     title: "Local-First AI Infrastructure",
@@ -35,9 +29,15 @@ const researchAreas = [
     active: false,
   },
   {
+    title: "Multi-Agent Coordination",
+    description:
+      "How networks of specialized agents communicate, divide work, and maintain coherence with shared context.",
+    active: false,
+  },
+  {
     title: "Knowledge Interfaces",
     description:
-      "New ways for humans to navigate and shape shared AI context.",
+      "New ways for humans to navigate and shape complex shared context.",
     active: false,
   },
 ];

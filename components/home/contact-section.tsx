@@ -18,7 +18,7 @@ const partnershipTypes = [
   {
     title: "Funding & Grants",
     description:
-      "Support for research into privacy-preserving and decentralized AI infrastructure.",
+      "Support our research into privacy-preserving and decentralized AI infrastructure.",
   },
 ];
 
@@ -34,8 +34,8 @@ export function ContactSection() {
         <div className="mb-12">
           <h2 className="text-4xl font-bold mb-4">Work With Us</h2>
           <p className="text-muted-foreground">
-            Superprism collaborates with organizations exploring new ways of
-            working with AI.
+            Superprism works closely with organizations exploring new ways of
+            enhancing collaboration with AI.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
