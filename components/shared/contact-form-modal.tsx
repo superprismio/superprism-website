@@ -81,51 +81,55 @@ export function ContactFormModal({ open, onOpenChange }: Props) {
           <DialogTitle>Get in Touch</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="contact-email">Email address</Label>
-            <Input
-              id="contact-email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+        {status === "success" ? (
+          <p className="mt-2 text-xl text-primary">{statusMessage}</p>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="contact-email">Email address</Label>
+              <Input
+                id="contact-email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="contact-message">
+                How would you like to collaborate?
+              </Label>
+              <Textarea
+                id="contact-message"
+                placeholder="Describe your project, goals, or ideas..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                disabled={isSubmitting}
+                rows={5}
+              />
+            </div>
+
+            {status === "error" && statusMessage && (
+              <Alert variant="destructive">
+                <AlertDescription className="text-sm">
+                  {statusMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full holographic-shimmer-hover"
               disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="contact-message">
-              How would you like to collaborate?
-            </Label>
-            <Textarea
-              id="contact-message"
-              placeholder="Describe your project, goals, or ideas..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              disabled={isSubmitting}
-              rows={5}
-            />
-          </div>
-
-          {status !== "idle" && statusMessage && (
-            <Alert variant={status === "error" ? "destructive" : "default"}>
-              <AlertDescription className="text-sm">
-                {statusMessage}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <Button
-            type="submit"
-            className="w-full holographic-shimmer-hover"
-            disabled={isSubmitting}
-            size="lg"
-          >
-            {isSubmitting ? "Sending..." : "Send Message"}
-          </Button>
-        </form>
+              size="lg"
+            >
+              {isSubmitting ? "Sending..." : "Send Message"}
+            </Button>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     if (!email || !email.includes("@")) {
       return NextResponse.json(
         { error: "A valid email address is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     if (fetchError && fetchError.code !== "PGRST116") {
       return NextResponse.json(
         { error: "Unable to save your request right now." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -52,16 +52,24 @@ export async function POST(request: Request) {
         .eq("email", email);
       mutationError = error;
     } else {
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("early_signups")
-        .insert({ email, metadata, source });
+        .insert({ email, metadata, source })
+        .select("id")
+        .single();
       mutationError = error;
+
+      if (!error && inserted) {
+        supabase.functions.invoke("notify-early-signup", {
+          body: { id: inserted.id },
+        });
+      }
     }
 
     if (mutationError) {
       return NextResponse.json(
         { error: "Unable to save your request right now." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -71,8 +79,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Unable to process request." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
-
