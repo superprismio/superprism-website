@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ContactFormModal } from "@/components/shared/contact-form-modal";
 
 const partnershipTypes = [
   {
@@ -19,6 +23,8 @@ const partnershipTypes = [
 ];
 
 export function ContactSection() {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <section
       id="contact"
@@ -43,14 +49,19 @@ export function ContactSection() {
           ))}
         </div>
         <div className="flex items-center gap-4">
-          <Button asChild className="holographic-shimmer-hover">
-            <Link href="#">Start a Conversation</Link>
+          <Button
+            className="holographic-shimmer-hover"
+            onClick={() => setModalOpen(true)}
+          >
+            Start a Conversation
           </Button>
           <Button asChild variant="outline">
             <Link href="#">Follow Our Research</Link>
           </Button>
         </div>
       </div>
+
+      <ContactFormModal open={modalOpen} onOpenChange={setModalOpen} />
     </section>
   );
 }
