@@ -211,4 +211,32 @@
       transform: rotate(-45deg) translateY(100%);
     }
   }
+
+  .holographic-shimmer-hover {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .holographic-shimmer-hover::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      0deg,
+      transparent,
+      transparent 30%,
+      var(--primary)
+    );
+    opacity: 0;
+    transform: rotate(-45deg) translateY(-100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .holographic-shimmer-hover:hover::before {
+    animation: holographic-sweep 0.5s ease-out forwards;
+  }
 }

@@ -8,11 +8,11 @@ import mobileLogo from "../../public/images/SP_logo.png";
 import { Button } from "../ui/button";
 
 const menuItems = [
-  { label: "How it Works", href: "#how-it-works" },
-  { label: "Capabilities", href: "#capabilities" },
-  { label: "Principles", href: "#principles" },
-  { label: "Foundation", href: "#foundation" },
-  { label: "Get Started", href: "#get-started" },
+  { label: "Problem", href: "#problem" },
+  { label: "Research", href: "#research" },
+  { label: "Platform", href: "#platform" },
+  { label: "Applied", href: "#applied" },
+  { label: "Work With Us", href: "#contact" },
 ];
 
 export function Header() {
