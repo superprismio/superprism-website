@@ -7,7 +7,10 @@ export function Footer() {
   return (
     <footer className="w-full flex flex-row items-center justify-between border-t text-xs gap-4 py-4 px-8">
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-2"><Copyright className="h-3 w-3" /><p>2026</p></div>
+        <div className="flex items-center gap-2">
+          <Copyright className="h-3 w-3" />
+          <p>2026</p>
+        </div>
         <Image
           alt="Superprism logo"
           className="h-12 w-auto object-cover"
@@ -15,12 +18,12 @@ export function Footer() {
         />
       </div>
       <Link
-        href="https://twitter.com/superprism"
+        href="https://discord.gg/3zQ3NcHm"
         target="_blank"
         rel="noopener noreferrer"
         className="text-sm hover:text-primary transition-colors"
       >
-        @superprism
+        superprism discord
       </Link>
     </footer>
   );
