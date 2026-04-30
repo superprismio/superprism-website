@@ -1,57 +1,124 @@
-# Haus OS UI Starter
+# Superprism Website
 
-A comprehensive Next.js starter template for building applications on the Haus OS data layer. This repository provides everything you need to quickly bootstrap projects with authentication, file management, semantic search, and collaborative features.
+This repository contains the public Superprism marketing site. It is a Next.js App Router project focused on the main landing page, supporting brand pages, and early-access signup capture.
 
-## 🚀 What's Included
+## What Is Here
 
-### **Core Features**
+- Public landing page at `/`, assembled from sections in `components/home/`.
+- Lightweight `/about` route.
+- Shared site chrome in `components/shared/`, including the header, footer, contact modal, loader, and early-access form.
+- Supabase-backed early-access API at `app/api/early-access/route.ts`.
+- Static brand and product imagery in `public/images/`.
+- shadcn-style UI primitives in `components/ui/`.
+- Invite tooling in `scripts/send-invites.ts` for early-access signups.
 
-- **🔐 Authentication** - Complete Supabase auth setup with user management
-- **📁 Heap CRUD** - Heap, Members, Files
-- **🎨 UI Components** - Modern, accessible components with theme customization
+## Tech Stack
 
-### **Technical Stack**
+- Next.js 16 with the App Router
+- React 19
+- TypeScript
+- Tailwind CSS
+- Radix UI and shadcn-style components
+- Supabase for early-access signup storage and invite management
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Supabase (PostgreSQL, Auth, Storage)
-- **UI**: shadcn/ui components with custom theming
+## Getting Started
 
-## 🛠️ Quick Start
+Install dependencies:
 
-### Installation
+```bash
+npm install
+```
 
-1. **Clone and install dependencies**
+Create a local environment file:
 
-   ```bash
-   git clone <your-repo-url>
-   cd hausos-starter
-   npm install
-   ```
+```bash
+cp .env.example .env.local
+```
 
-2. **Set up environment variables**
+Configure the required Supabase values:
 
-   ```bash
-   cp .env.example .env.local
-   ```
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
+```
 
-   Configure your Supabase credentials:
+Optional values used by specific features:
 
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=your-project-url
-   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
-   ```
+```env
+APP_URL=your-production-domain.com
+NEXT_PUBLIC_SIGNUP_PAUSED=false
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
 
-3. **Run the development server**
+`SUPABASE_SERVICE_ROLE_KEY` is only needed for administrative scripts such as sending invites. Do not expose or commit it.
 
-   ```bash
-   npm run dev
-   ```
+Start the development server:
 
-4. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+```bash
+npm run dev
+```
 
-## 📚 Documentation
+Open [http://localhost:3000](http://localhost:3000).
 
-- **[Component Theme Guide](docs/component-theme.md)** - UI theming and customization
-- **Authentication Guide** - Complete auth setup and user management - COMING SOON
-- **API Routes Documentation** - Full API reference with examples -COMING SOON
+## Available Scripts
+
+```bash
+npm run dev
+```
+
+Runs the local Next.js dev server with Turbopack.
+
+```bash
+npm run build
+```
+
+Builds the production site.
+
+```bash
+npm run start
+```
+
+Starts the production server after a build.
+
+```bash
+npm run lint
+```
+
+Runs ESLint across the project.
+
+```bash
+npm run send-invites
+```
+
+Uses the Supabase service role key to invite records from the `early_signups` table that have not yet been marked as invited.
+
+## Project Structure
+
+```text
+app/
+  page.tsx                  Main landing page
+  about/page.tsx            About route
+  api/early-access/route.ts Early-access signup endpoint
+components/
+  home/                     Landing-page sections
+  shared/                   Header, footer, forms, modal, shared chrome
+  ui/                       Reusable UI primitives
+lib/
+  supabase/                 Supabase browser/server helpers
+  types/                    Generated and local TypeScript types
+public/images/              Static imagery and favicon assets
+scripts/                    Operational scripts
+```
+
+## Early-Access Flow
+
+The early-access form posts to `/api/early-access`. The route validates the email address, upserts the signup in Supabase's `early_signups` table, and invokes the `notify-early-signup` Supabase function for new records.
+
+Invite sending is handled separately with `npm run send-invites`. The script reads `early_signups`, sends Supabase auth invites, and writes an `invitedAt` timestamp into each record's metadata.
+
+## Development Notes
+
+- Keep direct API calls out of React components. Wrap route calls in hooks when adding new client-side data flows.
+- Use Tailwind classes and the existing design tokens in `app/globals.css`.
+- Keep public assets under `public/images/`.
+- No automated test framework is currently configured; use `npm run lint` and `npm run build` before shipping changes.
