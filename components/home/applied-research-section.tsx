@@ -10,6 +10,18 @@ const caseStudies = [
       "Shared knowledge base for contributors",
       "Automated ingestion of chats and governance discussions",
       "AI-assisted sensemaking across distributed contributors",
+      "CMS content creation workflows for the Cohort Portal",
+    ],
+  },
+  {
+    label: "Case Study",
+    title: "DAOhaus",
+    description:
+      "Refactory deployment for protocol codebase maintenance and application operations.",
+    areas: [
+      "Active maintenance support for the DAOhaus protocol codebase",
+      "Application maintenance workflows coordinated through The Refactory",
+      "Operator-facing workflows for ongoing product support and admin tasks",
     ],
   },
   {
@@ -49,7 +61,7 @@ export function AppliedResearchSection() {
             AI.
           </p>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {caseStudies.map((study) => (
             <div key={study.title} className="bg-card border border-border p-8">
               <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground mb-4">
