@@ -41,7 +41,7 @@ export function BetaWarning() {
                 <li>Features are still under active development</li>
               </ul>
               <p className="pt-2">
-                If you encounter any issues or have feedback, please don't
+                If you encounter any issues or have feedback, please don&apos;t
                 hesitate to reach out to our team.
               </p>
             </div>

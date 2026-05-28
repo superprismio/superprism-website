@@ -17,7 +17,11 @@ export function ThesisSection() {
         <p className="text-foreground text-lg font-medium mb-6">
           The challenge is <strong>shared intelligence</strong>.
         </p>
-        <p className="text-foreground text-lg mb-6">There's also a compounding problem. The most capable AI tools are built for technical users, and collaboration doesn't work when only half the room can participate.</p>
+        <p className="text-foreground text-lg mb-6">
+          There&apos;s also a compounding problem. The most capable AI tools are
+          built for technical users, and collaboration doesn&apos;t work when only
+          half the room can participate.
+        </p>
         <p className="text-muted-foreground text-lg mb-6">
           How teams create, maintain, and govern context will determine whether
           AI empowers organizations — or fragments them.

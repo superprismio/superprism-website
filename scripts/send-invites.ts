@@ -5,8 +5,6 @@ import type { Database } from "@/lib/types/supabase";
 // Load environment variables from .env file
 config();
 
-type EarlySignup = Database["public"]["Tables"]["early_signups"]["Row"];
-
 async function sendInvites() {
   console.log("Starting invite process...");
 
@@ -23,7 +21,7 @@ async function sendInvites() {
   }
 
   // Create admin client with service role
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+  const supabase = createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -70,7 +68,7 @@ async function sendInvites() {
       console.log(`Sending invite to ${signup.email}...`);
 
       // Send invite email
-      const { data: inviteData, error: inviteError } =
+      const { error: inviteError } =
         await supabase.auth.admin.inviteUserByEmail(signup.email);
 
       if (inviteError) {

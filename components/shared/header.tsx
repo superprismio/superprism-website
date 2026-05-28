@@ -8,11 +8,12 @@ import mobileLogo from "../../public/images/SP_logo.png";
 import { Button } from "../ui/button";
 
 const menuItems = [
-  { label: "Problem", href: "#problem" },
-  { label: "Research", href: "#research" },
-  { label: "Platform", href: "#platform" },
-  { label: "Applied", href: "#applied" },
-  { label: "Work With Us", href: "#contact" },
+  { label: "Problem", href: "/#problem" },
+  { label: "Research", href: "/#research" },
+  { label: "Platform", href: "/#platform" },
+  { label: "Applied", href: "/#applied" },
+  { label: "Reports", href: "/research" },
+  { label: "Work With Us", href: "/#contact" },
 ];
 
 export function Header() {
