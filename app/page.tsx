@@ -7,6 +7,7 @@ import { ProblemSection } from "@/components/home/problem-section";
 import { ResearchAreasSection } from "@/components/home/research-areas-section";
 import { ReferenceImplSection } from "@/components/home/reference-impl-section";
 import { AppliedResearchSection } from "@/components/home/applied-research-section";
+import { ResearchReportsSection } from "@/components/home/research-reports-section";
 import { ThesisSection } from "@/components/home/thesis-section";
 import { ContactSection } from "@/components/home/contact-section";
 
@@ -19,6 +20,7 @@ export default function Home() {
       <ResearchAreasSection />
       <ReferenceImplSection />
       <AppliedResearchSection />
+      <ResearchReportsSection />
       <div className="relative overflow-hidden">
         <Image
           alt=""
