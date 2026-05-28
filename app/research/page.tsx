@@ -41,11 +41,10 @@ export default function ResearchPage() {
             Research Reports
           </p>
           <h1 className="max-w-4xl text-5xl font-bold leading-tight">
-            Field notes for collaborative AI infrastructure.
+            Field notes from the Prism.
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
-            Case studies, research reports, and experimentation logs from live
-            Superprism deployments.
+            Case studies, research reports, and experimentation logs.
           </p>
         </div>
       </section>
@@ -70,7 +69,9 @@ export default function ResearchPage() {
                 </div>
                 <div className="p-8 lg:p-10">
                   <div className="mb-5 flex flex-wrap items-center gap-3">
-                    <Badge variant="outline">{formatArticleType(article.type)}</Badge>
+                    <Badge variant="outline">
+                      {formatArticleType(article.type)}
+                    </Badge>
                     <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                       {formatArticleDate(article.date)}
                     </span>
