@@ -26,7 +26,7 @@ export default function Home() {
           alt=""
           src={chromaOrb}
           fill
-          className="object-cover object-center opacity-50"
+          className="pointer-events-none object-cover object-center opacity-50"
           aria-hidden="true"
         />
         <ThesisSection />

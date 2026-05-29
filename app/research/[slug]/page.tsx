@@ -7,6 +7,14 @@ import { ArrowLeft } from "lucide-react";
 import { Header } from "@/components/shared/header";
 import { Footer } from "@/components/shared/footer";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { getAllArticles, getArticleBySlug } from "@/lib/articles";
 
 type PageProps = {
@@ -69,6 +77,32 @@ const markdownComponents: Components = {
     <code className="border border-border bg-muted px-1.5 py-0.5 font-mono text-sm text-foreground">
       {children}
     </code>
+  ),
+  table: ({ children }) => (
+    <div className="mt-8 overflow-hidden border border-border">
+      <Table className="min-w-[720px]">
+        {children}
+      </Table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <TableHeader className="bg-muted/70">{children}</TableHeader>
+  ),
+  tbody: ({ children }) => (
+    <TableBody className="text-muted-foreground">{children}</TableBody>
+  ),
+  tr: ({ children }) => (
+    <TableRow className="hover:bg-muted/30">{children}</TableRow>
+  ),
+  th: ({ children }) => (
+    <TableHead className="h-auto min-w-36 px-4 py-3 align-top text-sm font-bold leading-6 text-foreground">
+      {children}
+    </TableHead>
+  ),
+  td: ({ children }) => (
+    <TableCell className="min-w-36 px-4 py-4 align-top text-sm leading-6">
+      {children}
+    </TableCell>
   ),
 };
 

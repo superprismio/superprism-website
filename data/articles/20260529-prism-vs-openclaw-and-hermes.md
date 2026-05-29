@@ -12,7 +12,9 @@ tags:
   - Agent Workflows
   - OpenClaw
   - Hermes
-featured: false
+featured: true
+image: "/images/articles/prism-vs-openclaw-and-hermes.png"
+imageAlt: "Three floating prismatic glass orbs refracting spectral light over a dark wireframe landscape"
 ---
 
 Prism, OpenClaw, and Hermes Agent sit near each other in the emerging agent tooling landscape, but they solve different coordination problems.
@@ -37,15 +39,15 @@ Use Hermes when the important object is the assistant: a personal or self-hosted
 
 ## Comparison Table
 
-| Dimension | Prism Railway Template | OpenClaw | Hermes Agent |
-| --- | --- | --- | --- |
-| Primary shape | Deployable operational workspace for teams and communities | Self-hosted multi-channel gateway for agents | Personal or self-hosted CLI and messaging agent |
-| Main runtime posture | Codex-first runtime wrapped by app-owned workflow state | Pluggable agent harnesses behind gateway routing | Agent CLI/gateway with broad provider and tool support |
-| System of record | Site service owns requests, workflows, executions, target apps, artifacts, skills, branding, and service-token APIs | Gateway owns sessions, routing, channel connections, transcripts, workspace policy, and delivery callbacks | Local or self-hosted Hermes environment owns conversations, memory, skills, tools, schedules, and provider config |
-| Best fit | Teams that need durable request handling, review gates, artifacts, target-app metadata, and operational memory | Operators who want one gateway across many messaging surfaces and agent runtimes | Developers and power users who want a configurable assistant for terminal, research, coding, and messaging workflows |
-| Human coordination | Explicit workflow gates, durable artifacts, request records, and review surfaces | Channel-level interaction, session management, and gateway policy | CLI and messaging interaction with user-controlled commands, tools, memory, and schedules |
-| Memory and knowledge posture | Memory is a service boundary and workspace resource, separate from workflow artifacts and site-owned state | Gateway/session memory and transcripts support agent continuity | Persistent memory, user profile, procedural skills, and context files support assistant continuity |
-| Extensibility boundary | App APIs, workflows, source adapters, transport adapters, skills, target apps, and runtime services | Channel plugins, provider/model resolution, agent harness plugins, device nodes, and gateway policy | Tools, toolsets, MCP servers, skills, cron jobs, terminal backends, providers, and gateway integrations |
+| Dimension                    | Prism Railway Template                                                                                              | OpenClaw                                                                                                   | Hermes Agent                                                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Primary shape                | Deployable operational workspace for teams and communities                                                          | Self-hosted multi-channel gateway for agents                                                               | Personal or self-hosted CLI and messaging agent                                                                      |
+| Main runtime posture         | Codex-first runtime wrapped by app-owned workflow state                                                             | Pluggable agent harnesses behind gateway routing                                                           | Agent CLI/gateway with broad provider and tool support                                                               |
+| System of record             | Site service owns requests, workflows, executions, target apps, artifacts, skills, branding, and service-token APIs | Gateway owns sessions, routing, channel connections, transcripts, workspace policy, and delivery callbacks | Local or self-hosted Hermes environment owns conversations, memory, skills, tools, schedules, and provider config    |
+| Best fit                     | Teams that need durable request handling, review gates, artifacts, target-app metadata, and operational memory      | Operators who want one gateway across many messaging surfaces and agent runtimes                           | Developers and power users who want a configurable assistant for terminal, research, coding, and messaging workflows |
+| Human coordination           | Explicit workflow gates, durable artifacts, request records, and review surfaces                                    | Channel-level interaction, session management, and gateway policy                                          | CLI and messaging interaction with user-controlled commands, tools, memory, and schedules                            |
+| Memory and knowledge posture | Memory is a service boundary and workspace resource, separate from workflow artifacts and site-owned state          | Gateway/session memory and transcripts support agent continuity                                            | Persistent memory, user profile, procedural skills, and context files support assistant continuity                   |
+| Extensibility boundary       | App APIs, workflows, source adapters, transport adapters, skills, target apps, and runtime services                 | Channel plugins, provider/model resolution, agent harness plugins, device nodes, and gateway policy        | Tools, toolsets, MCP servers, skills, cron jobs, terminal backends, providers, and gateway integrations              |
 
 ## Prism's Layer: App-Owned Operations
 

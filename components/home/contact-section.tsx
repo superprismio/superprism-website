@@ -28,7 +28,7 @@ export function ContactSection() {
   return (
     <section
       id="contact"
-      className="w-full border-t border-border scroll-mt-24"
+      className="relative z-10 w-full border-t border-border scroll-mt-24"
     >
       <div className="max-w-6xl mx-auto py-24 px-6">
         <div className="mb-12">
@@ -56,7 +56,7 @@ export function ContactSection() {
             Start a Conversation
           </Button>
           <Button asChild variant="outline">
-            <Link href="#">Follow Our Research</Link>
+            <Link href="/research">Follow Our Research</Link>
           </Button>
         </div>
       </div>
