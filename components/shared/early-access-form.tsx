@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useContactSubmission } from "@/hooks/use-contact-submission";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -18,7 +19,8 @@ export function EarlyAccessForm({ className }: Props) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<SubmissionState>("idle");
   const [message, setMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const contactSubmission = useContactSubmission();
+  const isSubmitting = contactSubmission.isPending;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,28 +31,14 @@ export function EarlyAccessForm({ className }: Props) {
       return;
     }
 
-    console.log("email", email);
-
-    setIsSubmitting(true);
     setStatus("idle");
     setMessage(null);
 
     try {
-      const response = await fetch("/api/early-access", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email }),
+      await contactSubmission.mutateAsync({
+        email,
+        source: "early_access",
       });
-
-      const payload = await response.json().catch(() => ({}));
-
-      console.log("payload", payload);
-
-      if (!response.ok) {
-        throw new Error(payload?.error ?? "Unable to save your request.");
-      }
 
       setStatus("success");
       setMessage("Thanks! We'll let you know as soon as slots open up.");
@@ -62,8 +50,6 @@ export function EarlyAccessForm({ className }: Props) {
           ? error.message
           : "Something went wrong. Please try again."
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

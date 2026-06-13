@@ -3,20 +3,18 @@
 ## Project Structure & Module Organization
 - `app/` houses Next.js App Router routes, layouts, and API route handlers (for example `app/api/heaps/[heapId]/route.ts`).
 - `components/` contains shared UI and feature components, with shadcn-style primitives under `components/ui/`.
-- `lib/` holds shared utilities and Supabase helpers; `hooks/` contains React hooks.
+- `lib/` holds shared utilities; `hooks/` contains React hooks.
 - `public/` stores static assets (images, favicon). `docs/` includes domain notes and guides.
-- `scripts/` includes one-off tooling such as `scripts/send-invites.ts`.
+- `scripts/` is reserved for one-off tooling when needed.
 
 ## Build, Test, and Development Commands
 - `npm run dev`: start the Next.js dev server with Turbopack.
 - `npm run build`: create a production build.
 - `npm run start`: run the production server after a build.
 - `npm run lint`: run ESLint across the repo.
-- `npm run send-invites`: execute the invite script via `tsx`.
 
 ## Architecture & Integrations
-- Supabase auth is enforced via middleware plus explicit checks in API routes; use `getClaims()` in server components and `getUser()` in API handlers.
-- Choose Supabase clients by context: `lib/supabase/client.ts` for client components, `lib/supabase/server.ts` for server/API, and service role only for RLS bypass.
+- Contact submissions post to `/api/contact`, which forwards leads to Discord using `DISCORD_BOT_TOKEN` and `DISCORD_CONSULTATION_CHANNEL_ID`.
 - Ingestion routes live under `/api/heaps/[heapId]/injest/*` and forward to an n8n webhook; follow the existing FormData/JSON shapes.
 - Theming uses CSS tokens in `app/globals.css` wired into Tailwind in `tailwind.config.ts`, with shadcn/ui variants and `next/font` variables.
 
@@ -89,5 +87,5 @@ Markdown body formatting:
 - Note any environment or migration steps in the PR description.
 
 ## Security & Configuration Tips
-- Create `.env.local` from `.env.example` and set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- Create `.env.local` from `.env.example` and set Discord notification credentials.
 - Avoid committing secrets; keep all credentials in env files.
