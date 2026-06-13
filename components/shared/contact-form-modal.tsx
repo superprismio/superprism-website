@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useContactSubmission } from "@/hooks/use-contact-submission";
 
 type SubmissionState = "idle" | "success" | "error";
 
@@ -26,7 +27,8 @@ export function ContactFormModal({ open, onOpenChange }: Props) {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<SubmissionState>("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const contactSubmission = useContactSubmission();
+  const isSubmitting = contactSubmission.isPending;
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -37,26 +39,15 @@ export function ContactFormModal({ open, onOpenChange }: Props) {
       return;
     }
 
-    setIsSubmitting(true);
     setStatus("idle");
     setStatusMessage(null);
 
     try {
-      const response = await fetch("/api/early-access", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          source: "contact_form",
-          metadata: { message },
-        }),
+      await contactSubmission.mutateAsync({
+        email,
+        source: "contact_form",
+        message,
       });
-
-      const payload = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(payload?.error ?? "Unable to send your message.");
-      }
 
       setStatus("success");
       setStatusMessage("Thanks! We'll be in touch soon.");
@@ -69,8 +60,6 @@ export function ContactFormModal({ open, onOpenChange }: Props) {
           ? error.message
           : "Something went wrong. Please try again.",
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

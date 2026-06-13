@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
 
 const defaultUrl = process.env.APP_URL
@@ -43,9 +44,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <main className="min-h-screen flex flex-col items-center">
-            {children}
-          </main>
+          <QueryProvider>
+            <main className="min-h-screen flex flex-col items-center">
+              {children}
+            </main>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

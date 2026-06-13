@@ -1,16 +1,15 @@
 # Superprism Website
 
-This repository contains the public Superprism marketing site. It is a Next.js App Router project focused on the main landing page, supporting brand pages, and early-access signup capture.
+This repository contains the public Superprism marketing site. It is a Next.js App Router project focused on the main landing page, supporting brand pages, and contact capture.
 
 ## What Is Here
 
 - Public landing page at `/`, assembled from sections in `components/home/`.
 - Lightweight `/about` route.
 - Shared site chrome in `components/shared/`, including the header, footer, contact modal, loader, and early-access form.
-- Supabase-backed early-access API at `app/api/early-access/route.ts`.
+- Discord-backed contact API at `app/api/contact/route.ts`.
 - Static brand and product imagery in `public/images/`.
 - shadcn-style UI primitives in `components/ui/`.
-- Invite tooling in `scripts/send-invites.ts` for early-access signups.
 
 ## Tech Stack
 
@@ -19,7 +18,7 @@ This repository contains the public Superprism marketing site. It is a Next.js A
 - TypeScript
 - Tailwind CSS
 - Radix UI and shadcn-style components
-- Supabase for early-access signup storage and invite management
+- React Query for client-side route mutations
 
 ## Getting Started
 
@@ -35,11 +34,11 @@ Create a local environment file:
 cp .env.example .env.local
 ```
 
-Configure the required Supabase values:
+Configure the required Discord notification values:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your-project-url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-or-anon-key
+DISCORD_BOT_TOKEN=
+DISCORD_CONSULTATION_CHANNEL_ID=
 ```
 
 Optional values used by specific features:
@@ -47,10 +46,7 @@ Optional values used by specific features:
 ```env
 APP_URL=your-production-domain.com
 NEXT_PUBLIC_SIGNUP_PAUSED=false
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
-
-`SUPABASE_SERVICE_ROLE_KEY` is only needed for administrative scripts such as sending invites. Do not expose or commit it.
 
 Start the development server:
 
@@ -86,35 +82,26 @@ npm run lint
 
 Runs ESLint across the project.
 
-```bash
-npm run send-invites
-```
-
-Uses the Supabase service role key to invite records from the `early_signups` table that have not yet been marked as invited.
-
 ## Project Structure
 
 ```text
 app/
   page.tsx                  Main landing page
   about/page.tsx            About route
-  api/early-access/route.ts Early-access signup endpoint
+  api/contact/route.ts      Contact and early-access lead endpoint
 components/
   home/                     Landing-page sections
   shared/                   Header, footer, forms, modal, shared chrome
   ui/                       Reusable UI primitives
+hooks/                      React Query route hooks
 lib/
-  supabase/                 Supabase browser/server helpers
   types/                    Generated and local TypeScript types
 public/images/              Static imagery and favicon assets
-scripts/                    Operational scripts
 ```
 
-## Early-Access Flow
+## Contact Flow
 
-The early-access form posts to `/api/early-access`. The route validates the email address, upserts the signup in Supabase's `early_signups` table, and invokes the `notify-early-signup` Supabase function for new records.
-
-Invite sending is handled separately with `npm run send-invites`. The script reads `early_signups`, sends Supabase auth invites, and writes an `invitedAt` timestamp into each record's metadata.
+The early-access and contact forms submit through a React Query mutation hook to `/api/contact`. The route validates the payload, formats a Discord message, and posts the lead into the configured Discord channel.
 
 ## Development Notes
 
