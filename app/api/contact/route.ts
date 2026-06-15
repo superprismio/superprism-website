@@ -4,6 +4,7 @@ export const runtime = "nodejs";
 
 const DISCORD_MESSAGE_LIMIT = 2000;
 const CONTACT_SOURCE = "superprism-website";
+const MIN_FORM_ELAPSED_MS = 3000;
 const emailPattern =
   /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/i;
 
@@ -11,6 +12,8 @@ type ContactPayload = {
   email?: unknown;
   source?: unknown;
   message?: unknown;
+  website?: unknown;
+  formStarted?: unknown;
   metadata?: unknown;
 };
 
@@ -46,6 +49,29 @@ function getMetadata(metadata: unknown) {
   }
 
   return metadata as Record<string, unknown>;
+}
+
+function parseFormStarted(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value);
+
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function createSuccessResponse() {
+  return NextResponse.json({
+    ok: true,
+    message: "Your message was sent.",
+  });
 }
 
 function formatLeadType(source: string) {
@@ -138,6 +164,16 @@ export async function POST(request: Request) {
     typeof body.source === "string" && body.source.trim().length > 0
       ? body.source.trim()
       : "early_access";
+  const website =
+    typeof body.website === "string" ? body.website.trim() : "";
+  const formStarted = parseFormStarted(body.formStarted);
+
+  if (
+    website.length > 0 ||
+    (formStarted != null && Date.now() - formStarted < MIN_FORM_ELAPSED_MS)
+  ) {
+    return createSuccessResponse();
+  }
 
   if (!emailPattern.test(email)) {
     return NextResponse.json(
@@ -169,10 +205,7 @@ export async function POST(request: Request) {
 
     await sendDiscordMessage(formatDiscordMessage(summary));
 
-    return NextResponse.json({
-      ok: true,
-      message: "Your message was sent.",
-    });
+    return createSuccessResponse();
   } catch (error) {
     console.error("Error submitting contact request:", error);
 

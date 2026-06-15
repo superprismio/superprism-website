@@ -6,6 +6,8 @@ export type ContactSubmissionInput = {
   email: string;
   source?: "early_access" | "contact_form" | (string & {});
   message?: string;
+  website?: string;
+  formStarted?: number | string;
   metadata?: Record<string, unknown>;
 };
 
