@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,13 +25,22 @@ type Props = {
 export function ContactFormModal({ open, onOpenChange }: Props) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [formStarted, setFormStarted] = useState(() => Date.now());
   const [status, setStatus] = useState<SubmissionState>("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const contactSubmission = useContactSubmission();
   const isSubmitting = contactSubmission.isPending;
 
+  useEffect(() => {
+    if (open) {
+      setFormStarted(Date.now());
+    }
+  }, [open]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const website = formData.get("website");
 
     if (!email) {
       setStatus("error");
@@ -47,6 +56,8 @@ export function ContactFormModal({ open, onOpenChange }: Props) {
         email,
         source: "contact_form",
         message,
+        website: typeof website === "string" ? website : "",
+        formStarted,
       });
 
       setStatus("success");
@@ -74,6 +85,21 @@ export function ContactFormModal({ open, onOpenChange }: Props) {
           <p className="mt-2 text-xl text-primary">{statusMessage}</p>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
+            <div
+              aria-hidden="true"
+              className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden"
+            >
+              <Label htmlFor="contact-website">Website</Label>
+              <Input
+                id="contact-website"
+                name="website"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                disabled={isSubmitting}
+              />
+            </div>
+
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="contact-email">Email address</Label>
               <Input
