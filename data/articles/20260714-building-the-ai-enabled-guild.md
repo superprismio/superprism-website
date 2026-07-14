@@ -11,7 +11,7 @@ tags:
   - Raid Guild
   - AI Operations
   - Research
-featured: false
+featured: true
 image: "/images/articles/building-the-ai-enabled-guild.png"
 imageAlt: "Transparent glass prism splitting spectral workflow beams over a dark networked terrain"
 ---
